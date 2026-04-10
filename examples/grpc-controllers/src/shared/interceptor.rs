@@ -15,3 +15,21 @@ impl OnRequest for AuthInterceptor {
         Ok(req)
     }
 }
+
+#[derive(Interceptor)]
+pub struct LoggingInterceptor;
+
+impl OnRequestWithConfig<&'static str> for LoggingInterceptor {
+    async fn on_request(&self, config: &'static str, req: Request<()>) -> GrpcInterceptorResult {
+        tracing::info!(
+            "[gRPC] - Incoming request: ID: {} - Controller: {}",
+            req.metadata()
+                .get("request-id")
+                .map(|v| v.to_str().unwrap_or("invalid UTF-8"))
+                .unwrap_or("unknown"),
+            config
+        );
+
+        Ok(req)
+    }
+}

@@ -1,0 +1,33 @@
+[package]
+name = "sword-macros"
+version.workspace = true
+edition.workspace = true
+authors = ["Luciano Revillod <lrevillod2022@alu.uct.cl>"]
+description = "Structured web framework built on top of tokio ecosystem, providing powerful features for building robust web applications."
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/sword-macros"
+keywords = ["web", "framework", "axum", "http", "async"]
+readme = "../README.md"
+license-file = "../LICENSE"
+rust-version.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+axum = { workspace = true }
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"
+
+[features]
+default = ["web-controllers"]
+web-controllers = []
+hot-reload = []
+socketio-controllers = []
+grpc-controllers = []

@@ -137,6 +137,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-stream"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5a71a6f37880a80d1d7f19efd781e4b5de42c88f0722cc13bcb6cc2cfe8476"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7c24de15d275a1ecfd47a380fb4d5ec9bfe0933f309ed5e705b775596a3574d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1226,13 +1248,11 @@ dependencies = [
 name = "grpc-controllers"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "prost",
- "serde",
  "sword",
- "sword-layers",
  "thiserror",
  "tokio",
- "tokio-stream",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
@@ -2572,6 +2592,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "scc"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46e6f046b7fef48e2660c57ed794263155d713de679057f2d0c169bfc6e756cc"
+dependencies = [
+ "sdd",
+]
+
+[[package]]
 name = "schemars"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2588,6 +2617,12 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "sdd"
+version = "3.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490dcfcbfef26be6800d11870ff2df8774fa6e86d047e3e8c8a76b25655e41ca"
 
 [[package]]
 name = "seahash"
@@ -2674,6 +2709,32 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serial_test"
+version = "3.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "911bd979bf1070a3f3aa7b691a3b3e9968f339ceeec89e08c280a8a22207a32f"
+dependencies = [
+ "futures-executor",
+ "futures-util",
+ "log",
+ "once_cell",
+ "parking_lot",
+ "scc",
+ "serial_test_derive",
+]
+
+[[package]]
+name = "serial_test_derive"
+version = "3.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a7d91949b85b0d2fb687445e448b40d322b6b3e4af6b44a29b21d9a5f33e6d9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -3128,36 +3189,21 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "sword"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "axum",
- "axum_responses",
- "bytes",
  "dioxus-devtools",
- "form_urlencoded",
  "futures-lite",
- "http-body-util",
  "inventory",
- "mime",
- "parking_lot",
  "serde",
- "serde_json",
- "serde_urlencoded",
- "socketioxide",
- "socketioxide-core",
- "socketioxide-parser-common",
- "socketioxide-parser-msgpack",
  "subsecond",
  "sword-core",
+ "sword-grpc",
  "sword-layers",
  "sword-macros",
- "thiserror",
+ "sword-socketio",
+ "sword-web",
  "tokio",
- "tonic",
- "tonic-async-interceptor",
- "tonic-health",
- "tonic-prost",
- "tonic-reflection",
  "tower",
  "tracing",
  "validator",
@@ -3165,7 +3211,7 @@ dependencies = [
 
 [[package]]
 name = "sword-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "inventory",
  "parking_lot",
@@ -3174,8 +3220,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "sword-grpc"
+version = "0.2.2"
+dependencies = [
+ "inventory",
+ "serde",
+ "sword-core",
+ "sword-layers",
+ "sword-macros",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-async-interceptor",
+ "tonic-health",
+ "tonic-reflection",
+ "tracing",
+]
+
+[[package]]
+name = "sword-grpc-tests"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "serial_test",
+ "sword",
+ "sword-grpc",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
 name = "sword-layers"
-version = "0.1.6"
+version = "0.2.2"
 dependencies = [
  "axum",
  "axum-helmet",
@@ -3194,7 +3273,7 @@ dependencies = [
 
 [[package]]
 name = "sword-macros"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "axum",
  "proc-macro2",
@@ -3203,8 +3282,69 @@ dependencies = [
 ]
 
 [[package]]
-name = "sword-tests"
-version = "0.1.3"
+name = "sword-socketio"
+version = "0.2.2"
+dependencies = [
+ "axum",
+ "axum-test",
+ "bytes",
+ "inventory",
+ "parking_lot",
+ "serde",
+ "socketioxide",
+ "socketioxide-core",
+ "socketioxide-parser-common",
+ "socketioxide-parser-msgpack",
+ "sword-core",
+ "sword-layers",
+ "sword-macros",
+ "sword-web",
+ "thiserror",
+ "tower-http",
+ "tracing",
+ "validator",
+]
+
+[[package]]
+name = "sword-socketio-tests"
+version = "0.1.0"
+dependencies = [
+ "axum-test",
+ "serde_json",
+ "sword",
+ "sword-layers",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
+name = "sword-web"
+version = "0.2.2"
+dependencies = [
+ "axum",
+ "axum-test",
+ "axum_responses",
+ "bytes",
+ "form_urlencoded",
+ "http-body-util",
+ "inventory",
+ "mime",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sword-core",
+ "sword-layers",
+ "sword-macros",
+ "thiserror",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "validator",
+]
+
+[[package]]
+name = "sword-web-tests"
+version = "0.1.0"
 dependencies = [
  "axum",
  "axum-test",

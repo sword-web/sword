@@ -1,0 +1,67 @@
+[package]
+name = "sword-layers"
+version.workspace = true
+edition = "2024"
+authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
+description = "Tower layers for the Sword web framework"
+repository = "https://github.com/sword-web/sword-layers"
+homepage = "https://github.com/sword-web"
+documentation = "https://docs.rs/sword-layers"
+keywords = ["sword", "web", "framework", "axum", "tower"]
+categories = ["web-programming", "web-programming::http-server"]
+readme = "../README.md"
+license = "MIT"
+
+[features]
+default = [
+    "body-limit",
+    "not-found",
+    "req-timeout",
+    "request-id",
+    "tracing",
+]
+body-limit = [
+    "dep:axum_responses",
+    "dep:byte-unit",
+    "dep:tracing",
+    "dep:tower-http",
+    "dep:tower-layer",
+    "tower-http/limit",
+]
+compression = ["dep:tower-http", "dep:tracing", "tower-http/compression-full"]
+cookies = ["dep:tower-cookies"]
+cors = ["dep:tower-http", "dep:tracing", "tower-http/cors"]
+helmet = ["dep:axum-helmet"]
+not-found = ["dep:axum_responses", "dep:tower-layer"]
+req-timeout = [
+    "dep:axum_responses",
+    "dep:tracing",
+    "dep:tower-http",
+    "dep:tower-layer",
+    "tower-http/timeout",
+]
+request-id = [
+    "dep:tower-http",
+    "dep:tower-layer",
+    "dep:uuid",
+    "tower-http/request-id",
+]
+servedir = ["dep:tower-http", "dep:tracing", "tower-http/fs"]
+tracing = ["dep:tracing", "dep:tracing-subscriber"]
+
+[dependencies]
+axum = { workspace = true }
+axum-helmet = { version = "0.2.0", optional = true }
+axum_responses = { workspace = true, optional = true }
+byte-unit = { version = "5.2.0", optional = true }
+serde = { workspace = true, features = ["derive"] }
+thisconfig = { workspace = true, features = ["byte-unit", "time-unit"] }
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+
+tower = { workspace = true }
+tower-cookies = { version = "0.11.0", features = ["private", "signed"], optional = true }
+tower-http = { workspace = true, optional = true }
+tower-layer = { version = "0.3.3", optional = true }
+
+uuid = { workspace = true, features = ["v4"], optional = true }

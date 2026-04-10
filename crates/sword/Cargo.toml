@@ -1,0 +1,58 @@
+[package]
+name = "sword"
+version.workspace = true
+edition.workspace = true
+authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
+description = "Structured web framework built on top of tokio ecosystem, providing powerful features for building robust web applications."
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/sword"
+keywords = ["sword", "web", "framework", "axum", "microservices"]
+categories = ["web-programming", "web-programming::http-server"]
+readme = "../README.md"
+license-file = "../LICENSE"
+rust-version.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+tokio = { workspace = true }
+axum = { workspace = true }
+
+sword-core = { workspace = true }
+sword-layers = { workspace = true, features = ["tracing"] }
+sword-macros = { workspace = true }
+sword-web = { workspace = true }
+sword-socketio = { workspace = true, optional = true }
+sword-grpc = { workspace = true, optional = true }
+
+serde = { workspace = true }
+validator = { workspace = true, optional = true }
+
+tower = { workspace = true }
+tracing = { workspace = true }
+inventory = { workspace = true }
+futures-lite = { workspace = true }
+
+subsecond = { workspace = true, optional = true }
+dioxus-devtools = { workspace = true, optional = true }
+
+[features]
+default = ["web-controllers"]
+
+web-controllers = ["sword-web/web-controllers"]
+
+socketio-controllers = [
+    "web-controllers",
+    "dep:sword-socketio",
+    "sword-socketio/socketio-controllers",
+]
+
+grpc-controllers = ["dep:sword-grpc", "sword-grpc/grpc-controllers"]
+
+multipart = ["sword-web/multipart"]
+validation-validator = ["dep:validator", "sword-web/validation-validator", "sword-socketio/validation-validator"]
+
+hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]

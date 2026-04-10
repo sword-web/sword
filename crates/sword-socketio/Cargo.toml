@@ -1,0 +1,54 @@
+[package]
+name = "sword-socketio"
+version.workspace = true
+edition.workspace = true
+authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
+description = "Socket.IO controllers for the Sword framework"
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/sword"
+keywords = ["sword", "socketio", "framework", "realtime", "web"]
+categories = ["web-programming", "web-programming::http-server"]
+readme = "../README.md"
+license-file = "../LICENSE"
+rust-version.workspace = true
+publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+axum = { workspace = true }
+bytes = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+inventory = { workspace = true }
+
+sword-core = { workspace = true }
+sword-web = { workspace = true }
+sword-macros = { workspace = true }
+
+socketioxide = { version = "0.18.0", features = ["extensions", "msgpack"] }
+socketioxide-core = "0.17.0"
+socketioxide-parser-common = "0.17.0"
+socketioxide-parser-msgpack = "0.17.0"
+
+validator = { workspace = true, optional = true }
+
+[features]
+default = ["socketio-controllers"]
+
+socketio-controllers = [
+    "sword-macros/socketio-controllers",
+    "sword-web/web-controllers",
+]
+
+validation-validator = ["dep:validator"]
+
+[dev-dependencies]
+axum-test = { workspace = true }
+tower-http = { workspace = true, features = ["limit", "cors", "trace"] }
+sword-layers = { workspace = true }

@@ -1,26 +1,46 @@
 [workspace]
 resolver = "2"
-members = ["sword", "sword-core", "sword-layers", "sword-macros", "sword-tests", "examples/*"]
-default-members = ["sword", "sword-core", "sword-layers", "sword-macros", "sword-tests"]
+members = [
+    "crates/*",
+    "examples/*",
+    "tests/sword-web",
+    "tests/sword-socketio",
+    "tests/sword-grpc",
+]
+
+[workspace.metadata.cargo-machete]
+ignored  = ["prost",  "tonic-prost"]
 
 [workspace.package]
+version = "0.2.2"
 edition = "2024"
 repository = "https://github.com/sword-web/sword"
 homepage = "https://github.com/sword-web/sword"
 rust-version = "1.85"
 
 [workspace.dependencies]
-sword = { path = "sword" }
-sword-core = { path = "sword-core", version = "0.2.1" }
-sword-macros = { path = "sword-macros", version = "0.2.1", default-features = false }
-sword-layers = { path = "sword-layers", version = "0.1.6" }
-axum_responses = { version = "0.5.5" }
+sword = { path = "crates/sword", default-features = false }
+sword-core = { path = "crates/sword-core", version = "0.2.1" }
+sword-macros = { path = "crates/sword-macros", version = "0.2.1" }
+sword-layers = { path = "crates/sword-layers", version = "0.2.2" }
+
+sword-web = { path = "crates/sword-web" }
+sword-grpc = { path = "crates/sword-grpc" }
+sword-socketio = { path = "crates/sword-socketio" }
 
 tokio = { version = "^1.0", features = ["full"] }
+tokio-stream = "0.1.18"
+tonic = "0.14.5"
+tonic-prost = "0.14.5"
+tonic-async-interceptor = "0.14.1"
+tonic-health = "0.14.2"
+tonic-reflection = "0.14.2"
+serde = { version = "1.0.219", features = ["derive"] }
+
 axum = "0.8.7"
+axum_responses = "0.5.5"
 tower = "0.5.2"
 
-serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 regex-lite = "0.1.7"
 
@@ -31,20 +51,8 @@ validator = { version = "0.20.0", features = ["derive"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json", "chrono"] }
 
-socketioxide = "0.18.0"
-socketioxide-core = "0.17.0"
-socketioxide-parser-common = "0.17.0"
-socketioxide-parser-msgpack = "0.17.0"
-tonic = "0.14.5"
-tonic-prost = "0.14.5"
-tonic-async-interceptor = "0.14.1"
-
 inventory = "0.3.21"
 parking_lot = "0.12.5"
-
-syn = { version = "2", features = ["full"] }
-quote = "1"
-proc-macro2 = "1"
 
 bytes = "1.10.1"
 http-body-util = "0.1.3"

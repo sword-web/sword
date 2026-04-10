@@ -1,0 +1,63 @@
+[package]
+name = "sword-web"
+version.workspace = true
+edition.workspace = true
+authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
+description = "Web controllers and runtime for the Sword framework"
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/sword"
+keywords = ["sword", "web", "framework", "axum", "http"]
+categories = ["web-programming", "web-programming::http-server"]
+readme = "../README.md"
+license-file = "../LICENSE"
+rust-version.workspace = true
+publish = false
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+tokio = { workspace = true }
+axum = { workspace = true }
+axum_responses = { workspace = true }
+
+sword-core = { workspace = true }
+sword-layers = { workspace = true, features = ["tracing"] }
+sword-macros = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+serde_urlencoded = { workspace = true }
+form_urlencoded = { workspace = true }
+mime = { workspace = true }
+bytes = { workspace = true }
+http-body-util = { workspace = true }
+
+validator = { workspace = true, optional = true }
+
+tracing = { workspace = true }
+inventory = { workspace = true }
+
+[features]
+default = ["web-controllers"]
+
+web-controllers = [
+    "sword-macros/web-controllers",
+    "sword-layers/not-found",
+    "sword-layers/request-id",
+    "sword-layers/cors",
+    "sword-layers/cookies",
+    "sword-layers/req-timeout",
+    "sword-layers/body-limit",
+]
+
+multipart = ["axum/multipart", "axum_responses/multipart"]
+validation-validator = ["dep:validator"]
+
+[dev-dependencies]
+axum-test = { workspace = true }
+tower-http = { workspace = true, features = ["limit", "cors", "trace"] }

@@ -13,9 +13,17 @@ Hey! Want to help out with Sword? Awesome! Here’s how you can jump in:
 - Use `rustfmt` to keep code style.
 - Run the full local quality gate before opening a PR:
   - `cargo fmt --all -- --check`
-  - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-  - `cargo test --workspace --all-features`
-  - `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --all-features`
+  - `cargo clippy -p sword --all-targets -- -D warnings`
+  - `cargo clippy -p sword-web --all-targets --all-features -- -D warnings`
+  - `cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings`
+  - `cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings`
+  - `cargo test -p sword-web --all-features`
+  - `cargo test -p sword-socketio --all-features`
+  - `cargo test -p sword-grpc --all-features`
+  - `RUSTDOCFLAGS="-D warnings" cargo doc -p sword --no-deps`
+  - `RUSTDOCFLAGS="-D warnings" cargo doc -p sword-web --no-deps --all-features`
+  - `RUSTDOCFLAGS="-D warnings" cargo doc -p sword-socketio --no-deps --all-features`
+  - `RUSTDOCFLAGS="-D warnings" cargo doc -p sword-grpc --no-deps --all-features`
 - Try to write clear code and add comments if something’s tricky.
 
 ## Docs

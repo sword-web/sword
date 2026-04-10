@@ -1,0 +1,20 @@
+[application]
+name = "gRPC Test App"
+host = "127.0.0.1"
+port = 50051
+graceful-shutdown = false
+enable-tonic-reflection = true
+
+[application.body-limit]
+max-decoding-message-size = "2 MiB"
+max-encoding-message-size = "2 MiB"
+display = false
+
+[tracing]
+enabled = true
+display = false
+filter = "error"
+format = "dev"
+time-style = "none"
+time-pattern = "%H:%M:%S"
+with-fields = []

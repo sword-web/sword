@@ -16,12 +16,14 @@ nursery:
 	cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery
 
 test:
-	cargo test --workspace --exclude grpc-controllers
-	cargo check -p sword --no-default-features --features grpc-controllers
-	cargo check -p grpc-controllers
+	cargo test -p sword-web-tests
+	cargo test -p sword-socketio-tests
+	cargo test -p sword-grpc-tests -- --test-threads=1
 
 test-log:
-	cargo test --workspace --exclude grpc-controllers -- --nocapture
+	cargo test -p sword-web-tests -- --nocapture
+	cargo test -p sword-socketio-tests -- --nocapture
+	cargo test -p sword-grpc-tests -- --test-threads=1 --nocapture
 
 build:
 	cargo build --workspace --all-features

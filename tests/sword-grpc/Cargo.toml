@@ -1,18 +1,18 @@
 [package]
-name = "grpc-controllers"
+name = "sword-grpc-tests"
 version = "0.1.0"
 edition.workspace = true
+publish = false
 
 [dependencies]
 sword = { workspace = true, features = ["grpc-controllers"] }
-tonic-prost = { workspace = true }
+sword-grpc = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
+tokio-stream = { workspace = true }
+tonic-prost = { workspace = true }
 prost = "0.14.1"
-thiserror = { workspace = true }
-tracing = { workspace = true }
-uuid = { workspace = true, features = ["v4"] }
-async-stream = "0.3.6"
+serial_test = "3.2.0"
 
 [build-dependencies]
 tonic-prost-build = "0.14.2"

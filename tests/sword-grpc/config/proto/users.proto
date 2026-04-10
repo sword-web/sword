@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package users;
+
+service UserService {
+  rpc ListUsers (ListUsersRequest) returns (ListUsersReply);
+  rpc StreamUsers (StreamUsersRequest) returns (stream UserItem);
+  rpc GetUser (GetUserRequest) returns (UserReply);
+}
+
+
+message UserItem {
+  string id = 1;
+  string username = 2;
+}
+
+message ListUsersRequest {}
+
+message StreamUsersRequest {}
+
+message ListUsersReply {
+  repeated UserItem users = 1;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message UserReply {
+  UserItem user = 1;
+}

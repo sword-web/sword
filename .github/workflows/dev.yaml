@@ -26,12 +26,7 @@ on:
 
 jobs:
   checks:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest ]
-        toolchain: [ stable ]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,7 +34,6 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
       - name: Cache cargo registry
@@ -59,22 +53,43 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run clippy (web/socketio set)
-        run: cargo clippy --workspace --exclude grpc-controllers --all-targets --all-features -- -D warnings
+      - name: Run clippy (sword)
+        run: cargo clippy -p sword --all-targets -- -D warnings
 
-      - name: Check web/socketio feature set
-        run: cargo check --workspace --exclude grpc-controllers
+      - name: Run clippy (sword-web)
+        run: cargo clippy -p sword-web --all-targets --all-features -- -D warnings
 
-      - name: Run tests (all except grpc example)
-        run: cargo test --workspace --exclude grpc-controllers
+      - name: Run clippy (sword-socketio)
+        run: cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
 
-      - name: Check gRPC engine feature set
-        run: cargo check -p sword --no-default-features --features grpc-controllers
+      - name: Run clippy (sword-grpc)
+        run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
 
-      - name: Check gRPC example
-        run: cargo check -p grpc-controllers
+      - name: Run tests (web)
+        run: cargo test -p sword-web-tests
 
-      - name: Build docs
+      - name: Run tests (socketio)
+        run: cargo test -p sword-socketio-tests
+
+      - name: Run tests (grpc)
+        run: cargo test -p sword-grpc-tests -- --test-threads=1
+
+      - name: Build docs (sword)
         env:
           RUSTDOCFLAGS: "-D warnings"
-        run: cargo doc --workspace --exclude grpc-controllers --no-deps --all-features
+        run: cargo doc -p sword --no-deps
+
+      - name: Build docs (sword-web)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-web --no-deps --all-features
+
+      - name: Build docs (sword-socketio)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-socketio --no-deps --all-features
+
+      - name: Build docs (sword-grpc)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-grpc --no-deps --all-features

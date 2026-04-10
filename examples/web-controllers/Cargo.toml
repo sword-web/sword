@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sword = { workspace = true, features = ["validation-validator"] }
+sword = { workspace = true, features = ["web-controllers", "validation-validator"] }
 serde = { workspace = true }
 validator = { workspace = true }
 serde_json = { workspace = true }

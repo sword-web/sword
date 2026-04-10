@@ -1,0 +1,15 @@
+[application]
+graceful-shutdown = false
+host = "0.0.0.0"
+port = 8080
+body-limit = { max-size = "1MB", display = true }
+request-timeout = { enabled = true, timeout = "2s", display = true }
+
+[socketio]
+enabled = true
+ping-timeout = "20s"
+ping-interval = "25s"
+
+[my-custom-section]
+custom_key = "value"
+env_user = "${USER:default_value}"
