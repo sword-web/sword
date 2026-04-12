@@ -1,4 +1,4 @@
-# interceptors
+# Sword Interceptors Example
 
 This example demonstrates interceptors in Sword for both web and Socket.IO controllers. It shows logging interceptors for incoming requests and socket connections.
 

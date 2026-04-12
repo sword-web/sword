@@ -30,11 +30,14 @@ pub mod not_found;
 
 pub mod prelude;
 
+#[cfg(feature = "body-limit")]
 pub(crate) type ServiceLayer<Inner, Outer> = tower::ServiceBuilder<
     tower_layer::Stack<Inner, tower_layer::Stack<Outer, tower_layer::Identity>>,
 >;
 
+#[cfg(any(feature = "body-limit", feature = "req-timeout"))]
 pub(crate) type MapResponseLayer = tower::util::MapResponseLayer<ResponseFnMapper>;
+#[cfg(any(feature = "body-limit", feature = "req-timeout"))]
 pub(crate) type ResponseFnMapper =
     fn(axum::response::Response<axum::body::Body>) -> axum::response::Response<axum::body::Body>;
 

@@ -4,25 +4,21 @@ use crate::prelude::{
 };
 
 use axum::{Router, extract::Request, middleware::Next};
+use socketioxide::layer::SocketIoLayer;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use sword_core::{Config, State, sword_error};
 use sword_core::{Controller, ControllerIds, ControllerRegistry};
+use sword_layers::DisplayConfig;
 use sword_web::router::WebRouterExtension;
 
-fn socketio_setup(
-    state: &State,
-    socketio_config: &SocketIoServerConfig,
-) -> (Option<crate::SocketIoLayer>, SocketIoServerConfig) {
-    let socketio_config = socketio_config.clone();
+fn socketio_setup(state: &State, config: &SocketIoServerConfig) -> SocketIoLayer {
+    let (layer, io) = SocketIoServerLayer::new(config);
 
-    let layer = socketio_config.enabled.then(|| {
-        let (layer, io) = SocketIoServerLayer::new(&socketio_config);
-        state.insert(io);
-        layer
-    });
+    state.insert(io);
+    config.display();
 
-    (layer, socketio_config)
+    layer
 }
 
 fn apply_socketio_layer(
@@ -80,13 +76,12 @@ fn apply_socketio_extension(
     controller_registry: &ControllerRegistry,
 ) -> Router<State> {
     let socketio_config = config.get_or_default::<SocketIoServerConfig>();
-    let (socketio_layer, socketio_config) = socketio_setup(state, &socketio_config);
+    let socketio_layer = socketio_setup(state, &socketio_config);
 
-    if let Some(layer) = socketio_layer {
-        router = apply_socketio_layer(router, layer, socketio_config);
-    }
+    router = apply_socketio_layer(router, socketio_layer, socketio_config);
 
     let controller_map = controller_registry.read();
+
     if let Some(handlers) = controller_map.get(&Controller::SocketIo) {
         apply_socketio_controllers(state, handlers);
     }

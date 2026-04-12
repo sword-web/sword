@@ -81,10 +81,6 @@ impl TracingSubscriber {
             Ok(()) => {
                 let _ = TRACING_INIT.set(());
 
-                if !config.display {
-                    return Ok(());
-                }
-
                 tracing::info!(
                     target: "sword.startup.tracing",
                     format = ?config.format,

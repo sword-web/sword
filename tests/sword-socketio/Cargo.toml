@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = ["socketio-controllers", "validation-validator"] }
+sword = { workspace = true, features = ["socketio", "validation-validator"] }
 sword-layers = { workspace = true, features = ["helmet", "compression", "cors"] }
 
 tokio = { workspace = true }

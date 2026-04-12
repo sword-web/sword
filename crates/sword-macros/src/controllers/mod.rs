@@ -23,7 +23,7 @@ pub fn expand_controller(attr: TokenStream, item: TokenStream) -> syn::Result<To
 
     let controller_kind = &parsed_input.kind;
 
-    let builder: proc_macro2::TokenStream = match controller_kind {
+    let builder: proc_macro::TokenStream = match controller_kind {
         #[cfg(feature = "web-controllers")]
         ParsedControllerKind::Web { .. } => web::expand_web_controller(&parsed_input)?,
 
@@ -34,8 +34,9 @@ pub fn expand_controller(attr: TokenStream, item: TokenStream) -> syn::Result<To
 
         #[cfg(feature = "grpc-controllers")]
         ParsedControllerKind::Grpc { .. } => grpc::expand_grpc_controller(&parsed_input)?,
-    }
-    .into();
+    };
+
+    let builder = proc_macro2::TokenStream::from(builder);
 
     let expanded = quote! {
         #input

@@ -4,9 +4,6 @@ use thisconfig::ConfigItem;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TracingConfig {
-    /// Enables the initial display of the tracing subscriber configuration on initialization.
-    pub display: bool,
-
     /// Enables or disables global tracing initialization.
     ///
     /// When `false`, `TracingSubscriber::init` returns without registering a
@@ -91,7 +88,6 @@ pub enum TimeStyle {
 impl Default for TracingConfig {
     fn default() -> Self {
         Self {
-            display: false,
             enabled: true,
             use_env_filter: true,
             filter: "info".to_string(),

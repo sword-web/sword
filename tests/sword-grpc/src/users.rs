@@ -64,6 +64,16 @@ impl UserService for UsersController {
 
         Ok(GrpcResponse::message(UserReply { user: Some(user) }))
     }
+
+    async fn get_error(
+        &self,
+        _: Request<proto::GetErrorRequest>,
+    ) -> GrpcResult<proto::GetErrorReply> {
+        Ok(GrpcResponse::message(proto::GetErrorReply {
+            id: String::new(),
+            status: "ok".into(),
+        }))
+    }
 }
 
 struct GrpcModule;

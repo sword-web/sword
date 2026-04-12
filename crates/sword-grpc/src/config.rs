@@ -13,10 +13,6 @@ pub struct GrpcApplicationConfig {
     /// Message size limits for gRPC requests/responses.
     #[serde(rename = "body-limit")]
     pub body_limit: GrpcBodyLimitConfig,
-
-    /// Enables tonic reflection service registration.
-    #[serde(rename = "enable-tonic-reflection")]
-    pub enable_tonic_reflection: bool,
 }
 
 impl Default for GrpcApplicationConfig {
@@ -25,14 +21,13 @@ impl Default for GrpcApplicationConfig {
             host: "0.0.0.0".to_string(),
             port: 50051,
             body_limit: GrpcBodyLimitConfig::default(),
-            enable_tonic_reflection: false,
         }
     }
 }
 
 impl ConfigItem for GrpcApplicationConfig {
     fn key() -> &'static str {
-        "application"
+        "grpc"
     }
 }
 

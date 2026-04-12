@@ -44,9 +44,9 @@ impl WebApplication {
         tracing::info!(
             target: "sword.startup.web",
             bind,
-            web_router_prefix = self
+            router_prefix = self
                 .web_config
-                .web_router_prefix
+                .router_prefix
                 .as_deref()
                 .unwrap_or("none"),
             "Starting application listener"

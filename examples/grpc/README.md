@@ -1,4 +1,4 @@
-# grpc-controllers
+# Sword gRPC Example
 
 Minimal gRPC users CRUD example for Sword using `grpc-controllers` and an in-memory store.
 
@@ -12,7 +12,7 @@ cargo run -p grpc-controllers
 
 - `users.UserService`
 - `grpc.health.v1.Health`
-- `grpc.reflection.v1.ServerReflection` (enabled by config)
+- `grpc.reflection.v1.ServerReflection` (enabled by `grpc-reflection` feature)
 
 ## Available RPC methods
 
@@ -28,5 +28,5 @@ cargo run -p grpc-controllers
 
 - UserService methods expect `authorization` metadata.
 - Server default address is `127.0.0.1:50051`.
-- If `application.enable-tonic-reflection = true`, `grpcurl list` includes health and users services.
+- If the binary is built with the `grpc-reflection` feature, `grpcurl list` includes health and users services.
 - Reflection metadata is registered automatically by Sword from `build.rs` when generating `sword_descriptor_set.bin`.

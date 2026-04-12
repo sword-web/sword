@@ -19,6 +19,10 @@ pub enum HttpMethod {
     Put,
     Delete,
     Patch,
+    Head,
+    Options,
+    Trace,
+    Connect,
 }
 
 impl HttpMethod {
@@ -29,6 +33,10 @@ impl HttpMethod {
             "PUT" => Ok(Self::Put),
             "DELETE" => Ok(Self::Delete),
             "PATCH" => Ok(Self::Patch),
+            "HEAD" => Ok(Self::Head),
+            "OPTIONS" => Ok(Self::Options),
+            "TRACE" => Ok(Self::Trace),
+            "CONNECT" => Ok(Self::Connect),
             _ => Err(syn::Error::new(
                 Span::call_site(),
                 format!("Unsupported HTTP method `{method}`"),
@@ -43,6 +51,10 @@ impl HttpMethod {
             Self::Put => "PUT",
             Self::Delete => "DELETE",
             Self::Patch => "PATCH",
+            Self::Head => "HEAD",
+            Self::Options => "OPTIONS",
+            Self::Trace => "TRACE",
+            Self::Connect => "CONNECT",
         }
     }
 
@@ -53,6 +65,10 @@ impl HttpMethod {
             Self::Put => quote! { put },
             Self::Delete => quote! { delete },
             Self::Patch => quote! { patch },
+            Self::Head => quote! { head },
+            Self::Options => quote! { options },
+            Self::Trace => quote! { trace },
+            Self::Connect => quote! { connect },
         }
     }
 }

@@ -21,9 +21,6 @@ pub struct GrpcBodyLimitConfig {
     /// Maximum allowed size for outbound encoded gRPC messages.
     #[serde(rename = "max-encoding-message-size")]
     pub max_encoding_message_size: ByteConfig,
-
-    /// Whether to log the configured limits at startup.
-    pub display: bool,
 }
 
 #[derive(Clone)]
@@ -41,13 +38,18 @@ impl Default for GrpcBodyLimitValue {
     }
 }
 
+impl From<GrpcBodyLimitConfig> for GrpcBodyLimitValue {
+    fn from(config: GrpcBodyLimitConfig) -> Self {
+        Self {
+            max_decoding_message_size: config.max_decoding_message_size.parsed,
+            max_encoding_message_size: config.max_encoding_message_size.parsed,
+        }
+    }
+}
+
 impl DisplayConfig for GrpcBodyLimitConfig {
     fn display(&self) {
-        if !self.display {
-            return;
-        }
-
-        tracing::info!(
+        tracing::debug!(
             target: "sword.layers.grpc.body-limit",
             max_decoding_message_size = self.max_decoding_message_size.raw,
             max_encoding_message_size = self.max_encoding_message_size.raw,
@@ -77,7 +79,6 @@ impl Default for GrpcBodyLimitConfig {
                 parsed: encode_parsed,
                 raw: encode_raw,
             },
-            display: false,
         }
     }
 }

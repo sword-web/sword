@@ -1,12 +1,8 @@
 use syn::{Attribute, Error, Ident, LitStr, Token, meta::ParseNestedMeta, spanned::Spanned};
 
-#[derive(Debug, Clone)]
-pub enum MessageValue {
-    Static(String),
-    Field(String),
-}
+use crate::errors::MessageValue;
 
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct GrpcErrorConfig {
     pub transparent: bool,
     pub code: Option<String>,
@@ -14,45 +10,79 @@ pub struct GrpcErrorConfig {
     pub tracing_level: Option<String>,
 }
 
-impl GrpcErrorConfig {
-    pub fn from_attrs(ident: &Ident, attrs: &[Attribute]) -> syn::Result<Self> {
-        let mut config = Self::default();
+pub fn parse_enum_grpc_error_config(attrs: &[Attribute]) -> syn::Result<GrpcErrorConfig> {
+    let mut config = GrpcErrorConfig::default();
 
-        for attr in attrs.iter().filter(|a| a.path().is_ident("grpc")) {
-            config.parse_grpc_attr(attr)?;
-        }
-
-        for attr in attrs.iter().filter(|a| a.path().is_ident("tracing")) {
-            attr.parse_nested_meta(|meta| {
-                let level_ident = meta
-                    .path
-                    .get_ident()
-                    .ok_or_else(|| Error::new(meta.path.span(), "expected identifier"))?;
-
-                let level_str = level_ident.to_string();
-
-                match level_str.as_str() {
-                    "debug" | "info" | "warn" | "error" | "trace" => {
-                        config.tracing_level = Some(level_str);
-                    }
-                    _ => {
-                        return Err(Error::new(
-                            level_ident.span(),
-                            "invalid tracing level, expected one of: debug, info, warn, error, trace",
-                        ));
-                    }
-                }
-
-                Ok(())
-            })?;
-        }
-
-        config.validate(ident)?;
-
-        Ok(config)
+    for attr in attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("grpc_error"))
+    {
+        config.parse_grpc_attr(attr, "grpc_error")?;
     }
 
-    fn parse_grpc_attr(&mut self, attr: &Attribute) -> syn::Result<()> {
+    config.validate_container()?;
+    Ok(config)
+}
+
+pub fn parse_variant_grpc_error_config(
+    ident: &Ident,
+    attrs: &[Attribute],
+) -> syn::Result<GrpcErrorConfig> {
+    let mut config = GrpcErrorConfig::default();
+
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("grpc")) {
+        config.parse_grpc_attr(attr, "grpc")?;
+    }
+
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("tracing")) {
+        config.parse_tracing_attr(attr)?;
+    }
+
+    config.validate_variant(ident)?;
+    Ok(config)
+}
+
+impl GrpcErrorConfig {
+    pub fn merged(self, defaults: &GrpcErrorConfig) -> Self {
+        Self {
+            transparent: self.transparent || defaults.transparent,
+            code: self.code.or_else(|| defaults.code.clone()),
+            message: self.message.or_else(|| defaults.message.clone()),
+            tracing_level: self
+                .tracing_level
+                .or_else(|| defaults.tracing_level.clone()),
+        }
+    }
+
+    pub fn default_code(&self) -> &str {
+        self.code.as_deref().unwrap_or("unknown")
+    }
+
+    fn validate_container(&self) -> syn::Result<()> {
+        if self.transparent {
+            return Err(Error::new(
+                proc_macro2::Span::call_site(),
+                "`transparent` is only valid inside #[grpc(...)] on enum variants",
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn validate_variant(&self, ident: &Ident) -> syn::Result<()> {
+        if self.transparent
+            && (self.code.is_some() || self.message.is_some() || self.tracing_level.is_some())
+        {
+            return Err(Error::new_spanned(
+                ident,
+                "`transparent` cannot be combined with `code`, `message`, or `tracing`",
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn parse_grpc_attr(&mut self, attr: &Attribute, attr_name: &str) -> syn::Result<()> {
         attr.parse_nested_meta(|meta| {
             let ident = meta
                 .path
@@ -61,87 +91,130 @@ impl GrpcErrorConfig {
 
             match ident.to_string().as_str() {
                 "transparent" => {
-                    self.transparent = true;
-                }
-                "code" => {
-                    self.code = Some(Self::parse_code_value(ident, &meta)?);
-                }
-                "message" => {
-                    self.message = Some(Self::parse_message_value(ident, &meta)?);
-                }
-                other => {
-                    return Err(Error::new(
-                        ident.span(),
-                        format!("unknown attribute `{other}`"),
-                    ));
-                }
-            }
+                    if self.transparent {
+                        return Err(Error::new(
+                            ident.span(),
+                            "duplicate `transparent` attribute",
+                        ));
+                    }
 
-            Ok(())
+                    self.transparent = true;
+                    Ok(())
+                }
+                "code" => self.set_code(ident, &meta),
+                "message" => self.set_message(ident, &meta),
+                "tracing" => self.set_tracing_level(ident, &meta),
+                other => Err(Error::new(
+                    ident.span(),
+                    format!("unknown attribute `{other}` in #[{attr_name}(...)]"),
+                )),
+            }
         })
     }
 
-    fn parse_code_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<String> {
-        if !meta.input.peek(Token![=]) {
-            return Err(Error::new(ident.span(), "expected '=' after 'code'"));
-        }
+    fn parse_tracing_attr(&mut self, attr: &Attribute) -> syn::Result<()> {
+        attr.parse_nested_meta(|meta| {
+            let ident = meta
+                .path
+                .get_ident()
+                .ok_or_else(|| Error::new(meta.path.span(), "expected identifier"))?;
 
-        meta.input.parse::<Token![=]>()?;
-        let lit = meta.input.parse::<LitStr>()?;
-        Ok(lit.value())
+            self.set_tracing_level_value(ident, ident.to_string())
+        })
     }
 
-    fn parse_message_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<MessageValue> {
+    fn set_code(&mut self, ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<()> {
+        if self.code.is_some() {
+            return Err(Error::new(ident.span(), "duplicate `code` attribute"));
+        }
+
+        self.code = Some(parse_code_value(ident, meta)?);
+        Ok(())
+    }
+
+    fn set_message(&mut self, ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<()> {
+        if self.message.is_some() {
+            return Err(Error::new(ident.span(), "duplicate `message` attribute"));
+        }
+
+        self.message = Some(parse_message_value(ident, meta)?);
+        Ok(())
+    }
+
+    fn set_tracing_level(&mut self, ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<()> {
         if !meta.input.peek(Token![=]) {
-            return Err(Error::new(ident.span(), "expected '=' after 'message'"));
+            return Err(Error::new(ident.span(), "expected '=' after 'tracing'"));
         }
 
         meta.input.parse::<Token![=]>()?;
 
-        if let Ok(lit) = meta.input.parse::<LitStr>() {
-            return Ok(MessageValue::Static(lit.value()));
+        if let Ok(level) = meta.input.parse::<Ident>() {
+            return self.set_tracing_level_value(&level, level.to_string());
         }
 
-        if let Ok(field) = meta.input.parse::<Ident>() {
-            return Ok(MessageValue::Field(field.to_string()));
+        if let Ok(level) = meta.input.parse::<LitStr>() {
+            return self.set_tracing_level_value(ident, level.value());
         }
 
         Err(Error::new(
             ident.span(),
-            "expected string literal or identifier",
+            "expected tracing level identifier or string literal",
         ))
     }
 
-    fn validate(&self, ident: &Ident) -> syn::Result<()> {
-        if !self.transparent && self.code.is_none() {
-            return Err(Error::new_spanned(
-                ident,
-                "missing `transparent` or `code` in #[grpc(...)]",
+    fn set_tracing_level_value(&mut self, ident: &Ident, level: String) -> syn::Result<()> {
+        if self.tracing_level.is_some() {
+            return Err(Error::new(ident.span(), "duplicate `tracing` attribute"));
+        }
+
+        match level.as_str() {
+            "trace" | "debug" | "info" | "warn" | "error" => {
+                self.tracing_level = Some(level);
+                Ok(())
+            }
+            _ => Err(Error::new(
+                ident.span(),
+                "invalid tracing level, expected one of: trace, debug, info, warn, error",
+            )),
+        }
+    }
+}
+
+fn parse_code_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<String> {
+    if !meta.input.peek(Token![=]) {
+        return Err(Error::new(ident.span(), "expected '=' after 'code'"));
+    }
+
+    meta.input.parse::<Token![=]>()?;
+    Ok(meta.input.parse::<LitStr>()?.value())
+}
+
+fn parse_message_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<MessageValue> {
+    if !meta.input.peek(Token![=]) {
+        return Err(Error::new(ident.span(), "expected '=' after 'message'"));
+    }
+
+    meta.input.parse::<Token![=]>()?;
+
+    if let Ok(lit) = meta.input.parse::<LitStr>() {
+        let value = lit.value();
+
+        if value.contains('{') || value.contains('}') {
+            return Err(Error::new(
+                lit.span(),
+                "message string interpolation is not supported; build the final client message before constructing the error",
             ));
         }
 
-        if self.transparent && self.code.is_some() {
-            return Err(Error::new_spanned(
-                ident,
-                "cannot use both `transparent` and `code`",
-            ));
-        }
-
-        if self.transparent && (self.message.is_some() || self.tracing_level.is_some()) {
-            return Err(Error::new_spanned(
-                ident,
-                "`message` and `tracing` are not valid with `transparent`",
-            ));
-        }
-
-        Ok(())
+        return Ok(MessageValue::Static(value));
     }
 
-    pub fn message(&self) -> Option<MessageValue> {
-        self.message.clone()
+    if let Ok(field) = meta.input.parse::<Ident>() {
+        return Ok(MessageValue::Field(field.to_string()));
     }
 
-    pub fn code(&self) -> Option<&str> {
-        self.code.as_deref()
-    }
+    Err(Error::new(
+        ident.span(),
+        "expected string literal or field identifier",
+    ))
 }

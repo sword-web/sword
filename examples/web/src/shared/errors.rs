@@ -4,14 +4,11 @@ use thiserror::Error as ThisError;
 pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Debug, ThisError, HttpError)]
+#[http_error(code = 500, tracing = error, message = "Internal server error")]
 pub enum AppError {
-    #[http(code = 500)]
-    #[tracing(error)]
     #[error("Database error occurred: {0}")]
     DatabaseError(#[from] sqlx::Error),
 
-    #[http(code = 500)]
-    #[tracing(error)]
     #[error("Hasher error occurred: {0}")]
     HasherError(#[from] bcrypt::BcryptError),
 
@@ -20,8 +17,12 @@ pub enum AppError {
     #[error("Not found error: {message}")]
     NotFoundError { message: String },
 
-    #[http(code = 409, message = "User with {field} '{value}' already exists")]
+    #[http(code = 409, message = message)]
     #[tracing(error)]
     #[error("Conflict error {field} - {value}")]
-    UserConflictError { field: String, value: String },
+    UserConflictError {
+        message: String,
+        field: String,
+        value: String,
+    },
 }

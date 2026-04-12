@@ -1,23 +1,19 @@
 [application]
-name = "gRPC Greeter"
+name = "gRPC Application Example"
+graceful-shutdown = true
+
+[grpc]
 host = "0.0.0.0"
 port = 50051
-graceful-shutdown = true
-enable-tonic-reflection = true
 
-[application.body-limit]
+[grpc.body-limit]
 max-decoding-message-size = "2 MiB"
 max-encoding-message-size = "2 MiB"
-display = true
 
 [tracing]
 enabled = true
-display = false
 filter = "info,sword=info"
 format = "dev"
 time-style = "none"
 time-pattern = "%H:%M:%S"
 with-fields = []
-
-[cors]
-display = false

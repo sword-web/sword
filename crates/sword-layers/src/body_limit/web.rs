@@ -6,18 +6,28 @@
 use crate::DisplayConfig;
 
 use byte_unit::Byte;
-use serde::{Deserialize, Serialize};
+use serde::{self, Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 use thisconfig::ByteConfig;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(default)]
 pub struct BodyLimitConfig {
     /// The maximum allowed size for request bodies (e.g., "1MB", "500KB").
-    #[serde(rename = "max-size")]
+    /// This is a direct value in TOML (e.g., `body-limit = "5MB"`).
     pub max_size: ByteConfig,
-    /// Whether to display the configuration details.
-    pub display: bool,
+}
+
+impl<'de> Deserialize<'de> for BodyLimitConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Deserialize as a simple value (string or number) into ByteConfig.
+        // This will reject maps/tables like `{ max-size = "..." }`.
+        let max_size = ByteConfig::deserialize(deserializer)?;
+        Ok(BodyLimitConfig { max_size })
+    }
 }
 
 use crate::{MapResponseLayer, ResponseFnMapper, ServiceLayer};
@@ -52,12 +62,10 @@ impl BodyLimitLayer {
 
 impl DisplayConfig for BodyLimitConfig {
     fn display(&self) {
-        if self.display {
-            tracing::info!(
-                target: "sword.layers.body-limit",
-                max_body_size = ?self.max_size.raw,
-            );
-        }
+        tracing::debug!(
+            target: "sword.layers.body-limit",
+            max_body_size = ?self.max_size.raw,
+        );
     }
 }
 
@@ -69,7 +77,6 @@ impl Default for BodyLimitConfig {
             .as_u64() as usize;
 
         BodyLimitConfig {
-            display: true,
             max_size: ByteConfig {
                 parsed,
                 raw: max_size,

@@ -34,7 +34,11 @@ impl UsersController {
                 user.username
             );
 
-            return Err(AppError::UserConflictError("username", &user.username))?;
+            return Err(AppError::UserConflictError(
+                format!("User with username '{}' already exists", user.username),
+                "username",
+                &user.username,
+            ))?;
         }
 
         self.users.save(&user).await?;

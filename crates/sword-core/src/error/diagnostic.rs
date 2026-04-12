@@ -58,6 +58,19 @@ pub fn emit(diagnostic: StartupDiagnostic) {
         emit_tracing_logs(&diagnostic);
     } else {
         eprintln!("ERROR: {}", diagnostic.title);
+        eprintln!("Reason: {}", diagnostic.reason);
+        eprintln!(
+            "Source: {}",
+            diagnostic.source.as_deref().unwrap_or("Unknown")
+        );
+        eprintln!("Context:");
+        for (key, value) in &diagnostic.context {
+            eprintln!("  {}: {}", key, value);
+        }
+        eprintln!("Hints:");
+        for hint in &diagnostic.hints {
+            eprintln!("  {}", hint);
+        }
         eprintln!("Enable tracing in config to see details");
     }
 }

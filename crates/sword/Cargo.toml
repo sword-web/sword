@@ -23,10 +23,10 @@ axum = { workspace = true }
 
 sword-core = { workspace = true }
 sword-layers = { workspace = true, features = ["tracing"] }
-sword-macros = { workspace = true }
-sword-web = { workspace = true }
-sword-socketio = { workspace = true, optional = true }
+sword-macros = { workspace = true, features = ["web-controllers", "socketio-controllers", "grpc-controllers"] }
+sword-web = { workspace = true, optional = true }
 sword-grpc = { workspace = true, optional = true }
+sword-socketio = { workspace = true, optional = true }
 
 serde = { workspace = true }
 validator = { workspace = true, optional = true }
@@ -40,17 +40,12 @@ subsecond = { workspace = true, optional = true }
 dioxus-devtools = { workspace = true, optional = true }
 
 [features]
-default = ["web-controllers"]
+default = []
 
-web-controllers = ["sword-web/web-controllers"]
-
-socketio-controllers = [
-    "web-controllers",
-    "dep:sword-socketio",
-    "sword-socketio/socketio-controllers",
-]
-
-grpc-controllers = ["dep:sword-grpc", "sword-grpc/grpc-controllers"]
+web = ["dep:sword-web"]
+socketio = ["web", "dep:sword-socketio"]
+grpc = ["dep:sword-grpc"]
+grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
 
 multipart = ["sword-web/multipart"]
 validation-validator = ["dep:validator", "sword-web/validation-validator", "sword-socketio/validation-validator"]

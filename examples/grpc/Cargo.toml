@@ -1,10 +1,10 @@
 [package]
-name = "grpc-controllers"
+name = "sword-grpc-example"
 version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-sword = { workspace = true, features = ["grpc-controllers"] }
+sword = { workspace = true, features = ["grpc", "grpc-reflection"] }
 tonic-prost = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }

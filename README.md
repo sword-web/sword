@@ -63,17 +63,16 @@ impl UsersController {
 
 ## Full Examples
 
-- [Controllers API](./examples/web-controllers)
-- [SocketIO Controllers Chat](./examples/socketio-controllers)
+- [Controllers API](./examples/web)
+- [SocketIO Controllers Chat](./examples/socketio)
 - [Interceptors (Web + Socket.IO controllers)](./examples/interceptors)
+- [gRPC Application with error handling](./examples/grpc)
 
 ## Application Type Features
 
-- `web-controllers` (default): enables the web application type
-- `grpc-controllers`: enables the gRPC application type
-- `socketio-controllers`: enables Socket.IO controllers for web applications
-- `multipart`: enables multipart request extraction
-- `validation-validator`: enables `validator` integration
+- `web`: enables the web application type
+- `grpc`: enables the gRPC application type
+- `socketio`: enables Socket.IO controllers for web applications
 
 ## Changelog
 

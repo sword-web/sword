@@ -1,21 +1,20 @@
 use serde::{Deserialize, Serialize};
 use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
-#[cfg(feature = "grpc-controllers")]
-use sword_grpc::config::GrpcApplicationConfig;
-use sword_web::config::WebApplicationConfig;
 
 pub enum ApplicationEngine {
-    #[cfg(any(feature = "web-controllers", feature = "socketio-controllers"))]
+    #[cfg(any(feature = "web", feature = "socketio"))]
     Web(sword_web::application::WebApplication),
 
-    #[cfg(feature = "grpc-controllers")]
+    #[cfg(feature = "grpc")]
     Grpc(sword_grpc::application::GrpcApplication),
 }
 
 /// Configuration structure for the Sword application.
 ///
-/// This struct contains all the configuration options that can be specified
-/// in the `config/config.toml` file under the `[application]` section.
+/// This struct contains only global application configuration.
+///
+/// Engine-specific settings live in their own sections such as `[web]`, `[grpc]`,
+/// and `[socketio]`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ApplicationConfig {
     /// Optional name of the application. Defaults `None`.
@@ -32,18 +31,6 @@ pub struct ApplicationConfig {
     /// Defaults `false`
     #[serde(rename = "graceful-shutdown")]
     pub graceful_shutdown: bool,
-
-    /// Web server settings flattened into `[application]`.
-    ///
-    /// This keeps the TOML ergonomic while still using a dedicated struct
-    /// for web-specific configuration.
-    #[serde(flatten)]
-    pub web: WebApplicationConfig,
-
-    /// gRPC server settings flattened into `[application]`.
-    #[cfg(feature = "grpc-controllers")]
-    #[serde(flatten)]
-    pub grpc: GrpcApplicationConfig,
 }
 
 impl ConfigItem for ApplicationConfig {

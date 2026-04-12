@@ -4,12 +4,12 @@ use crate::registry::GrpcServiceRegistry;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use sword_core::{Config, Controller, ControllerMap, ControllerRegistry, State, sword_error};
+use sword_core::{Controller, ControllerMap, ControllerRegistry, State, sword_error};
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue};
 
 pub struct GrpcApplication {
     state: State,
-    app_config: GrpcApplicationConfig,
+    config: GrpcApplicationConfig,
     graceful_shutdown: bool,
     controllers: ControllerMap,
 }
@@ -17,25 +17,25 @@ pub struct GrpcApplication {
 impl GrpcApplication {
     pub fn new(
         state: State,
-        _config: &Config,
-        grpc_config: GrpcApplicationConfig,
+        config: GrpcApplicationConfig,
         graceful_shutdown: bool,
         controllers: &ControllerRegistry,
     ) -> Self {
         Self {
             state,
-            app_config: grpc_config,
+            config,
             graceful_shutdown,
             controllers: controllers.snapshot(),
         }
     }
 
     pub async fn start(&self) {
-        let bind = format!("{}:{}", self.app_config.host, self.app_config.port);
+        let bind = format!("{}:{}", self.config.host, self.config.port);
 
         tracing::info!(
             target: "sword.startup.grpc",
             bind,
+            graceful_shutdown = self.graceful_shutdown,
             "Starting gRPC application listener"
         );
 
@@ -74,16 +74,15 @@ impl GrpcApplication {
         }
 
         let mut grpc_registry = GrpcServiceRegistry::new();
+
+        #[cfg(feature = "reflection")]
         let mut reflection_descriptor_sets: Vec<&'static [u8]> = Vec::new();
 
-        let body_limit = self.app_config.body_limit.clone();
+        let body_limit = self.config.body_limit.clone();
 
         body_limit.display();
 
-        self.state.insert(GrpcBodyLimitValue {
-            max_decoding_message_size: body_limit.max_decoding_message_size.parsed,
-            max_encoding_message_size: body_limit.max_encoding_message_size.parsed,
-        });
+        self.state.insert(GrpcBodyLimitValue::from(body_limit));
 
         for controller_id in grpc_ids {
             let registrar = registrars.get(controller_id).copied().unwrap_or_else(|| {
@@ -101,6 +100,7 @@ impl GrpcApplication {
             (registrar.build)(&self.state);
             (registrar.register)(&self.state, &mut grpc_registry);
 
+            #[cfg(feature = "reflection")]
             if let Some(descriptor) = registrar.reflection_descriptor_set {
                 reflection_descriptor_sets.push(descriptor);
             }
@@ -133,7 +133,8 @@ impl GrpcApplication {
                 .await;
         }
 
-        let reflection_service = if self.app_config.enable_tonic_reflection {
+        #[cfg(feature = "reflection")]
+        let reflection_service = {
             let mut reflection_builder = tonic_reflection::server::Builder::configure()
                 .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET);
 
@@ -149,19 +150,20 @@ impl GrpcApplication {
                     context: {
                         "source" => "GrpcApplication::start",
                     },
-                    hints: ["Ensure build.rs generates `sword_descriptor_set.bin` when enable-tonic-reflection is true"],
+                    hints: ["Ensure build.rs generates `sword_descriptor_set.bin` when reflection support is enabled"],
                 }
             }))
-        } else {
-            None
         };
 
         let server = tonic::transport::Server::builder().add_routes(routes);
-        let mut router = server.add_service(health_service);
+        let router = server.add_service(health_service);
 
-        if let Some(reflection_service) = reflection_service {
-            router = router.add_service(reflection_service);
-        }
+        #[cfg(feature = "reflection")]
+        let router = if let Some(reflection_service) = reflection_service {
+            router.add_service(reflection_service)
+        } else {
+            router
+        };
 
         if self.graceful_shutdown {
             router
@@ -173,8 +175,8 @@ impl GrpcApplication {
                         reason: err,
                         context: {
                             "mode" => "graceful_shutdown",
-                            "host" => self.app_config.host.clone(),
-                            "port" => self.app_config.port.to_string(),
+                            "host" => self.config.host.clone(),
+                            "port" => self.config.port.to_string(),
                         },
                     }
                 });
@@ -188,8 +190,8 @@ impl GrpcApplication {
                 reason: err,
                 context: {
                     "mode" => "normal",
-                    "host" => self.app_config.host.clone(),
-                    "port" => self.app_config.port.to_string(),
+                    "host" => self.config.host.clone(),
+                    "port" => self.config.port.to_string(),
                 },
             }
         });

@@ -44,7 +44,7 @@ impl<'a> WebRouter<'a> {
 
         router = self.layer_stack.apply(router);
 
-        if let Some(prefix) = &self.web_config.web_router_prefix {
+        if let Some(prefix) = &self.web_config.router_prefix {
             router = Router::new().nest(prefix, router);
         }
 
@@ -53,7 +53,9 @@ impl<'a> WebRouter<'a> {
             axum::routing::get(|| async { JsonResponse::Ok().message("healthy") }),
         );
 
-        router.layer(NotFoundLayer::new())
+        router = router.layer(NotFoundLayer);
+
+        router
     }
 
     /// Apply all controllers based on kind
@@ -156,7 +158,6 @@ impl<'a> WebRouter<'a> {
 
         if web_config.request_timeout.enabled {
             let timeout_service: TimeoutLayer = web_config.request_timeout.clone().into();
-
             let response_mapper = RequestTimeoutResponseLayer::new();
 
             router = router.layer(timeout_service);

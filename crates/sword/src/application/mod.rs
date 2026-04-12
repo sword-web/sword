@@ -18,6 +18,7 @@ pub struct Application {
 }
 
 impl Application {
+    #[cfg(any(feature = "web", feature = "socketio", feature = "grpc"))]
     pub(crate) fn new(engine: ApplicationEngine, config: Config) -> Self {
         Self { engine, config }
     }
@@ -81,20 +82,20 @@ impl Application {
         );
 
         match &self.engine {
-            #[cfg(any(feature = "web-controllers", feature = "socketio-controllers"))]
+            #[cfg(any(feature = "web", feature = "socketio"))]
             ApplicationEngine::Web(app) => app.start().await,
-            #[cfg(feature = "grpc-controllers")]
+            #[cfg(feature = "grpc")]
             ApplicationEngine::Grpc(app) => app.start().await,
             #[allow(unreachable_patterns)]
             _ => unreachable!(),
         }
     }
 
-    #[cfg(any(feature = "web-controllers", feature = "socketio-controllers"))]
+    #[cfg(any(feature = "web", feature = "socketio"))]
     pub fn router(&self) -> axum::Router {
         match &self.engine {
             ApplicationEngine::Web(app) => app.router(),
-            #[cfg(feature = "grpc-controllers")]
+            #[cfg(feature = "grpc")]
             ApplicationEngine::Grpc(_) => {
                 sword_error! {
                     title: "Router API is not available for gRPC engine",

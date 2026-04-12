@@ -11,8 +11,8 @@ pub struct WebApplicationConfig {
     pub port: u16,
 
     /// Optional global prefix for all web controller routes.
-    #[serde(rename = "web-router-prefix")]
-    pub web_router_prefix: Option<String>,
+    #[serde(rename = "router-prefix")]
+    pub router_prefix: Option<String>,
 
     /// Body limit policy for web request extraction.
     #[serde(rename = "body-limit")]
@@ -28,7 +28,7 @@ impl Default for WebApplicationConfig {
         Self {
             host: "0.0.0.0".to_string(),
             port: 8000,
-            web_router_prefix: None,
+            router_prefix: None,
             body_limit: BodyLimitConfig::default(),
             request_timeout: RequestTimeoutConfig::default(),
         }
@@ -37,7 +37,7 @@ impl Default for WebApplicationConfig {
 
 impl ConfigItem for WebApplicationConfig {
     fn key() -> &'static str {
-        "application"
+        "web"
     }
 }
 

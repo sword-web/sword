@@ -5,14 +5,11 @@ use socketioxide_parser_msgpack::MsgPackParser;
 use std::collections::HashSet;
 use std::str::FromStr;
 use sword_core::{ByteConfig, ConfigItem, ConfigRegistrar, TimeConfig, inventory_submit};
+use sword_layers::DisplayConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct SocketIoServerConfig {
-    /// Whether to enable the Socket.IO server.
-    /// Defaults to false.
-    pub enabled: bool,
-
     /// The amount of time the server will wait for an acknowledgement
     /// from the client before closing the connection.
     ///
@@ -69,9 +66,6 @@ pub struct SocketIoServerConfig {
     /// Setting it to a higher value will improve performance on heavy read scenarios
     /// but will consume more memory.
     pub ws_read_buffer_size: Option<usize>,
-
-    /// Whether to display the configuration on startup.
-    pub display: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -225,3 +219,18 @@ inventory_submit! {[
         state.insert(config.get_or_default::<SocketIoServerConfig>());
     })
 ]}
+
+impl DisplayConfig for SocketIoServerConfig {
+    fn display(&self) {
+        tracing::debug!(
+            target: "sword.socketio.config",
+            ack_timeout = ?self.ack_timeout,
+            connect_timeout = ?self.connect_timeout,
+            max_buffer_size = ?self.max_buffer_size,
+            max_payload = ?self.max_payload,
+            ping_interval = ?self.ping_interval,
+            ping_timeout = ?self.ping_timeout,
+            req_path = ?self.req_path
+        );
+    }
+}

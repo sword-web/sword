@@ -24,15 +24,14 @@ axum = { workspace = true }
 axum_responses = { workspace = true }
 
 sword-core = { workspace = true }
-sword-layers = { workspace = true, features = ["tracing"] }
-sword-macros = { workspace = true }
+sword-macros = { workspace = true, features = ["web-controllers"] }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
-serde_urlencoded = { workspace = true }
 form_urlencoded = { workspace = true }
+serde_urlencoded = { workspace = true }
 mime = { workspace = true }
 bytes = { workspace = true }
 http-body-util = { workspace = true }
@@ -42,18 +41,19 @@ validator = { workspace = true, optional = true }
 tracing = { workspace = true }
 inventory = { workspace = true }
 
-[features]
-default = ["web-controllers"]
-
-web-controllers = [
-    "sword-macros/web-controllers",
-    "sword-layers/not-found",
-    "sword-layers/request-id",
-    "sword-layers/cors",
-    "sword-layers/cookies",
-    "sword-layers/req-timeout",
-    "sword-layers/body-limit",
+[dependencies.sword-layers]
+workspace = true
+features = [
+    "tracing",
+    "not-found",
+    "request-id",
+    "cookies",
+    "req-timeout",
+    "body-limit",
 ]
+
+[features]
+default = []
 
 multipart = ["axum/multipart", "axum_responses/multipart"]
 validation-validator = ["dep:validator"]

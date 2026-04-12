@@ -13,36 +13,28 @@ readme = "../README.md"
 license = "MIT"
 
 [features]
-default = [
-    "body-limit",
-    "not-found",
-    "req-timeout",
-    "request-id",
-    "tracing",
-]
+default = []
+
 body-limit = [
     "dep:axum_responses",
     "dep:byte-unit",
     "dep:tracing",
     "dep:tower-http",
-    "dep:tower-layer",
     "tower-http/limit",
 ]
 compression = ["dep:tower-http", "dep:tracing", "tower-http/compression-full"]
 cookies = ["dep:tower-cookies"]
 cors = ["dep:tower-http", "dep:tracing", "tower-http/cors"]
 helmet = ["dep:axum-helmet"]
-not-found = ["dep:axum_responses", "dep:tower-layer"]
+not-found = ["dep:axum_responses"]
 req-timeout = [
     "dep:axum_responses",
     "dep:tracing",
     "dep:tower-http",
-    "dep:tower-layer",
     "tower-http/timeout",
 ]
 request-id = [
     "dep:tower-http",
-    "dep:tower-layer",
     "dep:uuid",
     "tower-http/request-id",
 ]
@@ -62,6 +54,7 @@ tracing-subscriber = { workspace = true, optional = true }
 tower = { workspace = true }
 tower-cookies = { version = "0.11.0", features = ["private", "signed"], optional = true }
 tower-http = { workspace = true, optional = true }
-tower-layer = { version = "0.3.3", optional = true }
+tower-layer = { version = "0.3.3" }
 
 uuid = { workspace = true, features = ["v4"], optional = true }
+serde_json.workspace = true

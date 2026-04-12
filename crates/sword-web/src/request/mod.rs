@@ -15,10 +15,8 @@ use axum::{
 use axum_responses::JsonResponse;
 use serde::de::DeserializeOwned;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
-use sword_layers::request_id::RequestId;
-
-#[cfg(feature = "web-controllers")]
 use sword_layers::cookies::Cookies;
+use sword_layers::request_id::RequestId;
 
 pub use error::*;
 
@@ -150,7 +148,7 @@ impl Request {
     ///     let post_id: u64 = req.param("post_id")?;
     ///
     ///     let message = format!("User ID: {}, Post ID: {}", user_id, post_id);
-    ///     
+    ///
     ///     Ok(JsonResponse::Ok().message(message))
     /// }
     /// ```
@@ -220,9 +218,9 @@ impl Request {
     /// #[post("/users")]
     /// async fn create_user(&self, req: Request) -> WebResult {
     ///     let user_data: CreateUserRequest = req.body()?;
-    ///     
+    ///
     ///     // Process user creation...
-    ///     
+    ///
     ///     Ok(JsonResponse::Created().message("User created"))
     /// }
     /// ```
@@ -287,11 +285,11 @@ impl Request {
     /// #[get("/search")]
     /// async fn search(&self, req: Request) -> WebResult {
     ///     let query: SearchQuery = req.query()?.unwrap_or_default();
-    ///     
+    ///
     ///     let search_term = query.q.unwrap_or("".into());
     ///     let page = query.page.unwrap_or(1);
     ///     let limit = query.limit.unwrap_or(20);
-    ///     
+    ///
     ///     Ok(JsonResponse::Ok().data(format!(
     ///         "Search results for '{search_term}', page {page}, limit {limit}"
     ///     )))

@@ -7,7 +7,9 @@ pub mod response;
 pub mod router;
 
 pub mod prelude {
-    pub use crate::controller::{WebController, delete, get, patch, post, put};
+    pub use crate::controller::{
+        WebController, connect, delete, get, head, options, patch, post, put, trace,
+    };
     pub use crate::interceptor::{
         OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
         WebInterceptorResult,
@@ -21,7 +23,6 @@ pub mod prelude {
     #[cfg(feature = "validation-validator")]
     pub use crate::request::ValidatorRequestValidation;
 
-    #[cfg(feature = "web-controllers")]
     pub use sword_layers::cookies::{
         Cookies, Key as CookiesKey, PrivateCookies, SignedCookies,
         cookie::{
@@ -47,8 +48,10 @@ pub mod internal {
     pub use axum::response::{IntoResponse, Response as AxumResponse};
     pub use axum::routing;
     pub use axum::routing::{
-        MethodRouter, Router as AxumRouter, delete, delete as delete_fn, get, get as get_fn, patch,
-        patch as patch_fn, post, post as post_fn, put, put as put_fn,
+        MethodRouter, Router as AxumRouter, connect, connect as connect_fn, delete,
+        delete as delete_fn, get, get as get_fn, head, head as head_fn, options,
+        options as options_fn, patch, patch as patch_fn, post, post as post_fn, put, put as put_fn,
+        trace, trace as trace_fn,
     };
 
     pub use crate::controller::{RouteRegistrar, WebController, WebControllerRegistrar};

@@ -1,17 +1,12 @@
 [application]
-name = "REST Adapter Example"
-host = "0.0.0.0"
-port = 8081
+name = "Web Application Example"
 graceful-shutdown = false
 
-[application.request-timeout]
-enabled = true
-timeout = "15s"
-display = true
-
-[application.body-limit]
-max-size = "5MB"
-display = true
+[web]
+host = "0.0.0.0"
+port = 8081
+body-limit = "5MB"
+request-timeout = { enabled = true, timeout = "15s" }
 
 [tracing]
 enabled = true

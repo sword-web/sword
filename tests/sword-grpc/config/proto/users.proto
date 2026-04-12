@@ -6,6 +6,7 @@ service UserService {
   rpc ListUsers (ListUsersRequest) returns (ListUsersReply);
   rpc StreamUsers (StreamUsersRequest) returns (stream UserItem);
   rpc GetUser (GetUserRequest) returns (UserReply);
+  rpc GetError (GetErrorRequest) returns (GetErrorReply);
 }
 
 
@@ -28,4 +29,13 @@ message GetUserRequest {
 
 message UserReply {
   UserItem user = 1;
+}
+
+message GetErrorRequest {
+  string id = 1;
+}
+
+message GetErrorReply {
+  string id = 1;
+  string status = 2;
 }

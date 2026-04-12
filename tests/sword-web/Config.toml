@@ -1,8 +1,10 @@
 [application]
 graceful-shutdown = false
+
+[web]
 host = "0.0.0.0"
 port = 8080
-body-limit = { max-size = "1MB", display = true }
+body-limit = "1MB"
 request-timeout = { enabled = true, timeout = "2s", display = true }
 
 [socketio]

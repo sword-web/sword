@@ -1,6 +1,6 @@
 use sword_core::ControllerSpec;
 
-pub use sword_macros::{controller, delete, get, patch, post, put};
+pub use sword_macros::{connect, controller, delete, get, head, options, patch, post, put, trace};
 
 /// Trait for controllers with automatic dependency injection and interceptors support.
 ///

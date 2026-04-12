@@ -4,6 +4,7 @@ use thiserror::Error;
 pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Debug, Error, GrpcError)]
+#[grpc_error(code = "internal", tracing = error)]
 pub enum AppError {
     #[grpc(code = "invalid_argument", message = reason)]
     #[error("Invalid argument: {reason}")]
@@ -21,7 +22,7 @@ pub enum AppError {
     #[error("Invalid name: {reason}")]
     InvalidName { reason: String },
 
-    #[grpc(code = "unavailable")]
+    #[grpc(code = "unavailable", tracing = warn)]
     #[error("Greeter service is temporarily unavailable")]
     SystemUnavailable,
 }

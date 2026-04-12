@@ -1245,22 +1245,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "grpc-controllers"
-version = "0.1.0"
-dependencies = [
- "async-stream",
- "prost",
- "sword",
- "thiserror",
- "tokio",
- "tonic",
- "tonic-prost",
- "tonic-prost-build",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "h2"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2842,18 +2826,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "socketio-controllers-example"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "serde",
- "sword",
- "tokio",
- "uuid",
- "validator",
-]
-
-[[package]]
 name = "socketioxide"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3238,6 +3210,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sword-grpc-example"
+version = "0.1.0"
+dependencies = [
+ "async-stream",
+ "prost",
+ "sword",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "sword-grpc-tests"
 version = "0.1.0"
 dependencies = [
@@ -3245,6 +3233,7 @@ dependencies = [
  "serial_test",
  "sword",
  "sword-grpc",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -3261,6 +3250,7 @@ dependencies = [
  "axum_responses",
  "byte-unit",
  "serde",
+ "serde_json",
  "thisconfig",
  "tower",
  "tower-cookies",
@@ -3306,6 +3296,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sword-socketio-example"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "sword",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "sword-socketio-tests"
 version = "0.1.0"
 dependencies = [
@@ -3343,15 +3345,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "sword-web-example"
+version = "0.1.0"
+dependencies = [
+ "bcrypt",
+ "dotenv",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "sword",
+ "thiserror",
+ "tracing",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "sword-web-tests"
 version = "0.1.0"
 dependencies = [
  "axum",
  "axum-test",
+ "http",
  "serde",
  "serde_json",
  "sword",
  "sword-layers",
+ "thiserror",
  "tokio",
  "tower-http",
  "validator",
@@ -4249,22 +4269,6 @@ dependencies = [
  "hashbrown 0.15.5",
  "indexmap",
  "semver",
-]
-
-[[package]]
-name = "web-controllers-example"
-version = "0.1.0"
-dependencies = [
- "bcrypt",
- "dotenv",
- "serde",
- "serde_json",
- "sqlx",
- "sword",
- "thiserror",
- "tracing",
- "uuid",
- "validator",
 ]
 
 [[package]]

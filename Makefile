@@ -8,6 +8,10 @@ fmt:
 
 lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
+	cargo clippy -p sword --all-targets -- -D warnings
+	cargo clippy -p sword-web --all-targets --all-features -- -D warnings
+	cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
+	cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
 
 machete:
 	cargo machete

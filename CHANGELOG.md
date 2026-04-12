@@ -32,11 +32,11 @@
 
 ### Changed
 
-- Aligned current naming across docs/examples/changelog: the canonical config section is `[application]`, the router prefix key is `web-router-prefix`, Socket.IO transport configuration uses `transports`, and Sword terminology now distinguishes Tower `layers` from typed `interceptors`.
+- Aligned current naming across docs/examples/changelog: engine config now lives in `[web]`, `[grpc]`, and `[socketio]`, the router prefix key is `router-prefix`, Socket.IO transport configuration uses `transports`, and Sword terminology now distinguishes Tower `layers` from typed `interceptors`.
 - **BREAKING:** Renamed web interceptor return alias from `HttpInterceptorResult` to `WebInterceptorResult`.
 - **BREAKING:** Renamed web controller result alias from `Result` to `WebResult`.
 - Renamed adapter/runtime naming across the codebase: HTTP controllers now use `controllers` naming, and the primary application module is now `application::web`.
-- Refactored runtime config under `[application]` with `web-router-prefix`, `body-limit`, and `request-timeout`.
+- Refactored runtime config so `[application]` keeps only global app settings while engine settings live under `[web]` and `[grpc]`.
 - Runtime now applies only mandatory built-ins by default (`not_found`, `body_limit`, `request_timeout`); optional layers are explicit via `.with_layer(...)`.
 - Replaced `HttpResult` usage with `WebResult` alias (`WebResult<T = JsonResponse, E = JsonResponse>`) in controller APIs.
 - Updated macros/docs/examples to match new naming and APIs, including workspace/metadata consistency fixes.
@@ -49,7 +49,7 @@
 
 - Middleware structs marked with `#[middleware]` macro now can omit the `next` parameter in their methods. Instead, they can call `req.next().await` to pass control to the next middleware or handler.
 
-- The global router prefix is configured under `[application]` using `web-router-prefix`.
+- The global router prefix is configured under `[web]` using `router-prefix`.
 
 - The `Request Timeout` middleware now can be configured with more human-friendly duration format using `duration-str` crate.
 

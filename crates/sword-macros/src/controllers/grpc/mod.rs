@@ -24,6 +24,14 @@ pub fn expand_grpc_controller(input: &ControllerStruct) -> syn::Result<TokenStre
     let build_impl = gen_build(self_name, self_fields);
     let clone_impl = gen_clone(self_name, self_fields);
 
+    #[cfg(feature = "grpc-reflection")]
+    let reflection_descriptor_set = quote! {
+        Some(include_bytes!(concat!(env!("OUT_DIR"), "/sword_descriptor_set.bin")))
+    };
+
+    #[cfg(not(feature = "grpc-reflection"))]
+    let reflection_descriptor_set = quote! { None };
+
     let interceptor_wrappers = interceptors.iter().rev().map(|interceptor| match interceptor {
         crate::interceptor::InterceptorArgs::Traditional(path) => {
             quote! {
@@ -103,7 +111,7 @@ pub fn expand_grpc_controller(input: &ControllerStruct) -> syn::Result<TokenStre
             ::sword::internal::grpc::GrpcControllerRegistrar {
                 controller_id: ::std::any::TypeId::of::<#self_name>(),
                 service_name: stringify!(#service),
-                reflection_descriptor_set: Some(include_bytes!(concat!(env!("OUT_DIR"), "/sword_descriptor_set.bin"))),
+                reflection_descriptor_set: #reflection_descriptor_set,
                 build: |state: &::sword::internal::core::State| {
                     state.insert::<#self_name>(#self_name::build(state).unwrap_or_else(|e| {
                         ::sword::internal::core::sword_error! {

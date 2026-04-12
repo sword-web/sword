@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sword = { workspace = true, features = ["socketio-controllers"] }
+sword = { workspace = true, features = ["socketio"] }
 serde = { workspace = true }
 sword-layers = { workspace = true, features = ["cors"] }

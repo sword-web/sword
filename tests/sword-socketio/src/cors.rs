@@ -58,16 +58,13 @@ fn test_server() -> TestServer {
 async fn cors_applies_to_socketio_handshake() {
     let test = test_server();
 
-    // SocketIO handshake request with Origin header
     let response = test
         .get("/socket.io/?EIO=4&transport=polling")
         .add_header("Origin", "http://localhost:3000")
         .await;
 
-    // Should return 200 OK for handshake
     assert_eq!(response.status_code(), 200);
 
-    // CORS headers should be present
     let headers = response.headers();
 
     // Access-Control-Allow-Origin should be present
@@ -81,7 +78,6 @@ async fn cors_applies_to_socketio_handshake() {
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    // Should allow the origin or be permissive
     assert!(
         allow_origin == "http://localhost:3000" || allow_origin == "*",
         "CORS should allow the origin. Got: {}",
@@ -96,7 +92,6 @@ async fn cors_applies_to_socketio_handshake() {
 async fn cors_headers_present_in_socketio_response() {
     let test = test_server();
 
-    // Request with Origin header (cross-origin request)
     let response = test
         .get("/socket.io/?EIO=4&transport=polling")
         .add_header("Origin", "http://localhost:3000")
@@ -104,7 +99,6 @@ async fn cors_headers_present_in_socketio_response() {
 
     let headers = response.headers();
 
-    // Should have CORS allow-origin header
     assert!(
         headers.contains_key("access-control-allow-origin"),
         "SocketIO response should contain access-control-allow-origin header for cross-origin requests"
@@ -116,17 +110,14 @@ async fn cors_headers_present_in_socketio_response() {
 async fn socketio_handshake_without_cors() {
     let test = test_server();
 
-    // Same-origin request (no Origin header)
     let response = test.get("/socket.io/?EIO=4&transport=polling").await;
 
-    // Should still work
     assert_eq!(
         response.status_code(),
         200,
         "SocketIO handshake should work without CORS for same-origin requests"
     );
 
-    // Response should contain session ID (SocketIO handshake response)
     let body = response.text();
     assert!(
         body.contains("sid") || body.starts_with("0{"),
@@ -138,7 +129,6 @@ async fn socketio_handshake_without_cors() {
 /// Test that CORS doesn't interfere with normal REST endpoints
 #[tokio::test]
 async fn cors_doesnt_break_rest() {
-    // Add a simple REST controller
     #[controller(kind = Controller::Web, path = "/api")]
     struct ApiController;
 
@@ -165,14 +155,12 @@ async fn cors_doesnt_break_rest() {
 
     let test = TestServer::new(app.router()).unwrap();
 
-    // REST endpoint should work
     let response = test.get("/api/test").await;
     assert_eq!(response.status_code(), 200);
 
     let json = response.json::<serde_json::Value>();
     assert_eq!(json["message"], "REST works");
 
-    // SocketIO should also work
     let socketio_response = test.get("/socket.io/?EIO=4&transport=polling").await;
     assert_eq!(socketio_response.status_code(), 200);
 }
@@ -189,7 +177,6 @@ async fn cors_credentials_in_socketio() {
 
     let headers = response.headers();
 
-    // If CORS is configured with credentials, the header should be present
     if headers.contains_key("access-control-allow-credentials") {
         let credentials = headers
             .get("access-control-allow-credentials")

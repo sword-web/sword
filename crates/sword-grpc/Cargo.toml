@@ -23,17 +23,17 @@ tokio = { workspace = true }
 tonic = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 tonic-health = { workspace = true }
-tonic-reflection = { workspace = true }
+tonic-reflection = { workspace = true, optional = true }
 tokio-stream = { workspace = true }
 serde = { workspace = true }
 
 sword-core = { workspace = true }
-sword-layers = { workspace = true }
-sword-macros = { workspace = true }
+sword-layers = { workspace = true, features = ["tracing", "body-limit"] }
+sword-macros = { workspace = true, features = ["grpc-controllers"] }
 
 tracing = { workspace = true }
 inventory = { workspace = true }
 
 [features]
-default = ["grpc-controllers"]
-grpc-controllers = ["sword-macros/grpc-controllers"]
+default = []
+reflection = ["dep:tonic-reflection", "sword-macros/grpc-reflection"]
