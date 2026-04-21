@@ -6,7 +6,6 @@ pub mod registry;
 pub mod response;
 
 pub mod prelude {
-    pub use crate::application::GrpcApplication;
     pub use crate::config::GrpcApplicationConfig;
     pub use crate::controller::{GrpcResult, GrpcStream};
     pub use crate::interceptor::{GrpcInterceptorResult, OnRequest, OnRequestWithConfig};

@@ -1,28 +1,13 @@
 use crate::application::Application;
-#[cfg(any(feature = "web", feature = "socketio", feature = "grpc"))]
-use crate::application::{ApplicationConfig, ApplicationEngine};
-use crate::module::Module;
-
-#[cfg(feature = "grpc")]
-use sword_grpc::application::GrpcApplication;
-#[cfg(feature = "grpc")]
-use sword_grpc::config::GrpcApplicationConfig;
-
-#[cfg(all(any(feature = "web", feature = "socketio"), not(feature = "grpc")))]
-use sword_web::application::WebApplication;
-
-#[cfg(all(any(feature = "web", feature = "socketio"), not(feature = "grpc")))]
-use sword_web::config::WebApplicationConfig;
 
 use axum::{extract::Request as AxumRequest, response::IntoResponse, routing::Route};
 use std::convert::Infallible;
 use std::path::Path;
-use sword_core::{
-    Config, ConfigRegistrar, ControllerRegistry, DependencyContainer, InterceptorRegistrar,
-    Provider, State, sword_error,
+use sword_core::*;
+use sword_layers::{
+    layer_stack::LayerStack,
+    tracing::{TracingConfig, TracingSubscriber},
 };
-use sword_layers::layer_stack::LayerStack;
-use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
 use tower::{Layer, Service};
 
@@ -98,7 +83,7 @@ impl ApplicationBuilder {
     /// Can be used with any type that implements the `Module` trait.
     pub fn with_module<M>(self) -> Self
     where
-        M: Module,
+        M: sword_core::Module,
     {
         futures_lite::future::block_on(M::register_providers(
             &self.config,
@@ -148,12 +133,14 @@ impl ApplicationBuilder {
     /// This method ends the builder pattern and constructs the final `Application`
     /// instance ready to run.
     pub fn build(self) -> Application {
+        // Runtime check — fires only if both features are enabled AND build() is called.
+        // This preserves dev experience for users who enable all features in their IDE.
         if cfg!(feature = "grpc") && (cfg!(feature = "web") || cfg!(feature = "socketio")) {
             sword_error! {
                 title: "Multiple application types enabled",
                 reason: "Only one app type feature can be enabled at a time",
                 hints: [
-                    "Enable only one of `web-controllers` or `grpc-controllers`",
+                    "Enable only one of `web` or `grpc` application type",
                     "Use controller features that match the selected app type",
                 ],
             }
@@ -189,44 +176,45 @@ impl ApplicationBuilder {
             register(&self.state);
         }
 
-        #[cfg(feature = "grpc")]
+        #[allow(unused_variables)]
+        let ctx = EngineBuildContext {
+            state: self.state,
+            config: self.config.clone(),
+            controllers: self.controller_registry,
+            layer_stack: self.layer_stack,
+        };
+
+        // NOTE: With --all-features, only the first matching #[cfg] branch is compiled in.
+        // The unreachable code and needless return warnings are suppressed here because
+        // each branch is reachable under normal single-feature usage.
+        #[allow(unreachable_code)]
+        #[allow(clippy::needless_return)]
         {
-            let app_config = self.config.get_or_default::<ApplicationConfig>();
-            let grpc_config = self.config.get_or_default::<GrpcApplicationConfig>();
-            let grpc_application = GrpcApplication::new(
-                self.state.clone(),
-                grpc_config,
-                app_config.graceful_shutdown,
-                &self.controller_registry,
-            );
+            #[cfg(feature = "grpc")]
+            {
+                let grpc_app = sword_grpc::application::GrpcApplication::from(ctx);
+                let engine = super::ApplicationEngine::Grpc(grpc_app);
 
-            Application::new(ApplicationEngine::Grpc(grpc_application), self.config)
-        }
+                return Application::new(engine, self.config);
+            }
 
-        #[cfg(all(any(feature = "web", feature = "socketio"), not(feature = "grpc")))]
-        {
-            let app_config = self.config.get_or_default::<ApplicationConfig>();
-            let web_config = self.config.get_or_default::<WebApplicationConfig>();
-            let web_application = WebApplication::new(
-                self.state.clone(),
-                &self.config,
-                web_config,
-                app_config.graceful_shutdown,
-                self.layer_stack,
-                &self.controller_registry,
-            );
+            #[cfg(any(feature = "web", feature = "socketio"))]
+            {
+                let web_app = sword_web::application::WebApplication::from(ctx);
+                let engine = super::ApplicationEngine::Web(web_app);
 
-            Application::new(ApplicationEngine::Web(web_application), self.config)
-        }
+                return Application::new(engine, self.config);
+            }
 
-        #[cfg(not(any(feature = "web", feature = "socketio", feature = "grpc")))]
-        sword_error! {
-            title: "No application engine available",
-            reason: "No supported controller feature is enabled",
-            context: {
-                "source" => "ApplicationBuilder::build",
-            },
-            hints: ["Enable one of: web-controllers, socketio-controllers, grpc-controllers"],
+            #[cfg(not(any(feature = "web", feature = "socketio", feature = "grpc")))]
+            sword_error! {
+                title: "No application engine available",
+                reason: "No supported controller feature is enabled",
+                context: {
+                    "source" => "ApplicationBuilder::build",
+                },
+                hints: ["Enable one of: web, socketio, grpc"],
+            }
         }
     }
 }

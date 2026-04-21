@@ -4,31 +4,21 @@ use crate::registry::GrpcServiceRegistry;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use sword_core::{Controller, ControllerMap, ControllerRegistry, State, sword_error};
+use sword_core::{
+    ApplicationConfig, Controller, ControllerMap, EngineBuildContext, State, shutdown_signal,
+    sword_error,
+};
+
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue};
 
 pub struct GrpcApplication {
-    state: State,
-    config: GrpcApplicationConfig,
-    graceful_shutdown: bool,
-    controllers: ControllerMap,
+    pub state: State,
+    pub config: GrpcApplicationConfig,
+    pub graceful_shutdown: bool,
+    pub controllers: ControllerMap,
 }
 
 impl GrpcApplication {
-    pub fn new(
-        state: State,
-        config: GrpcApplicationConfig,
-        graceful_shutdown: bool,
-        controllers: &ControllerRegistry,
-    ) -> Self {
-        Self {
-            state,
-            config,
-            graceful_shutdown,
-            controllers: controllers.snapshot(),
-        }
-    }
-
     pub async fn start(&self) {
         let bind = format!("{}:{}", self.config.host, self.config.port);
 
@@ -167,7 +157,7 @@ impl GrpcApplication {
 
         if self.graceful_shutdown {
             router
-                .serve_with_shutdown(bind_addr, Self::graceful_signal())
+                .serve_with_shutdown(bind_addr, shutdown_signal())
                 .await
                 .unwrap_or_else(|err| {
                     sword_error! {
@@ -196,55 +186,25 @@ impl GrpcApplication {
             }
         });
     }
+}
 
-    async fn graceful_signal() {
-        let ctrl_c = async {
-            tokio::signal::ctrl_c().await.unwrap_or_else(|err| {
-                sword_error! {
-                    title: "Failed to install Ctrl+C handler",
-                    reason: err,
-                    context: {
-                        "source" => "GrpcApplication::graceful_signal",
-                    },
-                }
-            });
-        };
+impl From<EngineBuildContext> for GrpcApplication {
+    fn from(ctx: EngineBuildContext) -> Self {
+        let EngineBuildContext {
+            state,
+            config,
+            controllers,
+            ..
+        } = ctx;
 
-        #[cfg(unix)]
-        let terminate = async {
-            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                .unwrap_or_else(|err| {
-                    sword_error! {
-                        title: "Failed to install SIGTERM handler",
-                        reason: err,
-                        context: {
-                            "signal" => "SIGTERM",
-                            "source" => "GrpcApplication::graceful_signal",
-                        },
-                    }
-                })
-                .recv()
-                .await;
-        };
+        let app_config = config.get_or_default::<ApplicationConfig>();
+        let grpc_config = config.get_or_default::<GrpcApplicationConfig>();
 
-        #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
-
-        tokio::select! {
-            _ = ctrl_c => {
-                tracing::info!(
-                    target: "sword.startup.signal",
-                    signal = "SIGINT",
-                    "Shutdown signal received, starting graceful shutdown"
-                );
-            },
-            _ = terminate => {
-                tracing::info!(
-                    target: "sword.startup.signal",
-                    signal = "SIGTERM",
-                    "Shutdown signal received, starting graceful shutdown"
-                );
-            },
+        GrpcApplication {
+            state,
+            config: grpc_config,
+            graceful_shutdown: app_config.graceful_shutdown,
+            controllers: controllers.snapshot(),
         }
     }
 }

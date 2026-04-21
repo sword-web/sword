@@ -22,6 +22,9 @@ tracing = { workspace = true }
 inventory = { workspace = true }
 parking_lot = { workspace = true }
 thisconfig = { workspace = true }
+sword-layers = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
 
 [features]
 default = []

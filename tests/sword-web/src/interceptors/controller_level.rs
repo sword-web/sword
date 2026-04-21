@@ -27,6 +27,18 @@ impl OnRequest for MwWithState {
     }
 }
 
+#[derive(Interceptor)]
+struct EnsureControllerInterceptorRunsFirst;
+
+impl OnRequest for EnsureControllerInterceptorRunsFirst {
+    async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
+        let has_controller_extension = req.extensions.get::<String>().is_some();
+        req.extensions.insert::<bool>(has_controller_extension);
+
+        req.next().await
+    }
+}
+
 #[controller(kind = Controller::Web, path = "/test")]
 #[interceptor(ExtensionsTestMiddleware)]
 struct TestController {}
@@ -57,6 +69,16 @@ impl TestController {
         Ok(JsonResponse::Ok()
             .message("Test controller response with middleware state")
             .data(json))
+    }
+
+    #[get("/controller-before-handler-order")]
+    #[interceptor(EnsureControllerInterceptorRunsFirst)]
+    async fn controller_before_handler_order(&self, req: Request) -> JsonResponse {
+        let saw_controller_extension = req.extensions.get::<bool>().cloned().unwrap_or(false);
+
+        JsonResponse::Ok().data(json!({
+            "saw_controller_extension": saw_controller_extension,
+        }))
     }
 }
 
@@ -102,4 +124,22 @@ async fn middleware_state() {
 
     assert_eq!(data["port"], 8080);
     assert_eq!(data["message"], "test_extension");
+}
+
+#[tokio::test]
+async fn controller_interceptor_executes_before_handler_interceptor() {
+    let app = application_builder().with_module::<TestModule>().build();
+    let test = test_server(app);
+
+    let response = test.get("/test/controller-before-handler-order").await;
+
+    assert_eq!(response.status_code(), 200);
+
+    let json = response.json::<JsonResponseBody>();
+
+    assert!(json.data.is_some());
+
+    let data = json.data.unwrap();
+
+    assert_eq!(data["saw_controller_extension"], true);
 }

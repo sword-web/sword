@@ -2,42 +2,17 @@ use crate::config::WebApplicationConfig;
 use crate::router::WebRouter;
 use axum::Router;
 use std::net::SocketAddr;
-use sword_core::{Config, ControllerRegistry, State, sword_error};
-use sword_layers::layer_stack::LayerStack;
+use sword_core::*;
 use tokio::net::TcpListener;
 
 pub struct WebApplication {
-    state: State,
-    router: Router<State>,
-    web_config: WebApplicationConfig,
-    graceful_shutdown: bool,
+    pub state: State,
+    pub router: Router<State>,
+    pub web_config: WebApplicationConfig,
+    pub graceful_shutdown: bool,
 }
 
 impl WebApplication {
-    pub fn new(
-        state: State,
-        config: &Config,
-        web_config: WebApplicationConfig,
-        graceful_shutdown: bool,
-        layers: LayerStack<State>,
-        controllers: &ControllerRegistry,
-    ) -> Self {
-        let router = WebRouter {
-            state: state.clone(),
-            config,
-            layer_stack: layers,
-            controller_registry: controllers,
-            web_config: web_config.clone(),
-        };
-
-        Self {
-            state,
-            web_config,
-            graceful_shutdown,
-            router: router.build(),
-        }
-    }
-
     pub async fn start(&self) {
         let bind = format!("{}:{}", self.web_config.host, self.web_config.port);
 
@@ -80,7 +55,7 @@ impl WebApplication {
 
         if self.graceful_shutdown {
             axum::serve(listener, app)
-                .with_graceful_shutdown(Self::graceful_signal())
+                .with_graceful_shutdown(shutdown_signal())
                 .await
                 .unwrap_or_else(|err| {
                     sword_error! {
@@ -113,55 +88,35 @@ impl WebApplication {
     pub fn router(&self) -> axum::Router {
         self.router.clone().with_state(self.state.clone())
     }
+}
 
-    async fn graceful_signal() {
-        let ctrl_c = async {
-            tokio::signal::ctrl_c().await.unwrap_or_else(|err| {
-                sword_error! {
-                    title: "Failed to install Ctrl+C handler",
-                    reason: err,
-                    context: {
-                        "source" => "WebApplication::graceful_signal",
-                    },
-                }
-            });
+impl From<EngineBuildContext> for WebApplication {
+    fn from(ctx: EngineBuildContext) -> Self {
+        let EngineBuildContext {
+            state,
+            config,
+            controllers,
+            layer_stack,
+        } = ctx;
+
+        let web_config = config.get_or_default::<WebApplicationConfig>();
+        let graceful_shutdown = config
+            .get_or_default::<ApplicationConfig>()
+            .graceful_shutdown;
+
+        let router = WebRouter {
+            state: state.clone(),
+            config: &config,
+            layer_stack,
+            controller_registry: &controllers,
+            web_config: web_config.clone(),
         };
 
-        #[cfg(unix)]
-        let terminate = async {
-            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                .unwrap_or_else(|err| {
-                    sword_error! {
-                        title: "Failed to install SIGTERM handler",
-                        reason: err,
-                        context: {
-                            "signal" => "SIGTERM",
-                            "source" => "WebApplication::graceful_signal",
-                        },
-                    }
-                })
-                .recv()
-                .await;
-        };
-
-        #[cfg(not(unix))]
-        let terminate = std::future::pending::<()>();
-
-        tokio::select! {
-            _ = ctrl_c => {
-                tracing::info!(
-                    target: "sword.startup.signal",
-                    signal = "SIGINT",
-                    "Shutdown signal received, starting graceful shutdown"
-                );
-            },
-            _ = terminate => {
-                tracing::info!(
-                    target: "sword.startup.signal",
-                    signal = "SIGTERM",
-                    "Shutdown signal received, starting graceful shutdown"
-                );
-            },
+        Self {
+            state,
+            web_config,
+            graceful_shutdown,
+            router: router.build(),
         }
     }
 }

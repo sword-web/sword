@@ -1,7 +1,10 @@
+mod application;
 mod config;
 mod controllers;
 mod injectables;
 mod interceptor;
+mod module;
+mod shutdown;
 mod state;
 
 pub mod error {
@@ -12,10 +15,13 @@ pub mod error {
     pub use diagnostic::{StartupDiagnostic, emit};
 }
 
+pub use application::*;
 pub use config::*;
 pub use controllers::*;
 pub use injectables::*;
 pub use interceptor::*;
+pub use module::*;
+pub use shutdown::*;
 pub use state::*;
 
 pub(crate) type RwMap<K, V> = parking_lot::RwLock<std::collections::HashMap<K, V>>;

@@ -75,7 +75,7 @@ impl WebRouteGenerator {
     }
 
     fn apply_route_interceptors(&self, mut handler: TokenStream) -> TokenStream {
-        for interceptor in self.route.context.controller_interceptors.iter().rev() {
+        for interceptor in self.route.interceptors.iter().rev() {
             let generated_interceptor =
                 expand_web_interceptor_args(interceptor, self.route.request_mode);
             handler = quote! {
@@ -83,7 +83,7 @@ impl WebRouteGenerator {
             };
         }
 
-        for interceptor in self.route.interceptors.iter().rev() {
+        for interceptor in self.route.context.controller_interceptors.iter().rev() {
             let generated_interceptor =
                 expand_web_interceptor_args(interceptor, self.route.request_mode);
             handler = quote! {

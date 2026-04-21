@@ -26,7 +26,7 @@ pub fn generate_socketio_controller_builder(
     let build_impl = gen_build(self_name, self_fields);
     let clone_impl = gen_clone(self_name, self_fields);
 
-    let interceptor_applications = interceptors.iter().map(|interceptor_path| {
+    let interceptor_applications = interceptors.iter().rev().map(|interceptor_path| {
         quote! {
             let interceptor = state.borrow::<#interceptor_path>()
                 .unwrap_or_else(|err| {

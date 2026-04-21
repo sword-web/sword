@@ -3,6 +3,7 @@ use sword::prelude::*;
 use sword::socketio::*;
 
 use crate::interceptors::LoggingInterceptor;
+use crate::interceptors::SocketAuditInterceptor;
 
 /// Socket.IO controller example with auto-registration and interceptors.
 ///
@@ -18,6 +19,7 @@ struct Event {
 
 #[controller(kind = Controller::SocketIo, namespace = "/events")]
 #[interceptor(LoggingInterceptor)]
+#[interceptor(SocketAuditInterceptor)]
 pub struct EventsController;
 
 impl EventsController {

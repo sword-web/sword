@@ -1,6 +1,6 @@
 pub use crate::application::*;
-pub use crate::module::Module;
 pub use sword_core::Controller;
+pub use sword_core::Module;
 
 pub use axum::body::Bytes;
 pub use axum::http::{HeaderMap as Headers, Method, Uri};

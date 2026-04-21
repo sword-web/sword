@@ -40,6 +40,7 @@ validator = { workspace = true, optional = true }
 
 tracing = { workspace = true }
 inventory = { workspace = true }
+bon = "3.9.1"
 
 [dependencies.sword-layers]
 workspace = true

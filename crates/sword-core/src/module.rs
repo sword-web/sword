@@ -1,4 +1,4 @@
-use sword_core::{ComponentRegistry, Config, ControllerRegistry, ProviderRegistry};
+use crate::{ComponentRegistry, Config, ControllerRegistry, ProviderRegistry};
 
 /// A trait for defining modules in the application.
 ///
@@ -9,7 +9,8 @@ use sword_core::{ComponentRegistry, Config, ControllerRegistry, ProviderRegistry
 /// # Example
 ///
 /// ```rust,ignore
-/// use sword::prelude::*;
+/// use sword_core::Module;
+/// use sword_core::ControllerRegistry;
 ///
 /// pub struct MyModule;
 ///
