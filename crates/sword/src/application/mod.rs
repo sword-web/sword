@@ -162,6 +162,7 @@ impl Application {
         }
     }
 
+    #[allow(irrefutable_let_patterns)]
     #[cfg(any(feature = "web", feature = "socketio"))]
     pub fn router(&self) -> axum::Router {
         #[cfg(any(feature = "web", feature = "socketio"))]

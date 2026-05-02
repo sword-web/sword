@@ -35,6 +35,7 @@ pub mod internal {
 
     pub use inventory;
     pub use tokio::runtime as tokio_runtime;
+    pub use toml;
     pub use tracing;
 
     #[cfg(feature = "hot-reload")]

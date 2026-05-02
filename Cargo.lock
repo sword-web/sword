@@ -3201,6 +3201,7 @@ dependencies = [
  "sword-socketio",
  "sword-web",
  "tokio",
+ "toml",
  "tower",
  "tracing",
  "validator",

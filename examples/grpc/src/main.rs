@@ -4,7 +4,7 @@ mod users;
 use crate::{shared::SharedModule, users::UsersModule};
 use sword::prelude::*;
 
-#[main]
+#[sword::main]
 async fn main() {
     tracing::info!("Starting gRPC Greeter example...");
 
