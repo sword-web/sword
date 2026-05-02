@@ -84,30 +84,30 @@ impl Application {
         match &self.engine {
             #[cfg(any(feature = "web", feature = "socketio"))]
             ApplicationEngine::Web(app) => app.start().await,
+
             #[cfg(feature = "grpc")]
             ApplicationEngine::Grpc(app) => app.start().await,
+
             #[allow(unreachable_patterns)]
-            _ => unreachable!(),
+            _ => unreachable!(
+                "Invalid application engine configuration. Enable the appropriate feature flag to use the desired engine."
+            ),
         }
     }
 
     #[cfg(any(feature = "web", feature = "socketio"))]
     pub fn router(&self) -> axum::Router {
-        match &self.engine {
-            ApplicationEngine::Web(app) => app.router(),
-            #[cfg(feature = "grpc")]
-            ApplicationEngine::Grpc(_) => {
-                sword_error! {
-                    title: "Router API is not available for gRPC engine",
-                    reason: "Application::router() is only valid for web/socketio applications",
-                    context: {
-                        "source" => "Application::router",
-                    },
-                    hints: ["Use Application::run() to start the gRPC server"],
-                }
+        #[cfg(any(feature = "web", feature = "socketio"))]
+        if let ApplicationEngine::Web(app) = &self.engine {
+            return app.router();
+        }
+
+        sword_error! {
+            title: "Router API is only available for web based applications",
+            reason: "Application::router() is only valid for web/socketio applications",
+            context: {
+                "source" => "Application::router",
             }
-            #[allow(unreachable_patterns)]
-            _ => unreachable!(),
         }
     }
 }

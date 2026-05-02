@@ -187,33 +187,30 @@ impl ApplicationBuilder {
         // NOTE: With --all-features, only the first matching #[cfg] branch is compiled in.
         // The unreachable code and needless return warnings are suppressed here because
         // each branch is reachable under normal single-feature usage.
-        #[allow(unreachable_code)]
-        #[allow(clippy::needless_return)]
-        {
-            #[cfg(feature = "grpc")]
-            {
+        cfg_select! {
+            feature = "grpc" => {
                 let grpc_app = sword_grpc::application::GrpcApplication::from(ctx);
                 let engine = super::ApplicationEngine::Grpc(grpc_app);
 
-                return Application::new(engine, self.config);
+                Application::new(engine, self.config)
             }
 
-            #[cfg(any(feature = "web", feature = "socketio"))]
-            {
+            any(feature = "web", feature = "socketio") => {
                 let web_app = sword_web::application::WebApplication::from(ctx);
                 let engine = super::ApplicationEngine::Web(web_app);
 
-                return Application::new(engine, self.config);
+                Application::new(engine, self.config)
             }
 
-            #[cfg(not(any(feature = "web", feature = "socketio", feature = "grpc")))]
-            sword_error! {
-                title: "No application engine available",
-                reason: "No supported controller feature is enabled",
-                context: {
-                    "source" => "ApplicationBuilder::build",
-                },
-                hints: ["Enable one of: web, socketio, grpc"],
+            _ => {
+                sword_error! {
+                    title: "No application engine available",
+                    reason: "No supported controller feature is enabled",
+                    context: {
+                        "source" => "ApplicationBuilder::build",
+                    },
+                    hints: ["Enable one of: web, socketio, grpc"],
+                }
             }
         }
     }

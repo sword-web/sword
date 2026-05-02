@@ -12,7 +12,6 @@ use axum::{
 };
 use axum_responses::JsonResponse;
 
-#[allow(async_fn_in_trait)]
 /// Fixed-state version of `axum::extract::FromRequest` using sword's State.
 ///
 /// This allows extractors to avoid the generic state parameter while still
@@ -20,19 +19,22 @@ use axum_responses::JsonResponse;
 pub trait FromRequest: Sized {
     type Rejection: IntoResponse;
 
-    async fn from_request(req: AxumReq, state: &State) -> Result<Self, Self::Rejection>;
+    fn from_request(
+        req: AxumReq,
+        state: &State,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send;
 }
 
-#[allow(async_fn_in_trait)]
 /// Fixed-state version of `axum::extract::FromRequestParts` using sword's State.
 pub trait FromRequestParts: Sized {
     type Rejection: IntoResponse;
 
-    async fn from_request_parts(parts: &mut Parts, state: &State) -> Result<Self, Self::Rejection>;
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &State,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send;
 }
 
-/// Implementation of `FromRequest` for `Request`.
-///
 /// Allows `Request` to be automatically extracted from HTTP requests
 /// in Axum handlers, providing easy access to parameters, headers, body, and state.
 impl FromRequest for Request {
