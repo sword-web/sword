@@ -15,6 +15,25 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, parse_macro_input};
 
+fn resolve_sword_config_path_from_cargo_toml() -> Option<String> {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok()?;
+    let cargo_toml_path = std::path::Path::new(&manifest_dir).join("Cargo.toml");
+    let contents = std::fs::read_to_string(cargo_toml_path).ok()?;
+    let value: toml::Value = toml::from_str(&contents).ok()?;
+
+    let sword_table = value
+        .get("package")?
+        .get("metadata")?
+        .get("sword")?
+        .as_table()?;
+
+    sword_table
+        .get("config-path")
+        .or_else(|| sword_table.get("config_path"))
+        .and_then(toml::Value::as_str)
+        .map(ToOwned::to_owned)
+}
+
 #[cfg(feature = "web-controllers")]
 #[proc_macro_attribute]
 pub fn get(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -635,6 +654,72 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     let fn_attrs = input.attrs.clone();
     let fn_vis = input.vis.clone();
     let _fn_sig = input.sig;
+    let config_path = resolve_sword_config_path_from_cargo_toml();
+
+    let config_path_expr = if let Some(path) = config_path {
+        quote! { Some(#path) }
+    } else {
+        quote! { None }
+    };
+
+    let runtime_bootstrap = quote! {
+        let __sword_bootstrap_config_path = #config_path_expr;
+        ::sword::internal::set_bootstrap_config_path(
+            __sword_bootstrap_config_path.map(::std::string::ToString::to_string),
+        );
+
+        let __runtime_config = __sword_bootstrap_config_path.and_then(|__config_path| {
+            let __config = ::sword::internal::core::Config::builder()
+                .add_required_file(::std::path::Path::new(__config_path))
+                .build()
+                .unwrap_or_else(|err| {
+                    ::sword::internal::core::sword_error!(
+                        title: "Failed to load Sword config file",
+                        reason: err,
+                        context: {
+                            "source" => "#[sword::main]",
+                            "config_path" => __config_path,
+                        },
+                    )
+                });
+
+            __config
+                .get_or_default::<::sword::internal::core::ApplicationConfig>()
+                .runtime
+        });
+
+        let mut __runtime_builder = match __runtime_config
+            .as_ref()
+            .and_then(|runtime| runtime.flavor.as_deref())
+        {
+            Some("current_thread") => ::sword::internal::tokio_runtime::Builder::new_current_thread(),
+            _ => ::sword::internal::tokio_runtime::Builder::new_multi_thread(),
+        };
+
+        __runtime_builder.enable_all();
+
+        if let Some(runtime) = __runtime_config.as_ref() {
+            if let Some(worker_threads) = runtime.worker_threads {
+                if !matches!(runtime.flavor.as_deref(), Some("current_thread")) {
+                    __runtime_builder.worker_threads(worker_threads);
+                }
+            }
+
+            if let Some(max_blocking_threads) = runtime.max_blocking_threads {
+                __runtime_builder.max_blocking_threads(max_blocking_threads);
+            }
+        }
+
+        let __runtime = __runtime_builder.build().unwrap_or_else(|err| {
+            ::sword::internal::core::sword_error!(
+                title: "Failed to build Tokio runtime",
+                reason: err,
+                context: {
+                    "source" => "#[sword::main]",
+                },
+            )
+        });
+    };
 
     #[allow(unused)]
     let mut output = quote! {};
@@ -648,38 +733,16 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
 
             #(#fn_attrs)*
             #fn_vis fn main() {
-                ::sword::internal::tokio_runtime::Builder::new_multi_thread()
-                    .enable_all()
-                    .build()
-                    .unwrap_or_else(|err| {
-                        ::sword::internal::core::sword_error!(
-                            title: "Failed to build Tokio runtime",
-                            reason: err,
-                            context: {
-                                "source" => "#[sword::main]",
-                            },
-                        )
-                    })
-                    .block_on(::sword::internal::dioxus_devtools::serve_subsecond(__internal_main))
+                #runtime_bootstrap
+                __runtime.block_on(::sword::internal::dioxus_devtools::serve_subsecond(__internal_main))
             }
         };
     } else {
         output = quote! {
             #(#fn_attrs)*
             #fn_vis fn main() {
-                ::sword::internal::tokio_runtime::Builder::new_multi_thread()
-                    .enable_all()
-                    .build()
-                    .unwrap_or_else(|err| {
-                        ::sword::internal::core::sword_error!(
-                            title: "Failed to build Tokio runtime",
-                            reason: err,
-                            context: {
-                                "source" => "#[sword::main]",
-                            },
-                        )
-                    })
-                    .block_on( async #fn_body )
+                #runtime_bootstrap
+                __runtime.block_on( async #fn_body )
             }
         };
     }

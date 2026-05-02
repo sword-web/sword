@@ -24,6 +24,7 @@ axum = { workspace = true, optional = true }
 syn = { version = "2", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
+toml = "0.9"
 
 [features]
 default = []

@@ -1,6 +1,6 @@
 use crate::State;
 
-pub use thisconfig::{ByteConfig, Config, ConfigItem, TimeConfig};
+pub use thisconfig::{ByteConfig, Config, ConfigItem, ConfigSourceInfo, TimeConfig};
 
 /// A struct that holds a function to register a config type.
 /// Used by the inventory system to collect all config types at compile time.

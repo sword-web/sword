@@ -18,6 +18,8 @@ pub use sword_macros::main;
 
 #[doc(hidden)]
 pub mod internal {
+    pub use crate::application::set_bootstrap_config_path;
+
     #[cfg(feature = "web")]
     pub use sword_web::internal as web;
 

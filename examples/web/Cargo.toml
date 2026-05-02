@@ -3,6 +3,9 @@ name = "sword-web-example"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.sword]
+config-path = "config/config.toml"
+
 [dependencies]
 sword = { workspace = true, features = ["web", "validation-validator"] }
 serde = { workspace = true }

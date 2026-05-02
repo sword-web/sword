@@ -25,6 +25,23 @@ pub struct ApplicationConfig {
     /// Defaults `false`
     #[serde(rename = "graceful-shutdown")]
     pub graceful_shutdown: bool,
+
+    /// Optional Tokio runtime settings used by `#[sword::main]`.
+    ///
+    /// If omitted, Sword uses its default runtime bootstrap.
+    pub runtime: Option<RuntimeConfig>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct RuntimeConfig {
+    /// Runtime flavor: `multi_thread` or `current_thread`.
+    pub flavor: Option<String>,
+
+    /// Number of worker threads for `multi_thread` flavor.
+    pub worker_threads: Option<usize>,
+
+    /// Maximum number of blocking threads.
+    pub max_blocking_threads: Option<usize>,
 }
 
 impl ConfigItem for ApplicationConfig {

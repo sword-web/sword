@@ -3297,6 +3297,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+ "toml",
 ]
 
 [[package]]
@@ -3467,8 +3468,7 @@ dependencies = [
 [[package]]
 name = "thisconfig"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75dd39d7b672d6f283382015f11994accbf75136b70d16e49e634a67fe41c45b"
+source = "git+https://github.com/MrRevillod/thisconfig#c8515f3dea687e0c2ec97d4336108b77868506d4"
 dependencies = [
  "byte-unit",
  "duration-str",
@@ -3483,8 +3483,7 @@ dependencies = [
 [[package]]
 name = "thisconfig-macros"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "680b0cdf9fb2ba51bec1d90a58bd45596967cc138849e5995475956a2c006cab"
+source = "git+https://github.com/MrRevillod/thisconfig#c8515f3dea687e0c2ec97d4336108b77868506d4"
 dependencies = [
  "quote",
  "syn 2.0.117",
