@@ -1,10 +1,8 @@
 pub mod application;
-pub mod config;
 pub mod controller;
 pub mod interceptor;
 pub mod request;
 pub mod response;
-pub mod router;
 
 pub mod prelude {
     pub use crate::controller::{

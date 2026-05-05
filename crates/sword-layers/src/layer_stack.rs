@@ -41,8 +41,8 @@ where
     /// Apply all layers to the given router.
     ///
     /// Layers are applied in FIFO order (first pushed = first applied = outermost).
-    pub fn apply(self, mut router: Router<S>) -> Router<S> {
-        for layer_fn in self.layers {
+    pub fn apply(&self, mut router: Router<S>) -> Router<S> {
+        for layer_fn in self.layers.iter() {
             router = layer_fn(router);
         }
         router

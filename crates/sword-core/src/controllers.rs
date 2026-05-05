@@ -94,6 +94,14 @@ impl ControllerRegistry {
     pub fn snapshot(&self) -> ControllerMap {
         self.controllers.read().clone()
     }
+
+    pub fn get_by_kind(&self, kind: Controller) -> ControllerIds {
+        self.controllers
+            .read()
+            .get(&kind)
+            .cloned()
+            .unwrap_or(HashSet::new())
+    }
 }
 
 impl Default for ControllerRegistry {

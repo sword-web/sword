@@ -4,93 +4,111 @@ use crate::prelude::{
 };
 
 use axum::{Router, extract::Request, middleware::Next};
+use socketioxide::SocketIo;
 use socketioxide::layer::SocketIoLayer;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
-use sword_core::{Config, State, sword_error};
-use sword_core::{Controller, ControllerIds, ControllerRegistry};
+use sword_core::{Config, Controller, ControllerMap, State, sword_error};
 use sword_layers::DisplayConfig;
-use sword_web::router::WebRouterExtension;
+use sword_web::application::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
 
-fn socketio_setup(state: &State, config: &SocketIoServerConfig) -> SocketIoLayer {
-    let (layer, io) = SocketIoServerLayer::new(config);
+struct SocketIoWebExtension;
 
-    state.insert(io);
-    config.display();
+impl SocketIoWebExtension {
+    fn get_config(config: &Config) -> SocketIoServerConfig {
+        config.get_or_default::<SocketIoServerConfig>()
+    }
 
-    layer
-}
+    fn register_handlers(state: &State, controller_map: &ControllerMap) {
+        let Some(handlers) = controller_map.get(&Controller::SocketIo) else {
+            return;
+        };
 
-fn apply_socketio_layer(
-    mut router: Router<State>,
-    layer: crate::SocketIoLayer,
-    config: SocketIoServerConfig,
-) -> Router<State> {
-    router = router.layer(layer);
-
-    router = router.layer(axum::middleware::from_fn(
-        move |mut req: Request, next: Next| async move {
-            req.extensions_mut().insert::<SocketIoParser>(config.parser);
-            next.run(req).await
-        },
-    ));
-
-    router
-}
-
-fn apply_socketio_controllers(state: &State, handlers: &ControllerIds) {
-    let setup_fns: HashMap<TypeId, &SocketIoHandlerRegistrar> =
-        inventory::iter::<SocketIoHandlerRegistrar>()
+        let setup_fns = inventory::iter::<SocketIoHandlerRegistrar>()
             .map(|setup| (setup.handler_type_id, setup))
-            .collect();
+            .collect::<HashMap<TypeId, &SocketIoHandlerRegistrar>>();
 
-    let handler_controllers: HashSet<TypeId> = inventory::iter::<HandlerRegistrar>()
-        .map(|handler| handler.controller_type_id)
-        .collect();
+        let handler_controllers = inventory::iter::<HandlerRegistrar>()
+            .map(|handler| handler.controller_type_id)
+            .collect::<HashSet<TypeId>>();
 
-    for handler_id in handlers {
-        if let Some(setup) = setup_fns.get(handler_id).copied() {
+        for handler_id in handlers {
+            let Some(setup) = setup_fns.get(handler_id) else {
+                if handler_controllers.contains(handler_id) {
+                    sword_error! {
+                        title: "Controller has handlers but no setup function",
+                        reason: "SocketIoHandlerRegistrar is missing for controller",
+                        context: {
+                            "handler_id" => format!("{handler_id:?}"),
+                            "source" => "SocketIoWebExtension::register_handlers",
+                        },
+                        hints: ["Verify #[controller(kind = Controller::SocketIo, namespace = \"...\")] and #[on(...)] annotations are applied correctly"],
+                    };
+                }
+
+                continue;
+            };
+
             (setup.setup_fn)(state);
-        } else {
-            let has_handlers = handler_controllers.contains(handler_id);
-
-            if has_handlers {
-                sword_error! {
-                    title: "Controller has handlers but no setup function",
-                    reason: "SocketIoHandlerRegistrar is missing for controller",
-                    context: {
-                        "handler_id" => format!("{handler_id:?}"),
-                        "source" => "WebRouterExtension::apply_socketio_handlers",
-                    },
-                    hints: ["Verify #[controller(kind = Controller::SocketIo, namespace = \"...\")] and #[on(...)] annotations are applied correctly"],
-                };
-            }
         }
     }
 }
 
-fn apply_socketio_extension(
-    state: &State,
-    config: &Config,
-    mut router: Router<State>,
-    controller_registry: &ControllerRegistry,
-) -> Router<State> {
-    let socketio_config = config.get_or_default::<SocketIoServerConfig>();
-    let socketio_layer = socketio_setup(state, &socketio_config);
-
-    router = apply_socketio_layer(router, socketio_layer, socketio_config);
-
-    let controller_map = controller_registry.read();
-
-    if let Some(handlers) = controller_map.get(&Controller::SocketIo) {
-        apply_socketio_controllers(state, handlers);
+impl WebExtension for SocketIoWebExtension {
+    fn name(&self) -> &'static str {
+        "socketio"
     }
 
-    router
+    fn init_state(&self, ctx: &WebExtensionContext) {
+        let state = &ctx.state;
+
+        if state.get::<SocketIo>().is_ok() && state.get::<SocketIoLayer>().is_ok() {
+            return;
+        }
+
+        let socketio_config = Self::get_config(&ctx.config);
+        let (layer, io) = SocketIoServerLayer::new(&socketio_config);
+
+        state.insert(io);
+        state.insert(layer);
+
+        socketio_config.display();
+    }
+
+    fn extend_router(&self, ctx: &WebExtensionContext, mut router: Router<State>) -> Router<State> {
+        let state = &ctx.state;
+        let socketio_config = Self::get_config(&ctx.config);
+
+        let socketio_layer = state.get::<SocketIoLayer>().unwrap_or_else(|err| {
+            sword_error! {
+                title: "Socket.IO layer not found in application state",
+                reason: err,
+                context: {
+                    "source" => "SocketIoWebExtension::extend_router",
+                },
+                hints: ["Ensure Socket.IO runtime bootstrap ran before router extension"],
+            }
+        });
+
+        router = router.layer(socketio_layer);
+
+        router = router.layer(axum::middleware::from_fn(
+            move |mut req: Request, next: Next| async move {
+                req.extensions_mut()
+                    .insert::<SocketIoParser>(socketio_config.parser);
+
+                next.run(req).await
+            },
+        ));
+
+        Self::register_handlers(state, &ctx.controller_map);
+
+        router
+    }
 }
 
 inventory::submit! {
-    WebRouterExtension {
-        apply: apply_socketio_extension,
+    WebExtensionRegistrar {
+        extension: &SocketIoWebExtension,
     }
 }

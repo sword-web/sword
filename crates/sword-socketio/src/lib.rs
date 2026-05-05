@@ -5,8 +5,6 @@ pub mod extract;
 mod integration;
 pub mod interceptor;
 
-pub(crate) use socketioxide::layer::SocketIoLayer;
-
 pub mod prelude {
     pub use crate::config::{SocketIoParser, SocketIoServerConfig, SocketIoServerLayer};
     pub use crate::controller::{
