@@ -13,7 +13,7 @@ transports = ["websocket", "polling"]
 
 [tracing]
 enabled = true
-default-filter = "info,sword=info"
-format = "pretty"
+filter = "debug"
+format = "dev"
 time-style = "none"
 with-fields = []

@@ -13,7 +13,6 @@ display = false
 
 [tracing]
 enabled = true
-display = false
 filter = "error"
 format = "dev"
 time-style = "none"

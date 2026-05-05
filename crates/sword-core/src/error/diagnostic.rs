@@ -86,6 +86,8 @@ fn emit_tracing_logs(diagnostic: &StartupDiagnostic) {
         );
 
         if diagnostic.has_details() {
+            emit_context_summary_error(Some(source), &diagnostic.context);
+
             for (key, value) in &diagnostic.context {
                 tracing::debug!(
                     target: "sword.startup.error",
@@ -117,6 +119,8 @@ fn emit_tracing_logs(diagnostic: &StartupDiagnostic) {
     );
 
     if diagnostic.has_details() {
+        emit_context_summary_error(None, &diagnostic.context);
+
         for (key, value) in &diagnostic.context {
             tracing::debug!(
                 target: "sword.startup.error",
@@ -131,6 +135,61 @@ fn emit_tracing_logs(diagnostic: &StartupDiagnostic) {
                 target: "sword.startup.error",
                 hint = %hint,
                 "Startup diagnostic hint"
+            );
+        }
+    }
+}
+
+fn emit_context_summary_error(source: Option<&str>, context: &[(String, String)]) {
+    if context.is_empty() {
+        return;
+    }
+
+    const PRIORITY_KEYS: [&str; 6] = [
+        "missing_dependency_path",
+        "dependency_path",
+        "controller_name",
+        "handler_id",
+        "path",
+        "bind",
+    ];
+
+    let mut selected: Vec<(&str, &str)> = Vec::new();
+
+    for key in PRIORITY_KEYS {
+        if let Some((found_key, found_value)) = context
+            .iter()
+            .find(|(ctx_key, _)| ctx_key.as_str() == key)
+            .map(|(ctx_key, ctx_value)| (ctx_key.as_str(), ctx_value.as_str()))
+        {
+            selected.push((found_key, found_value));
+        }
+    }
+
+    if selected.is_empty() {
+        selected.extend(
+            context
+                .iter()
+                .take(2)
+                .map(|(key, value)| (key.as_str(), value.as_str())),
+        );
+    }
+
+    for (key, value) in selected {
+        if let Some(source) = source {
+            tracing::error!(
+                target: "sword.startup.error",
+                source,
+                context_key = %key,
+                context_value = %value,
+                "Startup diagnostic key context"
+            );
+        } else {
+            tracing::error!(
+                target: "sword.startup.error",
+                context_key = %key,
+                context_value = %value,
+                "Startup diagnostic key context"
             );
         }
     }

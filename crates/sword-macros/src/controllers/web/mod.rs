@@ -53,7 +53,7 @@ pub fn expand_web_controller(input: &ControllerStruct) -> syn::Result<TokenStrea
                     state.insert::<#self_name>(#self_name::build(state).unwrap_or_else(|e| {
                         ::sword::internal::core::sword_error! {
                             title: "Failed to build controller",
-                            reason: "An error occurred while building the web controller",
+                            reason: format!("Failed to build web controller dependency graph: {e}"),
                             context: {
                                 "controller_name" => stringify!(#self_name),
                                 "error" => format!("{e:?}"),

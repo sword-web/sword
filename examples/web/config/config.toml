@@ -15,7 +15,7 @@ request-timeout = { enabled = true, timeout = "15s" }
 
 [tracing]
 enabled = true
-default-filter = "info,sword=debug,sqlx=error"
+filter = "info,sword=debug,sqlx=error"
 format = "dev"
 time-style = "none"
 with-fields = []
