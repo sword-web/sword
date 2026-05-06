@@ -230,7 +230,8 @@ impl DisplayConfig for SocketIoServerConfig {
             max_payload = ?self.max_payload,
             ping_interval = ?self.ping_interval,
             ping_timeout = ?self.ping_timeout,
-            req_path = ?self.req_path
+            req_path = ?self.req_path,
+            "Socket.IO server configuration",
         );
     }
 }

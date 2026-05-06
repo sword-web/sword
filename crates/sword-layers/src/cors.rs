@@ -51,6 +51,7 @@ impl DisplayConfig for CorsConfig {
             allow_headers = ?self.allow_headers,
             allow_credentials = self.allow_credentials,
             max_age = ?self.max_age.as_ref().map(|value| &value.raw),
+            "CORS configuration"
         );
     }
 }

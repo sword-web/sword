@@ -65,6 +65,7 @@ impl DisplayConfig for BodyLimitConfig {
         tracing::debug!(
             target: "sword.layers.body-limit",
             max_body_size = ?self.max_size.raw,
+            "HTTP body limit configuration"
         );
     }
 }

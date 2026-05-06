@@ -53,6 +53,7 @@ impl DisplayConfig for GrpcBodyLimitConfig {
             target: "sword.layers.grpc.body-limit",
             max_decoding_message_size = self.max_decoding_message_size.raw,
             max_encoding_message_size = self.max_encoding_message_size.raw,
+            "gRPC body limit configuration"
         );
     }
 }

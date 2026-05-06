@@ -65,6 +65,7 @@ impl DisplayConfig for RequestTimeoutConfig {
             target: "sword.layers.request-timeout",
             enabled = self.enabled,
             timeout = self.timeout.raw,
+            "Request timeout configuration"
         );
     }
 }

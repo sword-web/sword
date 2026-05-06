@@ -166,13 +166,13 @@ where
     }
 
     /// Returns a reference to the socket's request headers.
-    /// Shorthand for `&socket.req_parts().headers`.
+    /// Shortcut for `&socket.req_parts().headers`.
     pub fn headers(&self) -> &HeaderMap {
         &self.socket.req_parts().headers
     }
 
     /// Returns a reference to the socket's query parameters.
-    /// Shorthand for `&socket.req_parts().query`.
+    /// Shortcut for `&socket.req_parts().query`.
     pub fn authorization(&self) -> Option<&str> {
         self.socket
             .req_parts()

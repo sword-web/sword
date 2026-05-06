@@ -99,6 +99,7 @@ impl DisplayConfig for ServeDirConfig {
             compression_algorithm = ?self.compression_algorithm,
             chunk_size = ?self.chunk_size.as_ref().map(|value| &value.raw),
             not_found_file = ?self.not_found_file,
+            "ServeDir configuration"
         );
     }
 }

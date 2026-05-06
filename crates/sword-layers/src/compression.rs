@@ -44,6 +44,7 @@ impl DisplayConfig for CompressionConfig {
             tracing::info!(
                 target: "sword.layers.compression",
                 algorithms = ?self.algorithms,
+                "Compression configuration"
             );
         }
     }
