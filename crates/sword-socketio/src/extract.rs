@@ -1,22 +1,24 @@
 use crate::config::SocketIoParser;
 use crate::error::SocketError;
 
-use axum::http::Extensions as HttpExtensions;
+use axum::http::{Extensions as HttpExtensions, HeaderMap};
 use bytes::Bytes;
 use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
 use socketioxide::{
     ProtocolVersion, SendError, TransportType,
-    adapter::{Adapter as SocketIoEngineAdapter, LocalAdapter},
+    adapter::{Adapter as SocketIoAdapter, LocalAdapter},
     extensions::Extensions,
     extract::{AckSender, Event, SocketRef},
     handler::{FromConnectParts, FromDisconnectParts, FromMessageParts},
     socket::{DisconnectReason, Socket},
 };
+
 use socketioxide_core::{
     Sid, Value,
     parser::{Parse, ParseError},
 };
+
 use std::{convert::Infallible, sync::Arc};
 
 #[cfg(feature = "validation-validator")]
@@ -26,7 +28,7 @@ use validator::Validate;
 ///
 /// Provides access to socket operations, message data, acknowledgments, event names,
 /// and disconnect reasons depending on the handler type.
-pub struct SocketContext<A: SocketIoEngineAdapter = LocalAdapter> {
+pub struct SocketContext<A: SocketIoAdapter = LocalAdapter> {
     pub socket: SocketRef<A>,
     data: RwLock<Option<Value>>,
     ack: Option<AckSender<A>>,
@@ -36,7 +38,7 @@ pub struct SocketContext<A: SocketIoEngineAdapter = LocalAdapter> {
 
 impl<A> SocketContext<A>
 where
-    A: SocketIoEngineAdapter,
+    A: SocketIoAdapter,
 {
     fn parser(&self) -> SocketIoParser {
         self.socket
@@ -162,11 +164,27 @@ where
     pub fn disconnect_reason(&self) -> Option<&DisconnectReason> {
         self.disconnect_reason.as_ref()
     }
+
+    /// Returns a reference to the socket's request headers.
+    /// Shorthand for `&socket.req_parts().headers`.
+    pub fn headers(&self) -> &HeaderMap {
+        &self.socket.req_parts().headers
+    }
+
+    /// Returns a reference to the socket's query parameters.
+    /// Shorthand for `&socket.req_parts().query`.
+    pub fn authorization(&self) -> Option<&str> {
+        self.socket
+            .req_parts()
+            .headers
+            .get("Authorization")
+            .and_then(|value| value.to_str().ok())
+    }
 }
 
 impl<A> FromMessageParts<A> for SocketContext<A>
 where
-    A: SocketIoEngineAdapter,
+    A: SocketIoAdapter,
 {
     type Error = Infallible;
 
@@ -196,7 +214,7 @@ where
 
 impl<A> FromConnectParts<A> for SocketContext<A>
 where
-    A: SocketIoEngineAdapter,
+    A: SocketIoAdapter,
 {
     type Error = Infallible;
 
@@ -213,7 +231,7 @@ where
 
 impl<A> FromDisconnectParts<A> for SocketContext<A>
 where
-    A: SocketIoEngineAdapter,
+    A: SocketIoAdapter,
 {
     type Error = Infallible;
 

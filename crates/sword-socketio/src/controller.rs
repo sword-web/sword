@@ -33,8 +33,7 @@ pub enum SocketEventKind {
     Fallback,
 }
 
-type SocketCallFn =
-    fn(Arc<dyn Any + Send + Sync>, SocketContext) -> Pin<Box<dyn Future<Output = ()> + Send>>;
+type BoxedFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 /// Metadata for a SocketIO event handler registered via the `#[on]` attribute.
 ///
@@ -59,14 +58,13 @@ pub struct HandlerRegistrar {
     pub register_fn: fn(Arc<dyn Any + Send + Sync>, SocketRef),
 
     /// Executes the handler directly (used for Connection events).
-    pub call_fn: SocketCallFn,
+    pub call_fn: fn(Arc<dyn Any + Send + Sync>, SocketContext) -> BoxedFuture,
 }
 
 /// Setup function that initializes a SocketIO controller at runtime.
 pub struct SocketIoHandlerRegistrar {
     pub handler_type_id: TypeId,
     pub handler_type_name: &'static str,
-
     pub setup_fn: fn(&State),
 }
 
