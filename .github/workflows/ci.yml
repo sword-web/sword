@@ -2,6 +2,27 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      run_formatting:
+        description: 'Run formatting checks'
+        type: boolean
+        default: false
+      run_core:
+        description: 'Run core checks'
+        type: boolean
+        default: false
+      run_web:
+        description: 'Run web checks'
+        type: boolean
+        default: false
+      run_socketio:
+        description: 'Run socketio checks'
+        type: boolean
+        default: false
+      run_grpc:
+        description: 'Run grpc checks'
+        type: boolean
+        default: false
   push:
     branches: ["main"]
     paths-ignore:
@@ -64,7 +85,7 @@ jobs:
 
   formatting:
     needs: changes
-    if: needs.changes.outputs.formatting == 'true'
+    if: needs.changes.outputs.formatting == 'true' || inputs.run_formatting == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -81,7 +102,7 @@ jobs:
 
   core-checks:
     needs: changes
-    if: needs.changes.outputs.core == 'true'
+    if: needs.changes.outputs.core == 'true' || inputs.run_core == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -130,7 +151,7 @@ jobs:
 
   grpc-checks:
     needs: changes
-    if: needs.changes.outputs.grpc == 'true'
+    if: needs.changes.outputs.grpc == 'true' || inputs.run_grpc == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -172,7 +193,7 @@ jobs:
 
   web-checks:
     needs: changes
-    if: needs.changes.outputs.web == 'true'
+    if: needs.changes.outputs.web == 'true' || inputs.run_web == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -211,7 +232,7 @@ jobs:
 
   socketio-checks:
     needs: changes
-    if: needs.changes.outputs.socketio == 'true'
+    if: needs.changes.outputs.socketio == 'true' || inputs.run_socketio == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
