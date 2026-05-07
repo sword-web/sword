@@ -15,35 +15,6 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, parse_macro_input};
 
-fn resolve_sword_config_path_from_cargo_toml() -> Option<String> {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").ok()?;
-    let manifest_dir_path = std::path::Path::new(&manifest_dir);
-    let cargo_toml_path = manifest_dir_path.join("Cargo.toml");
-    let contents = std::fs::read_to_string(cargo_toml_path).ok()?;
-    let value: toml::Value = toml::from_str(&contents).ok()?;
-
-    let sword_table = value
-        .get("package")?
-        .get("metadata")?
-        .get("sword")?
-        .as_table()?;
-
-    let path = sword_table
-        .get("config-path")
-        .or_else(|| sword_table.get("config_path"))
-        .and_then(toml::Value::as_str)
-        .map(ToOwned::to_owned)?;
-
-    let path = std::path::Path::new(&path);
-    let absolute = if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        manifest_dir_path.join(path)
-    };
-
-    Some(absolute.to_string_lossy().to_string())
-}
-
 #[cfg(feature = "web-controllers")]
 #[proc_macro_attribute]
 pub fn get(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -664,194 +635,50 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     let fn_attrs = input.attrs.clone();
     let fn_vis = input.vis.clone();
     let _fn_sig = input.sig;
-    let config_path = resolve_sword_config_path_from_cargo_toml();
-
-    let config_path_expr = if let Some(path) = config_path {
-        quote! { Some(#path) }
-    } else {
-        quote! { None::<&str> }
-    };
-
-    let runtime_bootstrap = quote! {
-        let __sword_bootstrap_config_path: Option<&str> = #config_path_expr;
-        ::sword::internal::set_bootstrap_config_path(
-            __sword_bootstrap_config_path.map(::std::string::ToString::to_string),
-        );
-
-        let __runtime_config = __sword_bootstrap_config_path.and_then(|__config_path| {
-            let __contents = ::std::fs::read_to_string(__config_path).unwrap_or_else(|err| {
-                ::sword::internal::core::sword_error!(
-                    title: "Failed to load Sword config file",
-                    reason: err,
-                    context: {
-                        "source" => "#[sword::main]",
-                        "config_path" => __config_path,
-                    },
-                )
-            });
-
-            let __value: ::sword::internal::toml::Value = ::sword::internal::toml::from_str(&__contents).unwrap_or_else(|err| {
-                ::sword::internal::core::sword_error!(
-                    title: "Failed to parse Sword config file",
-                    reason: err,
-                    context: {
-                        "source" => "#[sword::main]",
-                        "config_path" => __config_path,
-                    },
-                )
-            });
-
-            let __runtime = __value
-                .get("application")
-                .and_then(::sword::internal::toml::Value::as_table)
-                .and_then(|app| app.get("runtime"))
-                .and_then(::sword::internal::toml::Value::as_table)?;
-
-            let __flavor = match __runtime.get("flavor") {
-                Some(value) => value.as_str().map(::std::string::ToString::to_string).unwrap_or_else(|| {
-                    ::sword::internal::core::sword_error!(
-                        title: "Invalid application.runtime.flavor",
-                        reason: "expected string value",
-                        context: {
-                            "source" => "#[sword::main]",
-                            "config_path" => __config_path,
-                            "key" => "application.runtime.flavor",
-                        },
-                    )
-                }),
-                None => ::std::string::String::from("multi_thread"),
-            };
-
-            let __worker_threads = match __runtime.get("worker_threads") {
-                Some(value) => {
-                    let n = value.as_integer().unwrap_or_else(|| {
-                        ::sword::internal::core::sword_error!(
-                            title: "Invalid application.runtime.worker_threads",
-                            reason: "expected positive integer value",
-                            context: {
-                                "source" => "#[sword::main]",
-                                "config_path" => __config_path,
-                                "key" => "application.runtime.worker_threads",
-                            },
-                        )
-                    });
-
-                    Some(usize::try_from(n).unwrap_or_else(|_| {
-                        ::sword::internal::core::sword_error!(
-                            title: "Invalid application.runtime.worker_threads",
-                            reason: "expected non-negative integer value",
-                            context: {
-                                "source" => "#[sword::main]",
-                                "config_path" => __config_path,
-                                "key" => "application.runtime.worker_threads",
-                            },
-                        )
-                    }))
-                }
-                None => None,
-            };
-
-            let __max_blocking_threads = match __runtime.get("max_blocking_threads") {
-                Some(value) => {
-                    let n = value.as_integer().unwrap_or_else(|| {
-                        ::sword::internal::core::sword_error!(
-                            title: "Invalid application.runtime.max_blocking_threads",
-                            reason: "expected positive integer value",
-                            context: {
-                                "source" => "#[sword::main]",
-                                "config_path" => __config_path,
-                                "key" => "application.runtime.max_blocking_threads",
-                            },
-                        )
-                    });
-
-                    Some(usize::try_from(n).unwrap_or_else(|_| {
-                        ::sword::internal::core::sword_error!(
-                            title: "Invalid application.runtime.max_blocking_threads",
-                            reason: "expected non-negative integer value",
-                            context: {
-                                "source" => "#[sword::main]",
-                                "config_path" => __config_path,
-                                "key" => "application.runtime.max_blocking_threads",
-                            },
-                        )
-                    }))
-                }
-                None => None,
-            };
-
-            Some((__flavor, __worker_threads, __max_blocking_threads))
-        });
-
-        let mut __runtime_builder = match __runtime_config
-            .as_ref()
-            .map(|runtime| runtime.0.as_str())
-        {
-            Some("current_thread") => ::sword::internal::tokio_runtime::Builder::new_current_thread(),
-            Some("multi_thread") | None => ::sword::internal::tokio_runtime::Builder::new_multi_thread(),
-            Some(__invalid_flavor) => {
-                ::sword::internal::core::sword_error!(
-                    title: "Invalid application.runtime.flavor",
-                    reason: ::std::format!(
-                        "expected 'multi_thread' or 'current_thread', got '{}'",
-                        __invalid_flavor
-                    ),
-                    context: {
-                        "source" => "#[sword::main]",
-                        "config_path" => __sword_bootstrap_config_path.unwrap_or("<none>"),
-                        "key" => "application.runtime.flavor",
-                    },
-                )
-            }
-        };
-
-        __runtime_builder.enable_all();
-
-        if let Some(runtime) = __runtime_config.as_ref() {
-            if let Some(worker_threads) = runtime.1 {
-                if runtime.0 != "current_thread" {
-                    __runtime_builder.worker_threads(worker_threads);
-                }
-            }
-
-            if let Some(max_blocking_threads) = runtime.2 {
-                __runtime_builder.max_blocking_threads(max_blocking_threads);
-            }
-        }
-
-        let __runtime = __runtime_builder.build().unwrap_or_else(|err| {
-            ::sword::internal::core::sword_error!(
-                title: "Failed to build Tokio runtime",
-                reason: err,
-                context: {
-                    "source" => "#[sword::main]",
-                },
-            )
-        });
-    };
 
     #[allow(unused)]
     let mut output = quote! {};
 
     if cfg!(feature = "hot-reload") {
         output = quote! {
-
             async fn __internal_main() {
                 #fn_body
             }
 
             #(#fn_attrs)*
             #fn_vis fn main() {
-                #runtime_bootstrap
-                __runtime.block_on(::sword::internal::dioxus_devtools::serve_subsecond(__internal_main))
+                ::sword::internal::tokio_runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap_or_else(|err| {
+                        ::sword::internal::core::sword_error!(
+                            title: "Failed to build Tokio runtime",
+                            reason: err,
+                            context: {
+                                "source" => "#[sword::main]",
+                            },
+                        )
+                    })
+                    .block_on(::sword::internal::dioxus_devtools::serve_subsecond(__internal_main))
             }
         };
     } else {
         output = quote! {
             #(#fn_attrs)*
             #fn_vis fn main() {
-                #runtime_bootstrap
-                __runtime.block_on( async #fn_body )
+                ::sword::internal::tokio_runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap_or_else(|err| {
+                        ::sword::internal::core::sword_error!(
+                            title: "Failed to build Tokio runtime",
+                            reason: err,
+                            context: {
+                                "source" => "#[sword::main]",
+                            },
+                        )
+                    })
+                    .block_on( async #fn_body )
             }
         };
     }
