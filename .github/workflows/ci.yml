@@ -1,0 +1,243 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - ".editorconfig"
+      - "README.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".github/workflows/**"
+      - "*.md"
+      - ".vscode/**"
+      - ".zed/**"
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - ".editorconfig"
+      - "README.md"
+      - "LICENSE"
+      - ".gitignore"
+      - ".github/workflows/**"
+      - "*.md"
+      - ".vscode/**"
+      - ".zed/**"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      grpc: ${{ steps.filter.outputs.grpc }}
+      web: ${{ steps.filter.outputs.web }}
+      socketio: ${{ steps.filter.outputs.socketio }}
+      formatting: ${{ steps.filter.outputs.formatting }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'crates/sword-core/**'
+              - 'crates/sword/**'
+              - 'crates/sword-macros/**'
+              - 'crates/sword-layers/**'
+            grpc:
+              - 'crates/sword-grpc/**'
+            web:
+              - 'crates/sword-core/**'
+              - 'crates/sword/**'
+              - 'crates/sword-web/**'
+            socketio:
+              - 'crates/sword-core/**'
+              - 'crates/sword/**'
+              - 'crates/sword-socketio/**'
+            formatting:
+              - '**/*.rs'
+              - 'rustfmt.toml'
+
+  formatting:
+    needs: changes
+    if: needs.changes.outputs.formatting == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  core-checks:
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run clippy (sword-core)
+        run: cargo clippy -p sword-core --all-targets -- -D warnings
+
+      - name: Run clippy (sword)
+        run: cargo clippy -p sword --all-targets -- -D warnings
+
+      - name: Run clippy (sword-macros)
+        run: cargo clippy -p sword-macros --all-targets -- -D warnings
+
+      - name: Run clippy (sword-layers)
+        run: cargo clippy -p sword-layers --all-targets -- -D warnings
+
+      - name: Build docs (sword-core)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-core --no-deps
+
+      - name: Build docs (sword)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword --no-deps
+
+      - name: Build docs (sword-macros)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-macros --no-deps
+
+      - name: Build docs (sword-layers)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-layers --no-deps
+
+  grpc-checks:
+    needs: changes
+    if: needs.changes.outputs.grpc == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Run clippy (sword-grpc)
+        run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
+
+      - name: Run tests (sword-grpc-tests)
+        run: cargo test -p sword-grpc-tests -- --test-threads=1
+
+      - name: Build docs (sword-grpc)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-grpc --no-deps --all-features
+
+  web-checks:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run clippy (sword-web)
+        run: cargo clippy -p sword-web --all-targets --all-features -- -D warnings
+
+      - name: Run tests (sword-web-tests)
+        run: cargo test -p sword-web-tests
+
+      - name: Build docs (sword-web)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-web --no-deps --all-features
+
+  socketio-checks:
+    needs: changes
+    if: needs.changes.outputs.socketio == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run clippy (sword-socketio)
+        run: cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
+
+      - name: Run tests (sword-socketio-tests)
+        run: cargo test -p sword-socketio-tests
+
+      - name: Build docs (sword-socketio)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-socketio --no-deps --all-features
