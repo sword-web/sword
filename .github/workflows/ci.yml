@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: ["main"]
     paths-ignore:
@@ -8,7 +9,6 @@ on:
       - "README.md"
       - "LICENSE"
       - ".gitignore"
-      - ".github/workflows/**"
       - "*.md"
       - ".vscode/**"
       - ".zed/**"
@@ -19,7 +19,6 @@ on:
       - "README.md"
       - "LICENSE"
       - ".gitignore"
-      - ".github/workflows/**"
       - "*.md"
       - ".vscode/**"
       - ".zed/**"
