@@ -14,8 +14,9 @@ use socketioxide::{
     socket::{DisconnectReason, Socket},
 };
 
+use socketioxide::handler::Value;
 use socketioxide_core::{
-    Sid, Value,
+    Sid,
     parser::{Parse, ParseError},
 };
 
