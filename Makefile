@@ -13,6 +13,12 @@ lint:
 	cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
 	cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
 
+	cargo doc -p sword-core --no-deps
+	cargo doc -p sword --no-deps
+	cargo doc -p sword-web --no-deps --all-features
+	cargo doc -p sword-socketio --no-deps --all-features
+	cargo doc -p sword-grpc --no-deps --all-features
+
 machete:
 	cargo machete
 

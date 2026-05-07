@@ -56,7 +56,7 @@ inventory_submit! {[
     })
 ]}
 
-/// Context passed from [`ApplicationBuilder`] to engine-specific builders.
+/// Context passed from 'ApplicationBuilder' to engine-specific builders.
 ///
 /// Contains all shared state accumulated during the builder phase,
 /// after DI resolution and interceptor registration.
