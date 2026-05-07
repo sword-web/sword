@@ -34,6 +34,10 @@ jobs:
       socketio: ${{ steps.filter.outputs.socketio }}
       formatting: ${{ steps.filter.outputs.formatting }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
