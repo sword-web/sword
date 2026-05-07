@@ -31,6 +31,7 @@ jobs:
       grpc: ${{ steps.filter.outputs.grpc }}
       web: ${{ steps.filter.outputs.web }}
       socketio: ${{ steps.filter.outputs.socketio }}
+      macros: ${{ steps.filter.outputs.macros }}
       formatting: ${{ steps.filter.outputs.formatting }}
     steps:
       - uses: actions/checkout@v4
@@ -44,8 +45,9 @@ jobs:
             core:
               - 'crates/sword-core/**'
               - 'crates/sword/**'
-              - 'crates/sword-macros/**'
               - 'crates/sword-layers/**'
+            macros:
+              - 'crates/sword-macros/**'
             grpc:
               - 'crates/sword-grpc/**'
             web:
@@ -108,9 +110,6 @@ jobs:
       - name: Run clippy (sword)
         run: cargo clippy -p sword --all-targets -- -D warnings
 
-      - name: Run clippy (sword-macros)
-        run: cargo clippy -p sword-macros --all-targets -- -D warnings
-
       - name: Run clippy (sword-layers)
         run: cargo clippy -p sword-layers --all-targets -- -D warnings
 
@@ -123,11 +122,6 @@ jobs:
         env:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo doc -p sword --no-deps
-
-      - name: Build docs (sword-macros)
-        env:
-          RUSTDOCFLAGS: "-D warnings"
-        run: cargo doc -p sword-macros --no-deps
 
       - name: Build docs (sword-layers)
         env:
@@ -165,6 +159,9 @@ jobs:
       - name: Run clippy (sword-grpc)
         run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
 
+      - name: Run clippy (sword-macros)
+        run: cargo clippy -p sword-macros --all-targets --features grpc-controllers -- -D warnings
+
       - name: Run tests (sword-grpc-tests)
         run: cargo test -p sword-grpc-tests -- --test-threads=1
 
@@ -201,6 +198,9 @@ jobs:
       - name: Run clippy (sword-web)
         run: cargo clippy -p sword-web --all-targets --all-features -- -D warnings
 
+      - name: Run clippy (sword-macros)
+        run: cargo clippy -p sword-macros --all-targets --features web-controllers -- -D warnings
+
       - name: Run tests (sword-web-tests)
         run: cargo test -p sword-web-tests
 
@@ -236,6 +236,9 @@ jobs:
 
       - name: Run clippy (sword-socketio)
         run: cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (sword-macros)
+        run: cargo clippy -p sword-macros --all-targets --features socketio-controllers -- -D warnings
 
       - name: Run tests (sword-socketio-tests)
         run: cargo test -p sword-socketio-tests
