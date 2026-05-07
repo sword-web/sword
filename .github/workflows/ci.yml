@@ -85,7 +85,7 @@ jobs:
 
   formatting:
     needs: changes
-    if: needs.changes.outputs.formatting == 'true' || inputs.run_formatting == 'true'
+    if: needs.changes.outputs.formatting == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -102,7 +102,7 @@ jobs:
 
   core-checks:
     needs: changes
-    if: needs.changes.outputs.core == 'true' || inputs.run_core == 'true'
+    if: needs.changes.outputs.core == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -151,7 +151,7 @@ jobs:
 
   grpc-checks:
     needs: changes
-    if: needs.changes.outputs.grpc == 'true' || inputs.run_grpc == 'true'
+    if: needs.changes.outputs.grpc == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -193,7 +193,7 @@ jobs:
 
   web-checks:
     needs: changes
-    if: needs.changes.outputs.web == 'true' || inputs.run_web == 'true'
+    if: needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -232,7 +232,7 @@ jobs:
 
   socketio-checks:
     needs: changes
-    if: needs.changes.outputs.socketio == 'true' || inputs.run_socketio == 'true'
+    if: needs.changes.outputs.socketio == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
