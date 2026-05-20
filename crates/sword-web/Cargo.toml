@@ -21,7 +21,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
-axum_responses = { workspace = true }
 
 sword-core = { workspace = true }
 sword-macros = { workspace = true, features = ["web-controllers"] }
@@ -29,6 +28,7 @@ sword-macros = { workspace = true, features = ["web-controllers"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+chrono = { workspace = true }
 
 form_urlencoded = { workspace = true }
 serde_urlencoded = { workspace = true }
@@ -56,7 +56,7 @@ features = [
 [features]
 default = []
 
-multipart = ["axum/multipart", "axum_responses/multipart"]
+multipart = ["axum/multipart"]
 validation-validator = ["dep:validator"]
 
 [dev-dependencies]

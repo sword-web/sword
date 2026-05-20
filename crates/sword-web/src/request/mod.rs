@@ -5,6 +5,7 @@ mod parts;
 #[cfg(feature = "validation-validator")]
 mod validator;
 
+use super::response::JsonResponse;
 use crate::interceptor::WebInterceptorResult;
 use axum::{
     body::Body as AxumBody,
@@ -12,7 +13,6 @@ use axum::{
     http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Uri},
     middleware::Next,
 };
-use axum_responses::JsonResponse;
 use serde::de::DeserializeOwned;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 use sword_layers::cookies::Cookies;

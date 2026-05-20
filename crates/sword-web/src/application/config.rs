@@ -3,6 +3,7 @@ use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
 use sword_layers::{body_limit::BodyLimitConfig, timeout::RequestTimeoutConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct WebApplicationConfig {
     /// The hostname or IP address to bind the server to. Defaults to "0.0.0.0"
     pub host: String,

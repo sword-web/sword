@@ -1,5 +1,5 @@
 use super::{
-    Request, RequestError, StreamRequest,
+    JsonResponse, Request, RequestError, StreamRequest,
     parts::{AxumRequestPreparationExt, PreparedRequestParts},
 };
 use sword_core::State;
@@ -10,7 +10,6 @@ use axum::{
     http::request::Parts,
     response::IntoResponse,
 };
-use axum_responses::JsonResponse;
 
 /// Fixed-state version of `axum::extract::FromRequest` using sword's State.
 ///

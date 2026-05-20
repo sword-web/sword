@@ -10,6 +10,7 @@ use sword_layers::layer_stack::LayerStack;
 /// Engine-specific settings live in their own sections such as `[web]`, `[grpc]`,
 /// and `[socketio]`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ApplicationConfig {
     /// Optional name of the application. Defaults `None`.
     /// This can be used for logging or display purposes.

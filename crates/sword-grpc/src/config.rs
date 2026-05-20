@@ -3,6 +3,7 @@ use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
 use sword_layers::body_limit::GrpcBodyLimitConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct GrpcApplicationConfig {
     /// The hostname or IP address to bind the gRPC server to. Defaults to "0.0.0.0".
     pub host: String,

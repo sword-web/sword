@@ -1,10 +1,19 @@
+mod file;
+mod json;
+mod redirect;
+
 use crate::request::RequestError;
 
-pub use axum_responses::{ContentDisposition, File, JsonResponse, JsonResponseBody, Redirect};
-
+pub use file::*;
+pub use json::{JsonResponse, JsonResponseBody};
+pub use redirect::Redirect;
 pub use sword_macros::HttpError;
 
-pub type WebResult<T = JsonResponse, E = JsonResponse> = std::result::Result<T, E>;
+#[allow(unused)]
+#[cfg(feature = "multipart")]
+pub use multipart::*;
+
+pub type WebResult<T = JsonResponse, E = JsonResponse> = Result<T, E>;
 
 impl From<RequestError> for JsonResponse {
     fn from(error: RequestError) -> JsonResponse {
@@ -106,4 +115,25 @@ pub(crate) fn format_validator_errors(e: validator::ValidationErrors) -> serde_j
     }
 
     serde_json::Value::Object(formatted_errors)
+}
+
+#[cfg(feature = "multipart")]
+mod multipart {
+    use super::JsonResponse;
+    use axum::extract::multipart::MultipartError;
+    use axum::extract::multipart::MultipartRejection;
+
+    impl From<MultipartRejection> for JsonResponse {
+        fn from(err: MultipartRejection) -> Self {
+            tracing::error!("MultipartRejection: {err:?}");
+            JsonResponse::status(err.status())
+        }
+    }
+
+    impl From<MultipartError> for JsonResponse {
+        fn from(err: MultipartError) -> Self {
+            tracing::error!("MultipartError: {err:?}");
+            JsonResponse::status(err.status())
+        }
+    }
 }
