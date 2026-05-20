@@ -10,7 +10,9 @@ use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use sword_core::{Config, Controller, ControllerMap, State, sword_error};
 use sword_layers::DisplayConfig;
-use sword_web::application::{WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar};
+use sword_web::application::{
+    WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
+};
 
 struct SocketIoWebExtension;
 
