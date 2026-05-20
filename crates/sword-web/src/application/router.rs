@@ -38,15 +38,15 @@ impl WebApplicationRouter {
         router = self.apply_web_controllers(router);
         router = self.apply_web_layers(router);
 
+        if let Some(prefix) = &self.web_config.router_prefix {
+            router = Router::new().nest(prefix, router);
+        }
+
         for extension in extensions {
             router = extension.extend_router(&extension_ctx, router);
         }
 
         router = self.layer_stack.apply(router);
-
-        if let Some(prefix) = &self.web_config.router_prefix {
-            router = Router::new().nest(prefix, router);
-        }
 
         router = router.route(
             "/health",

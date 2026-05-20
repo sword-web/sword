@@ -24,7 +24,9 @@ const messagesEl = document.querySelector("#messages");
 const composerEl = document.querySelector("#composer");
 const inputEl = document.querySelector("#messageInput");
 
-const socket = io("http://localhost:8081/chat");
+const socket = io("http://localhost:8081/chat", {
+    path: "/api/socket.io",
+});
 
 function setStatus(text, cssClass) {
     statusEl.textContent = text;

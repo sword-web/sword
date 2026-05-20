@@ -10,7 +10,7 @@ use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use sword_core::{Config, Controller, ControllerMap, State, sword_error};
 use sword_layers::DisplayConfig;
-use sword_web::application::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
+use sword_web::application::{WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar};
 
 struct SocketIoWebExtension;
 
@@ -66,7 +66,15 @@ impl WebExtension for SocketIoWebExtension {
             return;
         }
 
-        let socketio_config = Self::get_config(&ctx.config);
+        let mut socketio_config = Self::get_config(&ctx.config);
+
+        let web_config: WebApplicationConfig = ctx.config.get_or_default();
+        if let Some(prefix) = &web_config.router_prefix {
+            if socketio_config.req_path.is_none() {
+                socketio_config.req_path = Some(format!("{prefix}/socket.io"));
+            }
+        }
+
         let (layer, io) = SocketIoServerLayer::new(&socketio_config);
 
         state.insert(io);
