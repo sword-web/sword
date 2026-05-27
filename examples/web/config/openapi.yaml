@@ -1,0 +1,305 @@
+openapi: "3.1.0"
+info:
+  title: Sword Users API
+  description: |
+    CRUD operations for user management.
+    Part of the Sword web framework example.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8081
+    description: Local development server
+
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users
+      tags: [Users]
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: createUser
+      summary: Create a new user
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreatedResponse"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /users/{id}:
+    put:
+      operationId: updateUser
+      summary: Update an existing user
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User UUID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserUpdatedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      tags: [Users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User UUID
+      responses:
+        "200":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDeletedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  schemas:
+    User:
+      type: object
+      required: [id, username, password]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Auto-generated UUID v4
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Unique username
+          example: jdoe
+        password:
+          type: string
+          description: bcrypt-hashed password
+          example: "$2b$12$..."
+
+    CreateUserInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Desired username (must be unique)
+          example: jdoe
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+          description: Plain text password (will be bcrypt-hashed)
+          example: securePass123
+
+    UpdateUserInput:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: New username (omitted fields keep existing values)
+          example: jdoe_updated
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+          description: New plain text password (omitted fields keep existing values)
+          example: newSecurePass456
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates whether the request was successful
+        code:
+          type: integer
+          format: int32
+          description: HTTP status code
+        message:
+          type: string
+          description: Human-readable status message
+        request_id:
+          type: string
+          nullable: true
+          description: Unique request identifier for tracing
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 response timestamp
+        data:
+          type: object
+          nullable: true
+        error:
+          type: object
+          nullable: true
+        errors:
+          type: array
+          items:
+            type: object
+          nullable: true
+
+    UserListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/User"
+
+    UserCreatedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            message:
+              example: "User created"
+            data:
+              $ref: "#/components/schemas/User"
+
+    UserUpdatedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            message:
+              example: "User updated"
+
+    UserDeletedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            message:
+              example: "User deleted"
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: object
+          nullable: true
+          properties:
+            message:
+              type: string
+            field:
+              type: string
+            value:
+              type: string
+
+  responses:
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiError"
+              - type: object
+                properties:
+                  code:
+                    example: 404
+                  success:
+                    example: false
+                  message:
+                    example: "Not found error: User not found"
+
+    ConflictError:
+      description: Resource conflict (e.g. duplicate username)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiError"
+              - type: object
+                properties:
+                  code:
+                    example: 409
+                  success:
+                    example: false
+                  message:
+                    example: "User with username 'jdoe' already exists"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiError"
+              - type: object
+                properties:
+                  code:
+                    example: 500
+                  success:
+                    example: false
+                  message:
+                    example: "Internal server error"

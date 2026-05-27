@@ -48,7 +48,8 @@ socketio = ["web", "dep:sword-socketio"]
 grpc = ["dep:sword-grpc"]
 grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
 
-multipart = ["sword-web/multipart"]
+web-multipart = ["sword-web/multipart"]
+web-swagger-ui = ["sword-web/swagger-ui"]
 validation-validator = ["dep:validator", "sword-web/validation-validator", "sword-socketio?/validation-validator"]
 
 hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]

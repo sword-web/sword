@@ -53,6 +53,11 @@ impl WebApplicationRouter {
             axum::routing::get(|| async { JsonResponse::Ok().message("healthy") }),
         );
 
+        #[cfg(feature = "swagger-ui")]
+        {
+            router = self.apply_openapi(router);
+        }
+
         router = router.layer(NotFoundLayer);
 
         router
@@ -152,6 +157,87 @@ impl WebApplicationRouter {
 
         router = router.layer(RequestIdLayer::new());
         router = router.layer(CookieManagerLayer::new());
+
+        router
+    }
+
+    #[cfg(feature = "swagger-ui")]
+    fn apply_openapi(&self, mut router: Router<State>) -> Router<State> {
+        use utoipa_swagger_ui::{Config, SwaggerUi};
+
+        let Some(openapi) = &self.web_config.openapi else {
+            return router;
+        };
+
+        let mut urls: Vec<String> = Vec::new();
+
+        for spec_path in &openapi.spec_file_paths {
+            let file_extension = spec_path
+                .rsplit('.')
+                .next()
+                .unwrap_or_default()
+                .to_lowercase();
+
+            let spec_file_content_type = match file_extension.as_str() {
+                "yaml" | "yml" => "application/x-yaml",
+                "json" => "application/json",
+                ext => {
+                    sword_error! {
+                        title: "Unsupported OpenAPI spec file type",
+                        reason: "The OpenAPI spec file has an unsupported extension",
+                        context: {
+                            "spec_path" => spec_path.clone(),
+                            "file_extension" => ext.to_string(),
+                            "source" => "WebRouter::apply_openapi",
+                        },
+                        hints: ["Supported extensions are .yaml, .yml, and .json"],
+                        fatal: false,
+                    }
+                    continue;
+                }
+            };
+
+            let file_content = match std::fs::read_to_string(spec_path) {
+                Ok(c) => c,
+                Err(err) => {
+                    sword_error! {
+                        title: "Failed to read OpenAPI spec file",
+                        reason: "An error occurred while reading the OpenAPI spec file",
+                        context: {
+                            "spec_path" => spec_path.clone(),
+                            "error" => err.to_string(),
+                            "source" => "WebRouter::apply_openapi",
+                        },
+                        hints: ["Ensure the file exists and is readable"],
+                        fatal: false,
+                    }
+                    continue;
+                }
+            };
+
+            let filename = spec_path
+                .rsplit('/')
+                .next()
+                .unwrap_or("openapi.yaml");
+
+            let route_path = format!("/openapi/{filename}");
+
+            router = router.route(
+                &route_path,
+                axum::routing::get(move || async move {
+                    (
+                        [("Content-Type", spec_file_content_type)],
+                        file_content.clone(),
+                    )
+                }),
+            );
+
+            urls.push(route_path);
+        }
+
+        if !urls.is_empty() {
+            router = router.merge(SwaggerUi::new("/docs").config(Config::new(urls)));
+        }
 
         router
     }

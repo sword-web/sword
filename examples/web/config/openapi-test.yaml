@@ -1,0 +1,141 @@
+openapi: "3.1.0"
+info:
+  title: Sword Utility Endpoints
+  description: |
+    Utility and testing endpoints for the Sword web framework example:
+    compression test and health check.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8081
+    description: Local development server
+
+paths:
+  /users/test-compression:
+    get:
+      operationId: testCompression
+      summary: Test HTTP response compression
+      description: Returns a 5KB payload of repeated characters to verify compression middleware works correctly.
+      tags: [Tests]
+      responses:
+        "200":
+          description: Compression test data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompressionTestResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      description: Returns a simple health status to verify the server is running.
+      tags: [System]
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates whether the request was successful
+        code:
+          type: integer
+          format: int32
+          description: HTTP status code
+        message:
+          type: string
+          description: Human-readable status message
+        request_id:
+          type: string
+          nullable: true
+          description: Unique request identifier for tracing
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 response timestamp
+        data:
+          type: object
+          nullable: true
+        error:
+          type: object
+          nullable: true
+        errors:
+          type: array
+          items:
+            type: object
+          nullable: true
+
+    CompressionTestResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            message:
+              example: "Test compression data"
+            data:
+              type: object
+              properties:
+                size_kb:
+                  type: integer
+                  example: 5
+                data:
+                  type: string
+                  description: 5KB of repeated "x" characters
+                  example: "xxxxx..."
+
+    HealthResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            message:
+              example: "healthy"
+
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        request_id:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: object
+          nullable: true
+
+  responses:
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiError"
+              - type: object
+                properties:
+                  code:
+                    example: 500
+                  success:
+                    example: false
+                  message:
+                    example: "Internal server error"

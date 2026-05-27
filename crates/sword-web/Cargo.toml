@@ -40,7 +40,9 @@ validator = { workspace = true, optional = true }
 
 tracing = { workspace = true }
 inventory = { workspace = true }
+utoipa = { version = "5.5.0", optional = true }
 bon = "3.9.1"
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"], optional = true }
 
 [dependencies.sword-layers]
 workspace = true
@@ -58,6 +60,7 @@ default = []
 
 multipart = ["axum/multipart"]
 validation-validator = ["dep:validator"]
+swagger-ui = ["dep:utoipa", "dep:utoipa-swagger-ui"]
 
 [dev-dependencies]
 axum-test = { workspace = true }

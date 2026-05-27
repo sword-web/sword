@@ -3,6 +3,17 @@ use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
 use sword_layers::{body_limit::BodyLimitConfig, timeout::RequestTimeoutConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg(feature = "swagger-ui")]
+pub struct OpenApiConfig {
+    pub title: String,
+    pub version: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(rename = "spec-file-paths")]
+    pub spec_file_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WebApplicationConfig {
     /// The hostname or IP address to bind the server to. Defaults to "0.0.0.0"
@@ -14,6 +25,11 @@ pub struct WebApplicationConfig {
     /// Optional global prefix for all web controller routes.
     #[serde(rename = "router-prefix")]
     pub router_prefix: Option<String>,
+
+    #[cfg(feature = "swagger-ui")]
+    #[serde(default)]
+    /// Optional OpenAPI documentation configuration.
+    pub openapi: Option<OpenApiConfig>,
 
     /// Body limit policy for web request extraction.
     #[serde(rename = "body-limit")]
@@ -32,6 +48,8 @@ impl Default for WebApplicationConfig {
             router_prefix: None,
             body_limit: BodyLimitConfig::default(),
             request_timeout: RequestTimeoutConfig::default(),
+            #[cfg(feature = "swagger-ui")]
+            openapi: None,
         }
     }
 }
