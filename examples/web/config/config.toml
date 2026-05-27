@@ -7,6 +7,7 @@ host = "0.0.0.0"
 port = 8081
 body-limit = "5MB"
 request-timeout = { enabled = true, timeout = "15s" }
+router-prefix = "/api"
 
 [web.openapi]
 title = "Web Application API"
@@ -31,6 +32,11 @@ algorithms = ["gzip", "br"]
 
 [cors]
 display = true
+
+[serve-dir]
+display = true
+static-dir = "public"
+router-path = "/static"
 
 [hasher]
 cost = 12

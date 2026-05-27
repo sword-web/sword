@@ -9,4 +9,4 @@ This example demonstrates a user management API using Sword's web controllers. I
 3. Start PostgreSQL: `docker compose up -d`
 4. Run the application: `cargo run`
 
-The API will be available at http://localhost:8081/users.
+The API will be available at http://localhost:8081/api/users.

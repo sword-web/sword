@@ -67,3 +67,13 @@ pub struct SwordLayerRegistrar {
 }
 
 inventory::collect!(SwordLayerRegistrar);
+
+type ServiceRegistrarFn = fn(&Config) -> Box<dyn FnOnce(&mut dyn Any) + Send>;
+
+pub struct SwordServiceRegistrar {
+    pub name: &'static str,
+    pub register: ServiceRegistrarFn,
+    pub display: fn(&Config),
+}
+
+inventory::collect!(SwordServiceRegistrar);

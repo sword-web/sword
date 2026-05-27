@@ -11,7 +11,7 @@ servers:
     description: Local development server
 
 paths:
-  /users:
+  /api/users:
     get:
       operationId: listUsers
       summary: List all users
@@ -48,7 +48,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /users/{id}:
+  /api/users/{id}:
     put:
       operationId: updateUser
       summary: Update an existing user

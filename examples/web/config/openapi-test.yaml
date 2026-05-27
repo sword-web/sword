@@ -11,7 +11,7 @@ servers:
     description: Local development server
 
 paths:
-  /users/test-compression:
+  /api/users/test-compression:
     get:
       operationId: testCompression
       summary: Test HTTP response compression
@@ -27,7 +27,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /health:
+  /api/health:
     get:
       operationId: healthCheck
       summary: Health check endpoint

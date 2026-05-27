@@ -4,6 +4,7 @@
 //! service for serving files from a configured directory.
 
 use crate::DisplayConfig;
+use crate::SwordServiceRegistrar;
 use serde::{Deserialize, Serialize};
 use thisconfig::{ByteConfig, ConfigItem};
 use tower_http::services::{ServeDir, ServeFile};
@@ -92,7 +93,7 @@ impl DisplayConfig for ServeDirConfig {
             return;
         }
 
-        tracing::info!(
+        tracing::debug!(
             target: "sword.layers.serve_dir",
             static_dir = %self.static_dir,
             router_path = %self.router_path,
@@ -107,5 +108,26 @@ impl DisplayConfig for ServeDirConfig {
 impl ConfigItem for ServeDirConfig {
     fn key() -> &'static str {
         "serve-dir"
+    }
+}
+
+inventory::submit! {
+    SwordServiceRegistrar {
+        name: "serve-dir",
+        display: |config: &thisconfig::Config| {
+            let cfg: &ServeDirConfig = &config.get_or_default::<ServeDirConfig>();
+            cfg.display();
+        },
+        register: |config: &thisconfig::Config| {
+            let cfg: ServeDirConfig = config.get_or_default::<ServeDirConfig>();
+            let router_path = cfg.router_path.clone();
+            let service: ServeDirLayer = cfg.into();
+            Box::new(move |any: &mut dyn std::any::Any| {
+                let router: &mut axum::Router<sword_core::State> = any
+                    .downcast_mut()
+                    .expect("SwordServiceRegistrar: expected Router<sword_core::State>");
+                *router = std::mem::take(router).nest_service(&router_path, service.clone());
+            })
+        },
     }
 }

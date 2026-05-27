@@ -5,12 +5,13 @@ edition = "2024"
 
 [dependencies]
 sword = { workspace = true, features = ["web", "validation-validator", "web-swagger-ui"] }
+sword-layers = { workspace = true, features = ["compression", "cors",  "servedir"] }
+
 serde = { workspace = true }
 validator = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-sword-layers = { workspace = true, features = ["compression", "cors"] }
 
 uuid = { workspace = true }
 sqlx = { workspace = true }

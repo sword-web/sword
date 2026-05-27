@@ -58,6 +58,12 @@ impl WebApplicationRouter {
             router = self.apply_openapi(router);
         }
 
+        for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
+            tracing::info!(target: "sword.layers", name = registrar.name, "Registering service");
+            (registrar.display)(&self.config);
+            (registrar.register)(&self.config)(&mut router as &mut dyn std::any::Any);
+        }
+
         router = router.layer(NotFoundLayer);
 
         router
