@@ -35,6 +35,31 @@ impl WebApplication {
             "Starting application listener"
         );
 
+        #[cfg(feature = "swagger-ui")]
+        {
+            if let Some(cfg) = &self.config.openapi {
+                let display_host = if self.config.host == "0.0.0.0" {
+                    "localhost"
+                } else {
+                    &self.config.host
+                };
+
+                let docs_url = format!(
+                    "http://{}:{}{}/docs",
+                    display_host,
+                    self.config.port,
+                    self.config.router_prefix.as_deref().unwrap_or("")
+                );
+
+                tracing::info!(
+                    target: "sword.startup.app",
+                    docs_url = docs_url.as_str(),
+                    "Loaded {} OpenAPI spec file(s) for Swagger UI",
+                    cfg.spec_file_paths.len()
+                );
+            }
+        }
+
         let app = self.router.clone().with_state(self.state.clone());
 
         let bind_addr: SocketAddr = bind.parse::<SocketAddr>().unwrap_or_else(|err| {

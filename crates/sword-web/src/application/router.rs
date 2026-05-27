@@ -215,10 +215,7 @@ impl WebApplicationRouter {
                 }
             };
 
-            let filename = spec_path
-                .rsplit('/')
-                .next()
-                .unwrap_or("openapi.yaml");
+            let filename = spec_path.rsplit('/').next().unwrap_or("openapi.yaml");
 
             let route_path = format!("/openapi/{filename}");
 
@@ -236,7 +233,7 @@ impl WebApplicationRouter {
         }
 
         if !urls.is_empty() {
-            router = router.merge(SwaggerUi::new("/docs").config(Config::new(urls)));
+            router = router.merge(SwaggerUi::new("/docs").config(Config::new(urls.clone())));
         }
 
         router

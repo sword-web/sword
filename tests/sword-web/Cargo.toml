@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = ["web", "multipart", "validation-validator"] }
+sword = { workspace = true, features = ["web", "web-multipart", "validation-validator"] }
 sword-layers = { workspace = true, features = ["helmet", "compression"] }
 tokio = { workspace = true }
 axum = { workspace = true }
