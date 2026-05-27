@@ -23,6 +23,9 @@ mod errors;
 mod http_methods;
 
 #[cfg(test)]
+mod return_type;
+
+#[cfg(test)]
 mod interceptors {
     mod built_in;
     mod controller_level;

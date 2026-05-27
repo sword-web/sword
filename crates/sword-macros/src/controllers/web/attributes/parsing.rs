@@ -3,13 +3,20 @@ use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{Attribute, ItemFn, LitStr, Type};
+use syn::{Attribute, GenericArgument, ItemFn, LitStr, PathArguments, ReturnType, Type};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RequestMode {
     None,
     Buffered,
     Streaming,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ReturnKind {
+    Passthrough,
+    Serialize,
+    Empty,
 }
 
 #[derive(Clone, Copy)]
@@ -71,6 +78,13 @@ impl HttpMethod {
             Self::Connect => quote! { connect },
         }
     }
+
+    pub fn default_status_code(self) -> u16 {
+        match self {
+            Self::Post => 201,
+            _ => 200,
+        }
+    }
 }
 
 pub struct WebRouteContext {
@@ -126,6 +140,15 @@ pub struct ParsedRouteAttribute {
 
     /// Controller metadata from CMetaStack
     pub context: WebRouteContext,
+
+    /// Whether the handler returns Result<T, E> or WebResult<T>
+    pub is_result_return: bool,
+
+    /// How to wrap T when the handler returns Result<T, E>
+    pub return_kind: ReturnKind,
+
+    /// Default status code for the response (depends on HTTP method)
+    pub status_code: u16,
 }
 
 impl ParsedRouteAttribute {
@@ -140,6 +163,9 @@ impl ParsedRouteAttribute {
 
         let context = Self::resolve_context(method.as_str())?;
 
+        let (is_result_return, return_kind, status_code) =
+            Self::extract_result_info(&input_fn.sig, &method);
+
         Ok(Self {
             method,
             path,
@@ -147,6 +173,9 @@ impl ParsedRouteAttribute {
             interceptors,
             request_mode,
             context,
+            is_result_return,
+            return_kind,
+            status_code,
         })
     }
 
@@ -231,5 +260,81 @@ impl ParsedRouteAttribute {
         }
 
         RequestMode::None
+    }
+
+    fn extract_result_info(sig: &syn::Signature, method: &HttpMethod) -> (bool, ReturnKind, u16) {
+        let status_code = method.default_status_code();
+
+        let return_type = match &sig.output {
+            ReturnType::Type(_, ty) => ty.as_ref(),
+            _ => return (false, ReturnKind::Passthrough, status_code),
+        };
+
+        let type_path = match return_type {
+            Type::Path(type_path) => type_path,
+            _ => return (false, ReturnKind::Passthrough, status_code),
+        };
+
+        let last_segment = match type_path.path.segments.last() {
+            Some(seg) => seg,
+            None => return (false, ReturnKind::Passthrough, status_code),
+        };
+
+        let ident = last_segment.ident.to_string();
+
+        let ok_type = match ident.as_str() {
+            "Result" => {
+                let args = match &last_segment.arguments {
+                    PathArguments::AngleBracketed(args) => &args.args,
+                    _ => return (false, ReturnKind::Passthrough, status_code),
+                };
+                if args.len() < 2 {
+                    return (false, ReturnKind::Passthrough, status_code);
+                }
+                match &args[0] {
+                    GenericArgument::Type(ty) => ty.clone(),
+                    _ => return (false, ReturnKind::Passthrough, status_code),
+                }
+            }
+            "WebResult" => {
+                match &last_segment.arguments {
+                    PathArguments::AngleBracketed(args) => {
+                        if args.args.is_empty() {
+                            // WebResult without generics = WebResult<JsonResponse, JsonResponse>
+                            syn::parse_quote!(JsonResponse)
+                        } else {
+                            match &args.args[0] {
+                                GenericArgument::Type(ty) => ty.clone(),
+                                _ => return (false, ReturnKind::Passthrough, status_code),
+                            }
+                        }
+                    }
+                    _ => {
+                        // WebResult without generics = WebResult<JsonResponse, JsonResponse>
+                        syn::parse_quote!(JsonResponse)
+                    }
+                }
+            }
+            _ => return (false, ReturnKind::Passthrough, status_code),
+        };
+
+        let return_kind = Self::classify_return_type(&ok_type);
+        (true, return_kind, status_code)
+    }
+
+    fn classify_return_type(ty: &Type) -> ReturnKind {
+        match ty {
+            Type::Tuple(tuple) if tuple.elems.is_empty() => ReturnKind::Empty,
+            Type::Path(type_path) => {
+                let Some(last_segment) = type_path.path.segments.last() else {
+                    return ReturnKind::Serialize;
+                };
+                match last_segment.ident.to_string().as_str() {
+                    "JsonResponse" | "File" | "Redirect" => ReturnKind::Passthrough,
+                    _ => ReturnKind::Serialize,
+                }
+            }
+            _ => ReturnKind::Serialize,
+        }
     }
 }

@@ -1,4 +1,4 @@
-use super::parsing::ParsedRouteAttribute;
+use super::parsing::{ParsedRouteAttribute, ReturnKind};
 use crate::controllers::web::expand_web_interceptor_args;
 
 use proc_macro::TokenStream as TokenStream1;
@@ -46,18 +46,21 @@ impl WebRouteGenerator {
     fn build_handler_router(&self) -> TokenStream {
         let routing_fn = self.route.method.routing_fn_tokens();
         let call_parts = HandlerCallParts::from_function(&self.route.function);
-        let fn_name = &call_parts.fn_name;
+
+        let handler_body = if self.route.is_result_return {
+            self.build_result_handler_body(&call_parts)
+        } else {
+            self.build_plain_handler_body(&call_parts)
+        };
 
         if call_parts.has_params() {
             let closure_params = &call_parts.closure_params;
-            let call_args = &call_parts.call_args;
 
             quote! {
                 ::sword::internal::web::routing::#routing_fn({
                     let ctrl = std::sync::Arc::clone(&controller);
                     move |#(#closure_params),*| async move {
-                        use ::sword::internal::web::IntoResponse;
-                        ctrl.#fn_name(#(#call_args),*).await.into_response()
+                        #handler_body
                     }
                 })
             }
@@ -66,10 +69,80 @@ impl WebRouteGenerator {
                 ::sword::internal::web::routing::#routing_fn({
                     let ctrl = std::sync::Arc::clone(&controller);
                     move || async move {
-                        use ::sword::internal::web::IntoResponse;
-                        ctrl.#fn_name().await.into_response()
+                        #handler_body
                     }
                 })
+            }
+        }
+    }
+
+    fn build_plain_handler_body(&self, call_parts: &HandlerCallParts) -> TokenStream {
+        let fn_name = &call_parts.fn_name;
+        let call_args = &call_parts.call_args;
+
+        if call_parts.has_params() {
+            quote! {
+                use ::sword::internal::web::IntoResponse;
+                ctrl.#fn_name(#(#call_args),*).await.into_response()
+            }
+        } else {
+            quote! {
+                use ::sword::internal::web::IntoResponse;
+                ctrl.#fn_name().await.into_response()
+            }
+        }
+    }
+
+    fn build_result_handler_body(&self, call_parts: &HandlerCallParts) -> TokenStream {
+        let fn_name = &call_parts.fn_name;
+        let call_args = &call_parts.call_args;
+        let status = self.route.status_code;
+        let return_kind = self.route.return_kind;
+
+        let call = if call_parts.has_params() {
+            quote! { ctrl.#fn_name(#(#call_args),*).await }
+        } else {
+            quote! { ctrl.#fn_name().await }
+        };
+
+        let ok_arm = match return_kind {
+            ReturnKind::Passthrough => {
+                quote! {
+                    Ok(__data) => {
+                        use ::sword::internal::web::IntoResponse;
+                        __data.into_response()
+                    }
+                }
+            }
+            ReturnKind::Serialize => {
+                quote! {
+                    Ok(__data) => {
+                        use ::sword::internal::web::IntoResponse;
+                        ::sword::web::JsonResponse::status(#status).data(__data).into_response()
+                    }
+                }
+            }
+            ReturnKind::Empty => {
+                quote! {
+                    Ok(_) => {
+                        use ::sword::internal::web::IntoResponse;
+                        ::sword::web::JsonResponse::status(#status).into_response()
+                    }
+                }
+            }
+        };
+
+        let err_arm = quote! {
+            Err(__err) => {
+                use ::sword::internal::web::IntoResponse;
+                __err.into_response()
+            }
+        };
+
+        quote! {
+            match #call {
+                #ok_arm,
+                #err_arm,
             }
         }
     }
