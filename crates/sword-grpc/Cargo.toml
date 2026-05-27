@@ -19,7 +19,6 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-tokio = { workspace = true }
 tonic = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 tonic-health = { workspace = true }

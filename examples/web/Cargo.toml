@@ -10,6 +10,7 @@ validator = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+sword-layers = { workspace = true, features = ["compression", "cors"] }
 
 uuid = { workspace = true }
 sqlx = { workspace = true }

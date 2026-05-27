@@ -1,6 +1,7 @@
 #![allow(clippy::new_ret_no_self)]
 
-pub mod layer_stack;
+use std::any::Any;
+use thisconfig::Config;
 
 #[cfg(feature = "body-limit")]
 pub mod body_limit {
@@ -56,3 +57,13 @@ pub mod timeout;
 pub trait DisplayConfig {
     fn display(&self);
 }
+
+type LayerRegistrarFn = fn(&Config) -> Box<dyn FnOnce(&mut dyn Any) + Send>;
+
+pub struct SwordLayerRegistrar {
+    pub name: &'static str,
+    pub register: LayerRegistrarFn,
+    pub display: fn(&Config),
+}
+
+inventory::collect!(SwordLayerRegistrar);

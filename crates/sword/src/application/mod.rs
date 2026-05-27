@@ -75,8 +75,8 @@ impl Application {
 
         tracing::info!(
             target: "sword.startup.app",
-            name = app_config.name.as_deref().unwrap_or("unknown"),
-            environment = app_config.environment.as_deref().unwrap_or("unknown"),
+            name = app_config.name.as_deref().unwrap_or("none"),
+            environment = app_config.environment.as_deref().unwrap_or("none"),
             graceful_shutdown = app_config.graceful_shutdown,
             "Starting Sword application"
         );
@@ -97,7 +97,7 @@ impl Application {
 
     #[allow(irrefutable_let_patterns)]
     #[cfg(any(feature = "web", feature = "socketio"))]
-    pub fn router(&self) -> axum::Router {
+    pub fn router(&self) -> sword_web::internal::AxumRouter {
         #[cfg(any(feature = "web", feature = "socketio"))]
         if let ApplicationEngine::Web(app) = &self.engine {
             return app.router();

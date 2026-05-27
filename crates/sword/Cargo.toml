@@ -19,7 +19,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 tokio = { workspace = true }
-axum = { workspace = true }
 
 sword-core = { workspace = true }
 sword-layers = { workspace = true, features = ["tracing"] }
@@ -28,10 +27,6 @@ sword-web = { workspace = true, optional = true }
 sword-grpc = { workspace = true, optional = true }
 sword-socketio = { workspace = true, optional = true }
 
-serde = { workspace = true }
-validator = { workspace = true, optional = true }
-
-tower = { workspace = true }
 tracing = { workspace = true }
 inventory = { workspace = true }
 futures-lite = { workspace = true }
@@ -50,6 +45,6 @@ grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
 
 web-multipart = ["sword-web/multipart"]
 web-swagger-ui = ["sword-web/swagger-ui"]
-validation-validator = ["dep:validator", "sword-web/validation-validator", "sword-socketio?/validation-validator"]
+validation-validator = ["sword-web/validation-validator", "sword-socketio?/validation-validator"]
 
 hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]

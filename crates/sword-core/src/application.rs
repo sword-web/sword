@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::LayerStack;
 use crate::{Config, ConfigItem, ConfigRegistrar, ControllerRegistry, State, inventory_submit};
-use sword_layers::layer_stack::LayerStack;
 
 /// Configuration structure for the Sword application.
 ///

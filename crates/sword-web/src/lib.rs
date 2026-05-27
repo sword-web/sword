@@ -36,6 +36,9 @@ pub mod prelude {
 
     #[cfg(feature = "multipart")]
     pub use bytes::*;
+
+    pub use axum::body::Bytes as BodyBytes;
+    pub use axum::http::{HeaderMap as Headers, Method, Uri};
 }
 
 #[doc(hidden)]
@@ -51,6 +54,8 @@ pub mod internal {
         options as options_fn, patch, patch as patch_fn, post, post as post_fn, put, put as put_fn,
         trace, trace as trace_fn,
     };
+
+    pub use tower::{Layer as TowerLayer, Service as TowerService};
 
     pub use crate::controller::{RouteRegistrar, WebController, WebControllerRegistrar};
 }

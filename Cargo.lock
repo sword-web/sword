@@ -387,31 +387,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bon"
-version = "3.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f47dbe92550676ee653353c310dfb9cf6ba17ee70396e1f7cf0a2020ad49b2fe"
-dependencies = [
- "bon-macros",
- "rustversion",
-]
-
-[[package]]
-name = "bon-macros"
-version = "3.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "519bd3116aeeb42d5372c29d982d16d0170d3d4a5ed85fc7dd91642ffff3c67c"
-dependencies = [
- "darling 0.23.0",
- "ident_case",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "borsh"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -738,18 +713,8 @@ version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7f46116c46ff9ab3eb1597a45688b6715c6e628b5c133e288e709a29bcb4ee"
 dependencies = [
- "darling_core 0.20.11",
- "darling_macro 0.20.11",
-]
-
-[[package]]
-name = "darling"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25ae13da2f202d56bd7f91c25fba009e7717a1e4a1cc98a76d844b65ae912e9d"
-dependencies = [
- "darling_core 0.23.0",
- "darling_macro 0.23.0",
+ "darling_core",
+ "darling_macro",
 ]
 
 [[package]]
@@ -767,36 +732,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "darling_core"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9865a50f7c335f53564bb694ef660825eb8610e0a53d3e11bf1b0d3df31e03b0"
-dependencies = [
- "ident_case",
- "proc-macro2",
- "quote",
- "strsim",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "darling_macro"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc34b93ccb385b40dc71c6fceac4b2ad23662c7eeb248cf10d529b7e055b6ead"
 dependencies = [
- "darling_core 0.20.11",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "darling_macro"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac3984ec7bd6cfa798e62b4a642426a5be0e68f9401cfc2a01e3fa9ea2fcdb8d"
-dependencies = [
- "darling_core 0.23.0",
+ "darling_core",
  "quote",
  "syn 2.0.117",
 ]
@@ -3280,11 +3221,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "sword"
 version = "0.2.2"
 dependencies = [
- "axum",
  "dioxus-devtools",
  "futures-lite",
  "inventory",
- "serde",
  "subsecond",
  "sword-core",
  "sword-grpc",
@@ -3294,21 +3233,20 @@ dependencies = [
  "sword-web",
  "tokio",
  "toml",
- "tower",
  "tracing",
- "validator",
 ]
 
 [[package]]
 name = "sword-core"
 version = "0.2.2"
 dependencies = [
+ "axum",
  "inventory",
  "parking_lot",
  "serde",
- "sword-layers",
  "thisconfig",
  "tokio",
+ "tower",
  "tracing",
 ]
 
@@ -3321,7 +3259,6 @@ dependencies = [
  "sword-core",
  "sword-layers",
  "sword-macros",
- "tokio",
  "tokio-stream",
  "tonic",
  "tonic-async-interceptor",
@@ -3370,8 +3307,10 @@ dependencies = [
  "axum-helmet",
  "axum_responses",
  "byte-unit",
+ "inventory",
  "serde",
  "serde_json",
+ "sword-core",
  "thisconfig",
  "tower",
  "tower-cookies",
@@ -3390,7 +3329,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
- "toml",
 ]
 
 [[package]]
@@ -3448,7 +3386,6 @@ version = "0.2.2"
 dependencies = [
  "axum",
  "axum-test",
- "bon",
  "bytes",
  "chrono",
  "form_urlencoded",
@@ -3463,9 +3400,9 @@ dependencies = [
  "sword-macros",
  "thiserror",
  "tokio",
+ "tower",
  "tower-http",
  "tracing",
- "utoipa",
  "utoipa-swagger-ui",
  "validator",
 ]
@@ -3480,6 +3417,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "sword",
+ "sword-layers",
  "thiserror",
  "tracing",
  "uuid",
@@ -4255,7 +4193,7 @@ version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7df16e474ef958526d1205f6dda359fdfab79d9aa6d54bafcb92dcd07673dca"
 dependencies = [
- "darling 0.20.11",
+ "darling",
  "once_cell",
  "proc-macro-error2",
  "proc-macro2",

@@ -3,16 +3,17 @@
 //! This module defines CORS configuration and conversion into
 //! `tower_http::cors::CorsLayer` for controlling cross-origin policies.
 
-use crate::DisplayConfig;
+use crate::{DisplayConfig, SwordLayerRegistrar};
 
 use axum::http::{HeaderName, HeaderValue, Method};
 use serde::{Deserialize, Serialize};
+use thisconfig::Config;
 use thisconfig::{ConfigItem, TimeConfig};
 use tower_http::cors::Any;
 
 pub use tower_http::cors::CorsLayer;
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CorsConfig {
     /// A list of allowed origins for cross-origin requests.
@@ -39,19 +40,41 @@ pub struct CorsConfig {
     pub display: bool,
 }
 
+impl Default for CorsConfig {
+    fn default() -> Self {
+        Self {
+            allow_origins: Some(vec!["*".into()]),
+            allow_methods: Some(vec![
+                "GET".into(),
+                "POST".into(),
+                "PUT".into(),
+                "DELETE".into(),
+                "PATCH".into(),
+                "OPTIONS".into(),
+                "HEAD".into(),
+            ]),
+            allow_headers: Some(vec!["*".into()]),
+            allow_credentials: None,
+            max_age: None,
+            display: false,
+        }
+    }
+}
+
 impl DisplayConfig for CorsConfig {
     fn display(&self) {
         if !self.display {
             return;
         }
-        tracing::info!(
+
+        tracing::debug!(
             target: "sword.layers.cors",
             allow_origins = ?self.allow_origins,
             allow_methods = ?self.allow_methods,
             allow_headers = ?self.allow_headers,
             allow_credentials = self.allow_credentials,
             max_age = ?self.max_age.as_ref().map(|value| &value.raw),
-            "CORS configuration"
+            "CORS layer configuration"
         );
     }
 }
@@ -110,5 +133,23 @@ impl From<CorsConfig> for CorsLayer {
 impl ConfigItem for CorsConfig {
     fn key() -> &'static str {
         "cors"
+    }
+}
+
+inventory::submit! {
+    SwordLayerRegistrar {
+        name: "cors",
+        register: |config: &Config| {
+            let layer: CorsLayer = config.get_or_default::<CorsConfig>().into();
+            Box::new(move |any: &mut dyn std::any::Any| {
+                let stack = any
+                    .downcast_mut::<sword_core::LayerStack<sword_core::State>>()
+                    .expect("SwordLayerRegistrar: expected LayerStack<State>");
+                stack.push(layer);
+            })
+        },
+        display: |config: &Config| {
+            config.get_or_default::<CorsConfig>().display();
+        },
     }
 }

@@ -1,15 +1,14 @@
 use crate::application::Application;
 
-use axum::{extract::Request as AxumRequest, response::IntoResponse, routing::Route};
-use std::convert::Infallible;
-use std::path::Path;
-use sword_core::*;
-use sword_layers::{
-    layer_stack::LayerStack,
-    tracing::{TracingConfig, TracingSubscriber},
+#[cfg(any(feature = "web", feature = "socketio"))]
+use sword_web::internal::{
+    AxumRequest, IntoResponse, TowerLayer as Layer, TowerService as Service, routing::Route,
 };
 
-use tower::{Layer, Service};
+use std::any::Any;
+use std::path::Path;
+use sword_core::*;
+use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
 pub struct ApplicationBuilder {
     state: State,
@@ -96,6 +95,7 @@ impl ApplicationBuilder {
         self
     }
 
+    #[cfg(any(feature = "web", feature = "socketio"))]
     /// Adds a `tower::Layer` to the application builder.
     ///
     /// This method is equivalent to Axum's `Router::layer` method, allowing you to
@@ -109,7 +109,7 @@ impl ApplicationBuilder {
         L: Layer<Route> + Clone + Send + Sync + 'static,
         L::Service: Service<AxumRequest> + Clone + Send + Sync + 'static,
         <L::Service as Service<AxumRequest>>::Response: IntoResponse + 'static,
-        <L::Service as Service<AxumRequest>>::Error: Into<Infallible> + 'static,
+        <L::Service as Service<AxumRequest>>::Error: Into<std::convert::Infallible> + 'static,
         <L::Service as Service<AxumRequest>>::Future: Send + 'static,
     {
         self.layer_stack.push(layer);
@@ -132,7 +132,7 @@ impl ApplicationBuilder {
     ///
     /// This method ends the builder pattern and constructs the final `Application`
     /// instance ready to run.
-    pub fn build(self) -> Application {
+    pub fn build(mut self) -> Application {
         // Runtime check — fires only if both features are enabled AND build() is called.
         // This preserves dev experience for users who enable all features in their IDE.
         if cfg!(feature = "grpc") && (cfg!(feature = "web") || cfg!(feature = "socketio")) {
@@ -174,6 +174,20 @@ impl ApplicationBuilder {
 
         for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
             register(&self.state);
+        }
+
+        for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
+            let display_fn = registrar.display;
+            let push_layer_fn = (registrar.register)(&self.config);
+
+            tracing::info!(
+                target: "sword.layers",
+                name = registrar.name,
+                "Layer registered"
+            );
+
+            display_fn(&self.config);
+            push_layer_fn(&mut self.layer_stack as &mut dyn Any);
         }
 
         #[allow(unused_variables)]
