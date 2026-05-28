@@ -4,6 +4,10 @@
 
 ### Added
 
+- `SwordServiceRegistrar` — auto-registration system for services (parallel to `SwordLayerRegistrar`). Services are mounted directly into the router via `inventory`, not layered.
+- `ServeDir` now auto-registers via `SwordServiceRegistrar` when `sword-layers/servedir` is enabled. It nests at the configured `router-path` (default `/static`) without manual setup.
+- Route macros (`#[get]`, `#[post]`, etc.) now auto-detect the return type and wrap `Ok(T)` in `JsonResponse` with the correct status code (POST=201, other methods=200). Supports `Result<T, JsonResponse>`, `WebResult<T>`, and plain return types.
+
 - Added `StreamRequest` extractor and stream interceptor traits (`OnRequestStream`, `OnRequestStreamWithConfig`) for non-buffered request handling.
 - Added app type feature naming foundation: `web-controllers` and `grpc-controllers`.
 
@@ -31,6 +35,9 @@
 - Added `Interceptor` trait for creating custom interceptors that can access and modify requests and responses.
 
 ### Changed
+
+- **BREAKING:** Route macros now generate a `match` over the handler result — `Ok(T)` is wrapped in `JsonResponse` based on `T`'s classification. Handlers that returned `JsonResponse` directly (Passthrough) are unaffected.
+- `DisplayConfig` for `ServeDirConfig` lowered from `info!` to `debug!` to reduce production noise.
 
 - Aligned current naming across docs/examples/changelog: engine config now lives in `[web]`, `[grpc]`, and `[socketio]`, the router prefix key is `router-prefix`, Socket.IO transport configuration uses `transports`, and Sword terminology now distinguishes Tower `layers` from typed `interceptors`.
 - **BREAKING:** Renamed web interceptor return alias from `HttpInterceptorResult` to `WebInterceptorResult`.
