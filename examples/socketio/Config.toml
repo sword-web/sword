@@ -10,7 +10,7 @@ router-prefix = "/api"
 
 [socketio]
 parser = "common"
-transports = ["websocket", "polling"]
+transports = ["websocket"]
 
 [tracing]
 enabled = true
@@ -22,6 +22,6 @@ with-fields = []
 [cors]
 allow-origins = ["http://localhost:5173"]
 allow-methods = ["GET", "POST", "OPTIONS"]
-allow-headers = ["Content-Type", "Authorization"]
+allow-headers = ["Content-Type", "Authorization", "x-custom-header"]
 allow-credentials = true
 display = true

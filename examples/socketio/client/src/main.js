@@ -26,6 +26,10 @@ const inputEl = document.querySelector("#messageInput");
 
 const socket = io("http://localhost:8081/chat", {
     path: "/api/socket.io",
+    transports: ["websocket"],
+    auth: {
+        "auth_key": "custom_auth_value"
+    }
 });
 
 function setStatus(text, cssClass) {
