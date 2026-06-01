@@ -172,11 +172,13 @@ impl Request {
         ))
     }
 
-    // pub const fn params(&self) -> Result<&HashMap<String, String>, RequestError> {
-    //     let params = self.uri.path_and_query().ok_or(
-
-    //     )
-    // }
+    /// Returns a reference to the path parameters extracted from the request URL.
+    ///
+    /// Path parameters are extracted from route patterns (e.g., `/users/{id}`)
+    /// and populated automatically by Axum's path extractor.
+    pub fn params(&self) -> &HashMap<String, String> {
+        &self.params
+    }
 
     /// Deserializes the request body from JSON to a specific type.
     ///
