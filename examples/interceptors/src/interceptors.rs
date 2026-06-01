@@ -59,7 +59,10 @@ impl OnConnect for SocketAuditInterceptor {
     type Error = String;
 
     async fn on_connect(&self, socket: SocketContext) -> Result<(), Self::Error> {
-        println!("[SocketIO] - Audit interceptor for Socket ID: {}", socket.id());
+        println!(
+            "[SocketIO] - Audit interceptor for Socket ID: {}",
+            socket.id()
+        );
 
         Ok(())
     }
