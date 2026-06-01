@@ -24,25 +24,25 @@ pub struct EventsController;
 
 impl EventsController {
     #[on("connection")]
-    async fn on_connect_method(&self, ctx: SocketContext) {
-        println!("Client connected: {}", ctx.id());
+    async fn on_connect_method(&self, socket: SocketContext) {
+        println!("Client connected: {}", socket.id());
     }
 
     #[on("event")]
-    async fn handle_message_event(&self, ctx: SocketContext) {
-        let payload: Event = ctx.try_data().expect("Failed to parse event data");
+    async fn handle_message_event(&self, socket: SocketContext) {
+        let payload: Event = socket.try_data().expect("Failed to parse event data");
 
-        println!("Received 'event' from {}: {payload:?}", ctx.id());
+        println!("Received 'event' from {}: {payload:?}", socket.id());
     }
 
     #[on("eventWithAck")]
-    async fn handle_message(&self, ctx: SocketContext) {
-        let payload: Event = ctx.try_data().expect("Failed to parse event data");
+    async fn handle_message(&self, socket: SocketContext) {
+        let payload: Event = socket.try_data().expect("Failed to parse event data");
 
-        println!("Received 'eventWithAck' from {}: {payload:?}", ctx.id());
+        println!("Received 'eventWithAck' from {}: {payload:?}", socket.id());
 
-        if ctx.has_ack() {
-            ctx.ack("ok").ok();
+        if socket.has_ack() {
+            socket.ack("ok").ok();
         }
     }
 }

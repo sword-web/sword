@@ -48,8 +48,8 @@ impl OnRequest for AnotherInterceptor {
 impl OnConnect for LoggingInterceptor {
     type Error = String;
 
-    async fn on_connect(&self, ctx: SocketContext) -> Result<(), Self::Error> {
-        println!("[SocketIO] - New connection: - Socket ID: {}", ctx.id());
+    async fn on_connect(&self, socket: SocketContext) -> Result<(), Self::Error> {
+        println!("[SocketIO] - New connection: - Socket ID: {}", socket.id());
 
         Ok(())
     }
@@ -58,8 +58,8 @@ impl OnConnect for LoggingInterceptor {
 impl OnConnect for SocketAuditInterceptor {
     type Error = String;
 
-    async fn on_connect(&self, ctx: SocketContext) -> Result<(), Self::Error> {
-        println!("[SocketIO] - Audit interceptor for Socket ID: {}", ctx.id());
+    async fn on_connect(&self, socket: SocketContext) -> Result<(), Self::Error> {
+        println!("[SocketIO] - Audit interceptor for Socket ID: {}", socket.id());
 
         Ok(())
     }

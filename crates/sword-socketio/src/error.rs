@@ -22,4 +22,11 @@ pub enum SocketError {
 
     #[error("Socket IO error: {0}")]
     Socket(#[from] socketioxide::SocketError),
+
+    #[error("Socket Deserialization error: {message} - {err} ")]
+    Deserialization {
+        message: String,
+        #[source]
+        err: Box<dyn std::error::Error>,
+    },
 }

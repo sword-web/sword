@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use socketioxide::{ParserConfig, SocketIo, TransportType, layer::SocketIoLayer};
+use socketioxide_core::Value;
+use socketioxide_core::parser::{Parse, ParserError};
 use socketioxide_parser_common::CommonParser;
 use socketioxide_parser_msgpack::MsgPackParser;
 use std::collections::HashSet;
@@ -88,6 +90,29 @@ impl FromStr for SocketIoParser {
             "common" => Ok(SocketIoParser::Common(CommonParser)),
             "msgpack" => Ok(SocketIoParser::MsgPack(MsgPackParser)),
             _ => Err(format!("invalid Socket.IO parser: {s}")),
+        }
+    }
+}
+
+impl SocketIoParser {
+    pub fn decode_value<'de, T: serde::Deserialize<'de>>(
+        self,
+        value: &'de mut Value,
+        with_event: bool,
+    ) -> Result<T, ParserError> {
+        match self {
+            SocketIoParser::Common(parser) => parser.decode_value(value, with_event),
+            SocketIoParser::MsgPack(parser) => parser.decode_value(value, with_event),
+        }
+    }
+
+    pub fn decode_default<'de, T: serde::Deserialize<'de>>(
+        self,
+        value: Option<&'de Value>,
+    ) -> Result<T, ParserError> {
+        match self {
+            SocketIoParser::Common(parser) => parser.decode_default(value),
+            SocketIoParser::MsgPack(parser) => parser.decode_default(value),
         }
     }
 }

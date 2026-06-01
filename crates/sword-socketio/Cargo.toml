@@ -37,6 +37,8 @@ socketioxide-core = "0.18.0"
 socketioxide-parser-common = "0.17.1"
 socketioxide-parser-msgpack = "0.17.1"
 
+form_urlencoded = { workspace = true }
+serde_urlencoded = { workspace = true }
 validator = { workspace = true, optional = true }
 
 [features]

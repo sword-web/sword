@@ -1,3 +1,5 @@
+#![allow(rustdoc::broken_intra_doc_links)]
+
 pub mod config;
 pub mod controller;
 pub mod error;

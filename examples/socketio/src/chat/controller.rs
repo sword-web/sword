@@ -1,4 +1,3 @@
-use serde_json::Value;
 use std::sync::Arc;
 use sword::prelude::*;
 use sword::socketio::*;
@@ -15,17 +14,17 @@ pub struct ChatController {
 
 impl ChatController {
     #[on("connection")]
-    async fn on_connect(&self, ctx: SocketContext) {
+    async fn on_connect(&self, socket: SocketContext) {
         println!("New client connected");
 
         let messages = self.db.get_all().await;
 
-        ctx.socket.emit("messages", &messages).ok();
+        socket.emit("messages", &messages).ok();
     }
 
     #[on("message")]
-    async fn handle_message(&self, ctx: SocketContext) {
-        let Ok(data) = ctx.try_validated_data::<IncommingMessageDto>() else {
+    async fn handle_message(&self, socket: SocketContext) {
+        let Ok(data) = socket.try_validated_data::<IncommingMessageDto>() else {
             eprintln!("Failed to validate message data");
             return;
         };
@@ -34,12 +33,7 @@ impl ChatController {
 
         let messages = self.db.get_all().await;
 
-        ctx.socket.emit("messages", &messages).ok();
-
-        ctx.socket
-            .broadcast()
-            .emit("messages", &messages)
-            .await
-            .ok();
+        socket.emit("messages", &messages).ok();
+        socket.broadcast().emit("messages", &messages).await.ok();
     }
 }

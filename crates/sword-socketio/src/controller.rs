@@ -1,13 +1,16 @@
 use crate::extract::SocketContext;
 pub use socketioxide::{
-    ProtocolVersion, SocketIo, TransportType,
+    ProtocolVersion, SendError, SocketIo, TransportType,
+    ack::AckStream,
     adapter::LocalAdapter,
     extract::{
         AckSender, Data, Event, Extension, HttpExtension, MaybeExtension, MaybeHttpExtension,
         SocketRef, TryData,
     },
+    operators::{BroadcastOperators, ConfOperators},
     socket::DisconnectReason,
 };
+pub use socketioxide_core::adapter::{Room, RoomParam};
 use std::any::{Any, TypeId};
 use std::future::Future;
 use std::pin::Pin;
