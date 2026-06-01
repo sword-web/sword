@@ -118,10 +118,7 @@ pub fn generate_socketio_controller_builder(
                 ::std::sync::Arc::from(message_handlers.into_boxed_slice());
 
             let base_handler = move |ctx: ::sword::socketio::SocketContext| -> ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ()> + ::std::marker::Send>> {
-                let controller = controller.clone();
                 let socket = ctx.socket_ref().clone();
-                let connection_handler = connection_handler.clone();
-                let message_handlers = message_handlers.clone();
 
                 ::std::boxed::Box::pin(async move {
                     if let Some(handler) = connection_handler {

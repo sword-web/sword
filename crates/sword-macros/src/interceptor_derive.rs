@@ -1,4 +1,4 @@
-use crate::shared::{StructFields, gen_build, gen_clone};
+use crate::shared::{StructFields, gen_build, gen_clone, gen_deps};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -36,10 +36,12 @@ pub fn generate_interceptor_builder(input: &InterceptorInput) -> TokenStream2 {
 
     let build_impl = gen_build(self_name, self_fields);
     let clone_impl = gen_clone(self_name, self_fields);
+    let deps_impl = gen_deps(self_name, self_fields);
 
     quote! {
         #build_impl
         #clone_impl
+        #deps_impl
 
         impl ::sword::internal::core::Interceptor for #self_name {}
 
