@@ -244,7 +244,10 @@ where
     ///   will be returned, and the data you attempted to send will be included in the error.
     ///   See the `max_buffer_size` key in the `[socketio]` configuration section for more information
     ///   on internal buffer configuration.
-    pub fn emit<T: Serialize>(&self, event: impl AsRef<str>, data: &T) -> Result<(), SocketError> {
+    pub fn emit<T>(&self, event: impl AsRef<str>, data: &T) -> Result<(), SocketError>
+    where
+        T: Serialize + ?Sized,
+    {
         self.socket.emit(event, data).map_err(SocketError::from)
     }
 
