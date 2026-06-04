@@ -3,7 +3,7 @@ use quote::quote;
 use syn::{Fields, Ident, Type};
 
 use super::parse::HttpErrorConfig;
-use crate::errors::MessageValue;
+use crate::errors::{format_template, MessageValue};
 
 pub struct HttpErrorCodegen;
 
@@ -63,6 +63,14 @@ impl HttpErrorCodegen {
             Some(MessageValue::Field(field_name)) => {
                 let field_ident = Ident::new(field_name, proc_macro2::Span::call_site());
                 quote! { format!("{}", #field_ident) }
+            }
+            Some(MessageValue::Interpolated(template)) => {
+                let (fmt, fields) = format_template(template);
+                let field_idents: Vec<_> = fields
+                    .iter()
+                    .map(|f| Ident::new(f, proc_macro2::Span::call_site()))
+                    .collect();
+                quote! { format!(#fmt, #(#field_idents),*) }
             }
             None => {
                 let default_message = config.default_message();

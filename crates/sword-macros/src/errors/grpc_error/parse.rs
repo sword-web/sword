@@ -200,10 +200,7 @@ fn parse_message_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<Mes
         let value = lit.value();
 
         if value.contains('{') || value.contains('}') {
-            return Err(Error::new(
-                lit.span(),
-                "message string interpolation is not supported; build the final client message before constructing the error",
-            ));
+            return Ok(MessageValue::Interpolated(value));
         }
 
         return Ok(MessageValue::Static(value));

@@ -1,7 +1,7 @@
 use syn::{Error, Fields, Ident};
 
 use super::parse::HttpErrorConfig;
-use crate::errors::MessageValue;
+use crate::errors::{extract_template_fields, MessageValue};
 
 pub struct HttpErrorValidator;
 
@@ -45,6 +45,18 @@ impl HttpErrorValidator {
                     )?;
                 }
 
+                if let Some(MessageValue::Interpolated(template)) = &config.message {
+                    for field in extract_template_fields(template) {
+                        Self::ensure_named_field_exists(
+                            enum_name,
+                            variant_name,
+                            named,
+                            &field,
+                            "message",
+                        )?;
+                    }
+                }
+
                 if let Some(field) = &config.error_field {
                     Self::ensure_named_field_exists(
                         enum_name,
@@ -74,23 +86,25 @@ impl HttpErrorValidator {
                 }
 
                 if Self::message_field_name(config).is_some()
+                    || matches!(config.message, Some(MessageValue::Interpolated(_)))
                     || config.error_field.is_some()
                     || config.errors_field.is_some()
                 {
                     return Err(Error::new_spanned(
                         variant_name,
-                        "tuple variants do not support `message = field`, `error`, or `errors`; use named fields or construct the client message before creating the error",
+                        "tuple variants do not support `message = field`, interpolated messages, `error`, or `errors`; use named fields or construct the client message before creating the error",
                     ));
                 }
             }
             Fields::Unit => {
                 if Self::message_field_name(config).is_some()
+                    || matches!(config.message, Some(MessageValue::Interpolated(_)))
                     || config.error_field.is_some()
                     || config.errors_field.is_some()
                 {
                     return Err(Error::new_spanned(
                         variant_name,
-                        "unit variants do not support field-based `message`, `error`, or `errors`",
+                        "unit variants do not support field-based or interpolated `message`, `error`, or `errors`",
                     ));
                 }
             }

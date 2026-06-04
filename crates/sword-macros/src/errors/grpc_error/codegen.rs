@@ -3,7 +3,7 @@ use quote::quote;
 use syn::{Error, Fields, Ident};
 
 use super::parse::GrpcErrorConfig;
-use crate::errors::MessageValue;
+use crate::errors::{extract_template_fields, format_template, MessageValue};
 
 pub struct GrpcErrorCodegen;
 
@@ -46,6 +46,25 @@ impl GrpcErrorCodegen {
                         ));
                     }
                 }
+
+                if let Some(MessageValue::Interpolated(template)) = &config.message {
+                    for field in extract_template_fields(template) {
+                        let exists = named
+                            .named
+                            .iter()
+                            .filter_map(|f| f.ident.as_ref())
+                            .any(|f_ident| f_ident == field.as_str());
+
+                        if !exists {
+                            return Err(Error::new_spanned(
+                                variant_name,
+                                format!(
+                                    "`message = \"{template}\"` references a missing field `{field}` on {enum_name}::{variant_name}`"
+                                ),
+                            ));
+                        }
+                    }
+                }
             }
             Fields::Unnamed(unnamed) => {
                 if unnamed.unnamed.len() != 1 {
@@ -55,18 +74,18 @@ impl GrpcErrorCodegen {
                     ));
                 }
 
-                if matches!(config.message, Some(MessageValue::Field(_))) {
+                if matches!(config.message, Some(MessageValue::Field(_) | MessageValue::Interpolated(_))) {
                     return Err(Error::new_spanned(
                         variant_name,
-                        "tuple variants do not support `message = field`; use a named-field variant or build the final client message before creating the error",
+                        "tuple variants do not support `message = field` or interpolated messages; use a named-field variant or build the final client message before creating the error",
                     ));
                 }
             }
             Fields::Unit => {
-                if matches!(config.message, Some(MessageValue::Field(_))) {
+                if matches!(config.message, Some(MessageValue::Field(_) | MessageValue::Interpolated(_))) {
                     return Err(Error::new_spanned(
                         variant_name,
-                        "unit variants do not support field-based `message`",
+                        "unit variants do not support field-based or interpolated `message`",
                     ));
                 }
             }
@@ -151,6 +170,14 @@ impl GrpcErrorCodegen {
             Some(MessageValue::Field(field_name)) => {
                 let field_ident = Ident::new(field_name, Span::call_site());
                 quote! { format!("{}", #field_ident) }
+            }
+            Some(MessageValue::Interpolated(template)) => {
+                let (fmt, fields) = format_template(template);
+                let field_idents: Vec<_> = fields
+                    .iter()
+                    .map(|f| Ident::new(f, Span::call_site()))
+                    .collect();
+                quote! { format!(#fmt, #(#field_idents),*) }
             }
             None => match fields {
                 Fields::Unnamed(_) => quote! { format!("{}", _inner) },
