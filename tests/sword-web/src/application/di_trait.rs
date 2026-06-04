@@ -9,7 +9,7 @@ use sword::web::*;
 use super::di::Database;
 use crate::{application_builder, test_server};
 
-#[sword::contract]
+#[contract]
 pub trait TaskRepository {
     async fn find_all(&self) -> Vec<Value>;
     async fn create(&self, task: Value);
@@ -20,7 +20,7 @@ pub struct DatabaseTaskRepository {
     db: Database,
 }
 
-#[sword::contract]
+#[contract]
 impl TaskRepository for DatabaseTaskRepository {
     async fn find_all(&self) -> Vec<Value> {
         self.db.get_all("tasks").await.unwrap_or_default()

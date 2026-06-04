@@ -711,8 +711,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## On trait implementations
 ///
-/// Registers the concrete type as an injectable binding for the trait,
-/// eliminating the need for `#[injectable(as = dyn Trait)]`. If the
+/// Registers the concrete type as an injectable binding for the trait. If the
 /// implementation contains `async fn`, `#[async_trait::async_trait]` is
 /// applied automatically.
 ///
@@ -724,12 +723,6 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
 ///     async fn find_all(&self) -> Vec<Value> { /* ... */ }
 /// }
 /// ```
-///
-/// ## On inherent impl blocks → compile error
-///
-/// `#[contract]` is only valid on trait‑related items. Using it on an
-/// inherent `impl Struct { }` produces a clear compile‑time error.
-///
 /// ## How it works
 ///
 /// For trait implementations, the macro generates an

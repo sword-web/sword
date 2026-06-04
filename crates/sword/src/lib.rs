@@ -13,7 +13,6 @@ pub use sword_socketio::prelude as socketio;
 pub use sword_grpc::prelude as grpc;
 
 pub use application::*;
-pub use async_trait::async_trait;
 pub use sword_core::Module;
 pub use sword_macros::contract;
 pub use sword_macros::main;
