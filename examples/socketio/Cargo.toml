@@ -11,4 +11,3 @@ serde = { workspace = true }
 validator = { workspace = true }
 chrono = { workspace = true }
 sword-layers = { workspace = true, features = ["cors"] }
-serde_json = { workspace = true }

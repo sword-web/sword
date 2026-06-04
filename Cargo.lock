@@ -3326,7 +3326,6 @@ dependencies = [
 name = "sword-macros"
 version = "0.2.2"
 dependencies = [
- "async-trait",
  "axum",
  "proc-macro2",
  "quote",
@@ -3365,7 +3364,6 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "serde",
- "serde_json",
  "sword",
  "sword-layers",
  "tokio",
