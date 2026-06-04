@@ -17,12 +17,8 @@ pub enum AppError {
     #[error("Not found error: {message}")]
     NotFoundError { message: String },
 
-    #[http(code = 409, message = message)]
+    #[http(code = 409, message = "User with username '{value}' already exists")]
     #[tracing(error)]
     #[error("Conflict error {field} - {value}")]
-    UserConflictError {
-        message: String,
-        field: String,
-        value: String,
-    },
+    UserConflictError { field: String, value: String },
 }

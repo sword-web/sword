@@ -17,14 +17,12 @@ pub struct UsersController {
 
 impl UsersController {
     #[get("/")]
-    async fn get_users(&self, req: Request) -> WebResult<JsonResponse> {
-        let data = self.users.find_all().await?;
-
-        Ok(JsonResponse::Ok().data(data).request_id(req.id()))
+    async fn get_users(&self, _: Request) -> WebResult<Vec<User>> {
+        Ok(self.users.find_all().await?)
     }
 
     #[post("/")]
-    async fn create_user(&self, req: Request) -> WebResult {
+    async fn create_user(&self, req: Request) -> WebResult<User> {
         let body = req.body_validator::<CreateUserDto>()?;
         let user = User::new(body.username, self.hasher.hash(&body.password)?);
 
@@ -34,16 +32,12 @@ impl UsersController {
                 user.username
             );
 
-            return Err(AppError::UserConflictError(
-                format!("User with username '{}' already exists", user.username),
-                "username",
-                &user.username,
-            ))?;
+            return Err(AppError::UserConflictError("username", &user.username))?;
         }
 
         self.users.save(&user).await?;
 
-        Ok(JsonResponse::Created().message("User created").data(user))
+        Ok(user)
     }
 
     #[put("/{id}")]
