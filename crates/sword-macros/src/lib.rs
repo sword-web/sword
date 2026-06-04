@@ -1,5 +1,6 @@
 #![allow(irrefutable_let_patterns)]
 
+mod contract_ext;
 mod controllers;
 
 mod core;
@@ -684,6 +685,64 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     output.into()
+}
+
+/// Declares a DI‑ready contract: a trait definition or trait implementation.
+///
+/// ## On trait definitions
+///
+/// Automatically adds `Send + Sync + 'static` supertraits to make the trait
+/// usable with `Arc<dyn Trait>` in dependency injection. If the trait contains
+/// `async fn`, it also applies `#[async_trait::async_trait]`.
+///
+/// ```rust,ignore
+/// use sword::contract;
+///
+/// #[contract]
+/// pub trait TaskRepository {
+///     async fn find_all(&self) -> Vec<Value>;
+/// }
+///
+/// #[contract]
+/// pub trait UserRepository {
+///     fn find_by_id(&self, id: Uuid) -> User;
+/// }
+/// ```
+///
+/// ## On trait implementations
+///
+/// Registers the concrete type as an injectable binding for the trait,
+/// eliminating the need for `#[injectable(as = dyn Trait)]`. If the
+/// implementation contains `async fn`, `#[async_trait::async_trait]` is
+/// applied automatically.
+///
+/// ```rust,ignore
+/// use sword::contract;
+///
+/// #[contract]
+/// impl TaskRepository for DatabaseTaskRepository {
+///     async fn find_all(&self) -> Vec<Value> { /* ... */ }
+/// }
+/// ```
+///
+/// ## On inherent impl blocks → compile error
+///
+/// `#[contract]` is only valid on trait‑related items. Using it on an
+/// inherent `impl Struct { }` produces a clear compile‑time error.
+///
+/// ## How it works
+///
+/// For trait implementations, the macro generates an
+/// `inventory::submit! { TraitBindingRegistrar { ... } }` that registers
+/// the trait‑to‑concrete binding at program start. If the concrete type
+/// is not registered as a component or provider (via `#[injectable]`),
+/// the binding is automatically skipped at build time.
+///
+/// The `#[injectable]` registration is still required on the struct —
+/// `#[contract]` only adds the trait binding, not the concrete type's lifecycle.
+#[proc_macro_attribute]
+pub fn contract(attr: TokenStream, item: TokenStream) -> TokenStream {
+    contract_ext::expand(attr, item)
 }
 
 #[cfg(feature = "socketio-controllers")]

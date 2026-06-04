@@ -13,34 +13,47 @@ pub struct InjectableInput {
     pub fields: Vec<(Ident, Type)>,
     pub derive_clone: bool,
     pub kind: InjectableKind,
+    pub trait_as: Option<Type>,
 }
 
 struct InjectableArgs {
     kind: InjectableKind,
     derive_clone: bool,
+    trait_as: Option<Type>,
 }
 
 impl Parse for InjectableArgs {
     fn parse(input: ParseStream) -> ParseResult<Self> {
         let mut kind = InjectableKind::Component;
         let mut derive_clone = true;
+        let mut trait_as = None;
 
         if input.is_empty() {
-            return Ok(Self { kind, derive_clone });
+            return Ok(Self {
+                kind,
+                derive_clone,
+                trait_as,
+            });
         }
 
         while !input.is_empty() {
-            let arg: Ident = input.parse()?;
+            if input.peek(Token![as]) {
+                input.parse::<Token![as]>()?;
+                input.parse::<Token![=]>()?;
+                trait_as = Some(input.parse()?);
+            } else {
+                let arg: Ident = input.parse()?;
 
-            match arg.to_string().as_str() {
-                "provider" => kind = InjectableKind::Provider,
-                "component" => kind = InjectableKind::Component,
-                "no_derive_clone" => derive_clone = false,
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        arg,
-                        "Unknown attribute. Use 'provider', 'component', or 'no_derive_clone'",
-                    ));
+                match arg.to_string().as_str() {
+                    "provider" => kind = InjectableKind::Provider,
+                    "component" => kind = InjectableKind::Component,
+                    "no_derive_clone" => derive_clone = false,
+                    _ => {
+                        return Err(syn::Error::new_spanned(
+                            arg,
+                            "Unknown attribute. Use 'provider', 'component', 'no_derive_clone', or 'as = dyn Trait'",
+                        ));
+                    }
                 }
             }
 
@@ -49,7 +62,11 @@ impl Parse for InjectableArgs {
             }
         }
 
-        Ok(Self { kind, derive_clone })
+        Ok(Self {
+            kind,
+            derive_clone,
+            trait_as,
+        })
     }
 }
 
@@ -65,5 +82,6 @@ pub fn parse_injectable_input(
         fields: StructFields::parse(&input)?,
         derive_clone: args.derive_clone,
         kind: args.kind,
+        trait_as: args.trait_as,
     })
 }

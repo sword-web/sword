@@ -42,14 +42,26 @@ fn is_std_arc_path(path: &syn::Path) -> bool {
     }
 }
 
+fn is_trait_object(ty: &Type) -> bool {
+    matches!(ty, Type::TraitObject(_))
+}
+
 pub fn generate_field_extractions(fields: &[(Ident, Type)]) -> TokenStream {
     let extractions = fields.iter().map(|(field_name, field_type)| {
         match extract_arc_inner_type(field_type) {
+            Some(inner_type) if is_trait_object(inner_type) => {
+                quote! {
+                    let #field_name = {
+                        let __injectable = <::sword::internal::core::InjectableTrait::<#inner_type> as ::sword::internal::core::FromState>::from_state(state)?;
+                        __injectable.0
+                    };
+                }
+            }
             Some(_inner_type) => {
                 quote! {
                     let #field_name = <#field_type as ::sword::internal::core::FromStateArc>::from_state_arc(state)?;
                 }
-            },
+            }
             None => {
                 quote! {
                     let #field_name = <#field_type as ::sword::internal::core::FromState>::from_state(state)?;
@@ -129,7 +141,11 @@ pub fn gen_clone(name: &Ident, fields: &[(Ident, Type)]) -> TokenStream {
 pub fn gen_deps(name: &Ident, fields: &[(Ident, Type)]) -> TokenStream {
     let dep_types = fields.iter().map(|(_, field_type)| {
         if let Some(inner_type) = extract_arc_inner_type(field_type) {
-            quote! { ::std::any::TypeId::of::<#inner_type>() }
+            if is_trait_object(inner_type) {
+                quote! { ::std::any::TypeId::of::<::sword::internal::core::InjectableTrait::<#inner_type>>() }
+            } else {
+                quote! { ::std::any::TypeId::of::<#inner_type>() }
+            }
         } else {
             quote! { ::std::any::TypeId::of::<#field_type>() }
         }

@@ -85,6 +85,10 @@ impl State {
     pub fn insert_instance(&self, type_id: TypeId, instance: Arc<dyn Any + Send + Sync>) {
         self.inner.write().insert(type_id, instance);
     }
+
+    pub fn has_type_id(&self, type_id: TypeId) -> bool {
+        self.inner.read().contains_key(&type_id)
+    }
 }
 
 impl Default for State {

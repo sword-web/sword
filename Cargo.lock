@@ -3221,6 +3221,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "sword"
 version = "0.2.2"
 dependencies = [
+ "async-trait",
  "dioxus-devtools",
  "futures-lite",
  "inventory",
@@ -3325,6 +3326,7 @@ dependencies = [
 name = "sword-macros"
 version = "0.2.2"
 dependencies = [
+ "async-trait",
  "axum",
  "proc-macro2",
  "quote",

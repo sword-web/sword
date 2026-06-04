@@ -19,6 +19,29 @@ pub fn expand_injectable(attr: TokenStream, item: TokenStream) -> syn::Result<To
 
     let clone_impl = gen_clone(&parsed.struct_name, &parsed.fields);
 
+    let trait_binding = parsed.trait_as.as_ref().map(|trait_type| {
+        let struct_name = &parsed.struct_name;
+        quote! {
+            ::sword::internal::inventory::submit! {
+                ::sword::internal::core::TraitBindingRegistrar {
+                    register: |container: &::sword::internal::core::DependencyContainer| {
+                        container.register_trait_binding(
+                            ::std::any::TypeId::of::<::sword::internal::core::InjectableTrait::<#trait_type>>(),
+                            ::std::any::TypeId::of::<#struct_name>(),
+                            Box::new(|state: &::sword::internal::core::State| {
+                                let concrete: ::std::sync::Arc<#struct_name> = state.borrow::<#struct_name>()?;
+                                let trait_obj: ::std::sync::Arc<#trait_type> = concrete;
+                                Ok(::std::sync::Arc::new(
+                                    ::sword::internal::core::InjectableTrait(trait_obj)
+                                ) as ::std::sync::Arc<dyn ::std::any::Any + ::std::marker::Send + ::std::marker::Sync>)
+                            }),
+                        );
+                    },
+                }
+            }
+        }
+    });
+
     let mut expanded = quote! {
         #input
         #injectable_impl
@@ -28,6 +51,10 @@ pub fn expand_injectable(attr: TokenStream, item: TokenStream) -> syn::Result<To
         expanded.extend(quote! {
             #clone_impl
         });
+    }
+
+    if let Some(trait_binding) = trait_binding {
+        expanded.extend(trait_binding);
     }
 
     Ok(expanded.into())
