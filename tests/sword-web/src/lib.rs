@@ -36,6 +36,7 @@ mod interceptors {
 mod application {
     mod config;
     mod di;
+    mod di_trait;
 }
 
 #[cfg(test)]
