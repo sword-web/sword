@@ -3,11 +3,12 @@ use sword::prelude::*;
 use sword::socketio::*;
 
 use crate::{
-    chat::{IncommingMessageDto, Message},
+    chat::{ChatInterceptor, IncommingMessageDto, Message},
     database::Database,
 };
 
 #[controller(kind = Controller::SocketIo, namespace = "/chat")]
+#[interceptor(ChatInterceptor)]
 pub struct ChatController {
     db: Arc<Database>,
 }

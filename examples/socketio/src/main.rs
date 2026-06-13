@@ -8,7 +8,7 @@ use sword::prelude::*;
 async fn main() {
     let database = Database::new();
 
-    let app = Application::builder()
+    let app = Application::from_config_path("Config.toml")
         .with_module::<ChatModule>()
         .with_provider(database)
         .build();

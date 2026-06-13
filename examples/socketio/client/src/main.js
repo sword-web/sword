@@ -24,12 +24,15 @@ const messagesEl = document.querySelector("#messages");
 const composerEl = document.querySelector("#composer");
 const inputEl = document.querySelector("#messageInput");
 
+document.cookie = "CHAT_EXAMPLE_COOKIE=HELLO_CHAT_EXAMPLE_COOKIE; path=/";
+
 const socket = io("http://localhost:8081/chat", {
     path: "/api/socket.io",
     transports: ["websocket"],
     auth: {
         "auth_key": "custom_auth_value"
-    }
+    },
+    withCredentials: true,
 });
 
 function setStatus(text, cssClass) {
@@ -67,6 +70,11 @@ socket.on("disconnect", () => {
 
 socket.on("messages", (messages) => {
     renderMessages(messages);
+});
+
+socket.on("connect_error", (err) => {
+    console.error("Connection error:", err.message);
+    setStatus(`error: ${err.message}`, "status-disconnected");
 });
 
 composerEl.addEventListener("submit", (event) => {

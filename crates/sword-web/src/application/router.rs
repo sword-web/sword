@@ -46,6 +46,7 @@ impl WebApplicationRouter {
             router = extension.extend_router(&extension_ctx, router);
         }
 
+        router = router.layer(CookieManagerLayer::new());
         router = self.layer_stack.apply(router);
 
         router = router.route(
@@ -162,7 +163,6 @@ impl WebApplicationRouter {
         ));
 
         router = router.layer(RequestIdLayer::new());
-        router = router.layer(CookieManagerLayer::new());
 
         router
     }

@@ -3366,6 +3366,7 @@ dependencies = [
  "sword",
  "sword-layers",
  "tokio",
+ "tracing",
  "uuid",
  "validator",
 ]

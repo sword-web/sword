@@ -22,6 +22,7 @@ use socketioxide_core::{
     adapter::{Room, RoomParam},
     parser::ParseError,
 };
+use sword_web::prelude::Cookies;
 
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
@@ -361,6 +362,21 @@ where
     /// See [SocketRef::ns](https://docs.rs/socketioxide/latest/socketioxide/extract/struct.SocketRef.html#method.ns) for full documentation.
     pub fn ns(&self) -> &str {
         self.socket.ns()
+    }
+
+    /// Access cookies from the initial HTTP handshake request.
+    ///
+    /// **Reading** works in all handler types (connect, message, disconnect).
+    ///
+    /// **Writing** (`cookies.add(...)`, `cookies.remove(...)`) only takes effect
+    /// in **connection** handlers, where the HTTP response has not yet been sent.
+    /// In message and disconnect handlers, mutations are silently discarded
+    /// since the HTTP response has already been committed.
+    ///
+    /// Returns `None` if `CookieManagerLayer` is not present in the
+    /// layer stack (sword's default behavior)
+    pub fn cookies(&self) -> Option<&Cookies> {
+        self.http_extensions().get::<Cookies>()
     }
 
     #[doc(hidden)]
