@@ -14,7 +14,6 @@ pub use sword_grpc::prelude as grpc;
 
 pub use application::*;
 pub use sword_core::Module;
-pub use sword_macros::contract;
 pub use sword_macros::main;
 
 #[doc(hidden)]
@@ -32,7 +31,6 @@ pub mod internal {
         pub use sword_core::*;
     }
 
-    pub use async_trait;
     pub use inventory;
     pub use tokio::runtime as tokio_runtime;
     pub use toml;

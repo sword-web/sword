@@ -3,7 +3,7 @@ use quote::quote;
 use syn::{Fields, Ident, Type};
 
 use super::parse::HttpErrorConfig;
-use crate::errors::{format_template, MessageValue};
+use crate::errors::{MessageValue, format_template};
 
 pub struct HttpErrorCodegen;
 

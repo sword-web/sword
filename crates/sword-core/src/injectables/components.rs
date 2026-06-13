@@ -43,25 +43,6 @@ impl ComponentRegistry {
         self.builders.write().insert(type_id, component_builder);
     }
 
-    /// Registers a trait binding so a concrete type can be injected as
-    /// `Arc<dyn Trait>`.
-    ///
-    /// The `builder` closure must upcast from the concrete `Arc<C>` to
-    /// `Arc<InjectableTrait<T>>` (and then to `Arc<dyn Any + Send + Sync>`).
-    /// The macro generates this closure where concrete types are known.
-    pub(crate) fn register_trait_binding(
-        &self,
-        trait_type_id: TypeId,
-        concrete_type_id: TypeId,
-        builder: ComponentBuilderFn,
-    ) {
-        self.dependency_graph
-            .write()
-            .insert(trait_type_id, vec![concrete_type_id]);
-
-        self.builders.write().insert(trait_type_id, builder);
-    }
-
     pub(crate) fn get_builders(&self) -> &RwMap<TypeId, ComponentBuilderFn> {
         &self.builders
     }

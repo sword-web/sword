@@ -1,8 +1,6 @@
 #![allow(clippy::type_complexity)]
 
-use crate::{
-    ComponentRegistry, DependencyInjectionError as DIError, Injectable, ProviderRegistry, State,
-};
+use crate::{ComponentRegistry, DependencyInjectionError as DIError, ProviderRegistry, State};
 
 use std::{any::TypeId, collections::HashSet, sync::Arc};
 
@@ -40,32 +38,6 @@ impl DependencyContainer {
 
     pub fn component_registry(&self) -> &ComponentRegistry {
         &self.components
-    }
-
-    /// Registers a trait binding only if the concrete type is registered
-    /// as a component or provider. Otherwise the binding is silently skipped
-    /// to avoid leaking trait bindings across tests.
-    pub fn register_trait_binding(
-        &self,
-        trait_type_id: TypeId,
-        concrete_type_id: TypeId,
-        builder: Box<dyn Fn(&State) -> Result<Injectable, DIError>>,
-    ) {
-        let is_registered = self
-            .components
-            .get_dependency_graph()
-            .read()
-            .contains_key(&concrete_type_id)
-            || self
-                .providers
-                .get_providers()
-                .read()
-                .contains_key(&concrete_type_id);
-
-        if is_registered {
-            self.components
-                .register_trait_binding(trait_type_id, concrete_type_id, builder);
-        }
     }
 
     /// Builds all registered components in dependency order.

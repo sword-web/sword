@@ -1,7 +1,7 @@
 use syn::{Error, Fields, Ident};
 
 use super::parse::HttpErrorConfig;
-use crate::errors::{extract_template_fields, MessageValue};
+use crate::errors::{MessageValue, extract_template_fields};
 
 pub struct HttpErrorValidator;
 

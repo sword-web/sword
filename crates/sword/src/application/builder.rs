@@ -146,10 +146,6 @@ impl ApplicationBuilder {
             }
         }
 
-        for TraitBindingRegistrar { register } in inventory::iter::<TraitBindingRegistrar>() {
-            register(&self.container);
-        }
-
         self.container.build_all(&self.state).unwrap_or_else(|err| {
             match (err.dependency_path(), err.missing_dependency_path()) {
                 (Some(dependency_path), Some(missing_dependency_path)) => {

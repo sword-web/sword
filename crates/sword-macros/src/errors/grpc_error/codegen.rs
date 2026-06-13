@@ -3,7 +3,7 @@ use quote::quote;
 use syn::{Error, Fields, Ident};
 
 use super::parse::GrpcErrorConfig;
-use crate::errors::{extract_template_fields, format_template, MessageValue};
+use crate::errors::{MessageValue, extract_template_fields, format_template};
 
 pub struct GrpcErrorCodegen;
 
@@ -74,7 +74,10 @@ impl GrpcErrorCodegen {
                     ));
                 }
 
-                if matches!(config.message, Some(MessageValue::Field(_) | MessageValue::Interpolated(_))) {
+                if matches!(
+                    config.message,
+                    Some(MessageValue::Field(_) | MessageValue::Interpolated(_))
+                ) {
                     return Err(Error::new_spanned(
                         variant_name,
                         "tuple variants do not support `message = field` or interpolated messages; use a named-field variant or build the final client message before creating the error",
@@ -82,7 +85,10 @@ impl GrpcErrorCodegen {
                 }
             }
             Fields::Unit => {
-                if matches!(config.message, Some(MessageValue::Field(_) | MessageValue::Interpolated(_))) {
+                if matches!(
+                    config.message,
+                    Some(MessageValue::Field(_) | MessageValue::Interpolated(_))
+                ) {
                     return Err(Error::new_spanned(
                         variant_name,
                         "unit variants do not support field-based or interpolated `message`",
