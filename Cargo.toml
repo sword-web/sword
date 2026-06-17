@@ -15,8 +15,8 @@ ignored  = ["prost",  "tonic-prost"]
 version = "0.2.2"
 edition = "2024"
 repository = "https://github.com/sword-web/sword"
-homepage = "https://github.com/sword-web/sword"
-rust-version = "1.85"
+homepage = "https://sword-web.github.io"
+rust-version = "1.95"
 
 [workspace.dependencies]
 sword = { path = "crates/sword", default-features = false }
