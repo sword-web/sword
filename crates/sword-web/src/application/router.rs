@@ -238,8 +238,13 @@ impl WebApplicationRouter {
             urls.push(route_path);
         }
 
+        let router_path = format!(
+            "{}/docs",
+            self.web_config.router_prefix.clone().unwrap_or_default()
+        );
+
         if !urls.is_empty() {
-            router = router.merge(SwaggerUi::new("/docs").config(Config::new(urls.clone())));
+            router = router.merge(SwaggerUi::new(router_path).config(Config::new(urls.clone())));
         }
 
         router
