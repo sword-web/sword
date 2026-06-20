@@ -65,6 +65,7 @@ pub struct ControllerRegistry {
 }
 
 impl ControllerRegistry {
+    #[doc(hidden)]
     pub fn new() -> Self {
         Self {
             controllers: RwLock::new(HashMap::new()),
@@ -87,14 +88,17 @@ impl ControllerRegistry {
             .insert(C::type_id());
     }
 
+    #[doc(hidden)]
     pub fn read(&self) -> RwLockReadGuard<'_, RawRwLock, HashMap<Controller, HashSet<TypeId>>> {
         self.controllers.read()
     }
 
+    #[doc(hidden)]
     pub fn snapshot(&self) -> ControllerMap {
         self.controllers.read().clone()
     }
 
+    #[doc(hidden)]
     pub fn get_by_kind(&self, kind: Controller) -> ControllerIds {
         self.controllers
             .read()
