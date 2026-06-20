@@ -19,8 +19,6 @@ pub(crate) struct WebApplicationRouter {
 
 impl WebApplicationRouter {
     pub fn build(&mut self) -> Router<State> {
-        let mut router = Router::new();
-
         let extensions = inventory::iter::<WebExtensionRegistrar>()
             .map(|entry| entry.extension)
             .collect::<Vec<&'static dyn WebExtension>>();
@@ -35,12 +33,35 @@ impl WebApplicationRouter {
             extension.init_state(&extension_ctx);
         }
 
-        router = self.apply_web_controllers(router);
-        router = self.apply_web_layers(router);
+        // Build the API router: controllers, mandatory layers, health, OpenAPI, and services
+        // Everything goes into api_router so it's consistently under prefix when configured
+        let mut api_router = Router::new();
 
-        if let Some(prefix) = &self.web_config.router_prefix {
-            router = Router::new().nest(prefix, router);
+        api_router = self.apply_web_controllers(api_router);
+        api_router = self.apply_web_layers(api_router);
+
+        api_router = api_router.route(
+            "/health",
+            axum::routing::get(|| async { JsonResponse::Ok().message("healthy") }),
+        );
+
+        #[cfg(feature = "swagger-ui")]
+        {
+            api_router = self.apply_openapi(api_router);
         }
+
+        for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
+            tracing::info!(target: "sword.layers", name = registrar.name, "Registering service");
+            (registrar.display)(&self.config);
+            (registrar.register)(&self.config)(&mut api_router as &mut dyn std::any::Any);
+        }
+
+        // Nest the API router under the global prefix, or use it directly
+        let mut router = if let Some(prefix) = &self.web_config.router_prefix {
+            Router::new().nest(prefix, api_router)
+        } else {
+            api_router
+        };
 
         for extension in extensions {
             router = extension.extend_router(&extension_ctx, router);
@@ -48,23 +69,6 @@ impl WebApplicationRouter {
 
         router = router.layer(CookieManagerLayer::new());
         router = self.layer_stack.apply(router);
-
-        router = router.route(
-            "/health",
-            axum::routing::get(|| async { JsonResponse::Ok().message("healthy") }),
-        );
-
-        #[cfg(feature = "swagger-ui")]
-        {
-            router = self.apply_openapi(router);
-        }
-
-        for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
-            tracing::info!(target: "sword.layers", name = registrar.name, "Registering service");
-            (registrar.display)(&self.config);
-            (registrar.register)(&self.config)(&mut router as &mut dyn std::any::Any);
-        }
-
         router = router.layer(NotFoundLayer);
 
         router
@@ -176,6 +180,7 @@ impl WebApplicationRouter {
         };
 
         let mut urls: Vec<String> = Vec::new();
+        let prefix = self.web_config.router_prefix.as_deref().unwrap_or("");
 
         for spec_path in &openapi.spec_file_paths {
             let file_extension = spec_path
@@ -235,16 +240,13 @@ impl WebApplicationRouter {
                 }),
             );
 
-            urls.push(route_path);
+            // Swagger UI fetches specs from the full (potentially prefixed) path
+            urls.push(format!("{prefix}{route_path}"));
         }
 
-        let router_path = format!(
-            "{}/docs",
-            self.web_config.router_prefix.clone().unwrap_or_default()
-        );
-
+        // Swagger UI at /docs — prefix is handled by nesting into api_router
         if !urls.is_empty() {
-            router = router.merge(SwaggerUi::new(router_path).config(Config::new(urls.clone())));
+            router = router.merge(SwaggerUi::new("/docs").config(Config::new(urls.clone())));
         }
 
         router
