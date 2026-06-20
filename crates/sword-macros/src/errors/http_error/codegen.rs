@@ -197,10 +197,10 @@ impl HttpErrorCodegen {
     }
 
     fn is_string_type(ty: &Type) -> bool {
-        if let Type::Path(type_path) = ty {
-            if let Some(segment) = type_path.path.segments.last() {
-                return segment.ident == "String";
-            }
+        if let Type::Path(type_path) = ty
+            && let Some(segment) = type_path.path.segments.last()
+        {
+            return segment.ident == "String";
         }
         false
     }

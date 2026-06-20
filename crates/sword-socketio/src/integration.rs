@@ -69,12 +69,12 @@ impl WebExtension for SocketIoWebExtension {
         }
 
         let mut socketio_config = Self::get_config(&ctx.config);
-
         let web_config: WebApplicationConfig = ctx.config.get_or_default();
-        if let Some(prefix) = &web_config.router_prefix {
-            if socketio_config.req_path.is_none() {
-                socketio_config.req_path = Some(format!("{prefix}/socket.io"));
-            }
+
+        if let Some(prefix) = &web_config.router_prefix
+            && socketio_config.req_path.is_none()
+        {
+            socketio_config.req_path = Some(format!("{prefix}/socket.io"));
         }
 
         let (layer, io) = SocketIoServerLayer::new(&socketio_config);
