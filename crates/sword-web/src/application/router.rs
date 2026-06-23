@@ -46,9 +46,7 @@ impl WebApplicationRouter {
         );
 
         #[cfg(feature = "swagger-ui")]
-        {
-            api_router = self.apply_openapi(api_router);
-        }
+        let (mut api_router, openapi_urls) = self.apply_openapi_specs(api_router);
 
         for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
             tracing::info!(target: "sword.layers", name = registrar.name, "Registering service");
@@ -62,6 +60,14 @@ impl WebApplicationRouter {
         } else {
             api_router
         };
+
+        // Swagger UI must be merged at the outer router level (after prefix nesting)
+        // because utoipa_swagger_ui creates redirects (e.g. /docs → /docs/) with hardcoded
+        // Location headers that don't account for Axum's prefix nesting
+        #[cfg(feature = "swagger-ui")]
+        {
+            router = self.apply_openapi_swagger_ui(router, &openapi_urls);
+        }
 
         for extension in extensions {
             router = extension.extend_router(&extension_ctx, router);
@@ -172,11 +178,9 @@ impl WebApplicationRouter {
     }
 
     #[cfg(feature = "swagger-ui")]
-    fn apply_openapi(&self, mut router: Router<State>) -> Router<State> {
-        use utoipa_swagger_ui::{Config, SwaggerUi};
-
+    fn apply_openapi_specs(&self, mut router: Router<State>) -> (Router<State>, Vec<String>) {
         let Some(openapi) = &self.web_config.openapi else {
-            return router;
+            return (router, vec![]);
         };
 
         let mut urls: Vec<String> = Vec::new();
@@ -240,15 +244,24 @@ impl WebApplicationRouter {
                 }),
             );
 
-            // Swagger UI fetches specs from the full (potentially prefixed) path
+            // Full URL with prefix so Swagger UI fetches from the correct path
             urls.push(format!("{prefix}{route_path}"));
         }
 
-        // Swagger UI at /docs — prefix is handled by nesting into api_router
-        if !urls.is_empty() {
-            router = router.merge(SwaggerUi::new("/docs").config(Config::new(urls.clone())));
+        (router, urls)
+    }
+
+    #[cfg(feature = "swagger-ui")]
+    fn apply_openapi_swagger_ui(&self, router: Router<State>, urls: &[String]) -> Router<State> {
+        use utoipa_swagger_ui::{Config, SwaggerUi};
+
+        if urls.is_empty() {
+            return router;
         }
 
-        router
+        let prefix = self.web_config.router_prefix.as_deref().unwrap_or("");
+        let docs_path = format!("{prefix}/docs");
+
+        router.merge(SwaggerUi::new(docs_path).config(Config::new(urls.to_vec())))
     }
 }
