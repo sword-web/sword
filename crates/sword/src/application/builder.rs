@@ -1,5 +1,8 @@
 use crate::application::Application;
 
+#[cfg(feature = "events-in-memory")]
+use std::sync::Arc;
+
 #[cfg(any(feature = "web", feature = "socketio"))]
 use sword_web::internal::{
     AxumRequest, IntoResponse, TowerLayer as Layer, TowerService as Service, routing::Route,
@@ -117,11 +120,32 @@ impl ApplicationBuilder {
     }
 
     #[cfg(feature = "events-in-memory")]
-    fn init_event_queue(&self) -> Option<tokio::sync::watch::Sender<bool>> {
+    fn init_event_publisher(&self) -> tokio::sync::mpsc::Receiver<Arc<dyn sword_events::Event>> {
+        use sword_events::in_memory::EventPublisher;
+        use sword_events::EventQueueConfig;
+
+        let config = self.state.get::<EventQueueConfig>().unwrap_or_else(|_| {
+            let config = EventQueueConfig::default();
+            self.state.insert(config.clone());
+            config
+        });
+
+        let (tx, rx) = tokio::sync::mpsc::channel::<Arc<dyn sword_events::Event>>(config.buffer_size);
+        let publisher = EventPublisher::new(tx);
+        self.state.insert(publisher);
+
+        rx
+    }
+
+    #[cfg(feature = "events-in-memory")]
+    fn init_event_subscriber(
+        &self,
+        rx: tokio::sync::mpsc::Receiver<Arc<dyn sword_events::Event>>,
+    ) -> Option<tokio::sync::watch::Sender<bool>> {
         use std::any::TypeId;
         use std::collections::HashMap;
 
-        use sword_events::in_memory::{EventPublisher, EventSubscriber};
+        use sword_events::in_memory::EventSubscriber;
         use sword_events::{
             EventHandlerFn, EventQueueConfig, MemEventControllerRegistrar, MemEventRouteRegistrar,
         };
@@ -139,12 +163,6 @@ impl ApplicationBuilder {
             self.state.insert(config.clone());
             config
         });
-
-        let (tx, rx) = tokio::sync::mpsc::channel(config.buffer_size);
-
-        let publisher = EventPublisher::new(tx);
-        self.state.insert(publisher.clone());
-        self.container.provider_registry().register(publisher);
 
         let controller_registrars: HashMap<TypeId, &MemEventControllerRegistrar> =
             inventory::iter::<MemEventControllerRegistrar>()
@@ -219,6 +237,9 @@ impl ApplicationBuilder {
     pub fn build(mut self) -> Application {
         // Runtime check — fires only if both features are enabled AND build() is called.
         // This preserves dev experience for users who enable all features in their IDE.
+        #[cfg(feature = "events-in-memory")]
+        let event_rx = self.init_event_publisher();
+
         if cfg!(feature = "grpc") && (cfg!(feature = "web") || cfg!(feature = "socketio")) {
             sword_error! {
                 title: "Multiple application types enabled",
@@ -261,7 +282,7 @@ impl ApplicationBuilder {
         }
 
         #[cfg(feature = "events-in-memory")]
-        let event_shutdown_tx = self.init_event_queue();
+        let event_shutdown_tx = self.init_event_subscriber(event_rx);
 
         for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
             let display_fn = registrar.display;
