@@ -15,12 +15,25 @@ pub use config::{ApplicationConfig, ApplicationEngine};
 pub struct Application {
     engine: ApplicationEngine,
     pub config: Config,
+    #[cfg(feature = "events-in-memory")]
+    event_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
 }
 
 impl Application {
     #[cfg(any(feature = "web", feature = "socketio", feature = "grpc"))]
-    pub(crate) fn new(engine: ApplicationEngine, config: Config) -> Self {
-        Self { engine, config }
+    pub(crate) fn new(
+        engine: ApplicationEngine,
+        config: Config,
+        #[cfg(feature = "events-in-memory")] event_shutdown_tx: Option<
+            tokio::sync::watch::Sender<bool>,
+        >,
+    ) -> Self {
+        Self {
+            engine,
+            config,
+            #[cfg(feature = "events-in-memory")]
+            event_shutdown_tx,
+        }
     }
 
     /// Creates a new application builder for configuring the application.
@@ -70,6 +83,9 @@ impl Application {
     /// This method starts the web server and begins listening for incoming
     /// requests. It will bind to the host and port specified in the
     /// server configuration.
+    ///
+    /// When the server shuts down, the event subscriber is signaled to stop
+    /// processing new events.
     pub async fn run(&self) {
         let app_config = self.config.get_or_default::<ApplicationConfig>();
 
@@ -92,6 +108,12 @@ impl Application {
             _ => unreachable!(
                 "Invalid application engine configuration. Enable the appropriate feature flag to use the desired engine."
             ),
+        }
+
+        #[cfg(feature = "events-in-memory")]
+        if let Some(tx) = &self.event_shutdown_tx {
+            tracing::info!(target: "sword.events", "Signaling event subscriber shutdown");
+            let _ = tx.send(true);
         }
     }
 

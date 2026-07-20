@@ -14,6 +14,7 @@ pub enum Controller {
     Web,
     SocketIo,
     Grpc,
+    MemEventHandler,
 }
 
 /// A trait for defining controllers in the application.

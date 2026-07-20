@@ -116,6 +116,90 @@ impl ApplicationBuilder {
         self
     }
 
+    #[cfg(feature = "events-in-memory")]
+    fn init_event_queue(&self) -> Option<tokio::sync::watch::Sender<bool>> {
+        use std::any::TypeId;
+        use std::collections::HashMap;
+
+        use sword_events::in_memory::{EventPublisher, EventSubscriber};
+        use sword_events::{
+            EventHandlerFn, EventQueueConfig, MemEventControllerRegistrar, MemEventRouteRegistrar,
+        };
+
+        let event_controllers = self
+            .controller_registry
+            .get_by_kind(Controller::MemEventHandler);
+
+        if event_controllers.is_empty() {
+            return None;
+        }
+
+        let config = self.state.get::<EventQueueConfig>().unwrap_or_else(|_| {
+            let config = EventQueueConfig::default();
+            self.state.insert(config.clone());
+            config
+        });
+
+        let (tx, rx) = tokio::sync::mpsc::channel(config.buffer_size);
+
+        let publisher = EventPublisher::new(tx);
+        self.state.insert(publisher.clone());
+        self.container.provider_registry().register(publisher);
+
+        let controller_registrars: HashMap<TypeId, &MemEventControllerRegistrar> =
+            inventory::iter::<MemEventControllerRegistrar>()
+                .map(|r| (r.handler_type_id, r))
+                .collect();
+
+        let mut route_map: HashMap<TypeId, Vec<&MemEventRouteRegistrar>> = HashMap::new();
+        for route in inventory::iter::<MemEventRouteRegistrar>() {
+            route_map
+                .entry(route.handler_type_id)
+                .or_default()
+                .push(route);
+        }
+
+        let mut handlers: HashMap<&'static str, Vec<EventHandlerFn>> = HashMap::new();
+
+        for type_id in &event_controllers {
+            let Some(registrar) = controller_registrars.get(type_id) else {
+                tracing::warn!(
+                    target: "sword.events",
+                    "No MemEventControllerRegistrar found for handler type {:?}",
+                    type_id,
+                );
+                continue;
+            };
+
+            (registrar.build)(&self.state);
+
+            let Some(routes) = route_map.get(type_id) else {
+                tracing::warn!(
+                    target: "sword.events",
+                    "No event routes registered for handler type {:?}",
+                    type_id,
+                );
+                continue;
+            };
+
+            for route in routes {
+                let handle_fn = (route.build_and_handle)(&self.state);
+                handlers.entry(route.event_key).or_default().push(handle_fn);
+            }
+        }
+
+        if handlers.is_empty() {
+            return None;
+        }
+
+        let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+        let subscriber = EventSubscriber::new(rx, handlers, config);
+        subscriber.run(shutdown_rx);
+        tracing::info!(target: "sword.events", "Event queue initialized");
+
+        Some(shutdown_tx)
+    }
+
     /// Register a provider directly with the application builder.
     ///
     /// This method can be used to add providers directly to the application, avoiding the need
@@ -176,6 +260,9 @@ impl ApplicationBuilder {
             register(&self.state);
         }
 
+        #[cfg(feature = "events-in-memory")]
+        let event_shutdown_tx = self.init_event_queue();
+
         for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
             let display_fn = registrar.display;
             let push_layer_fn = (registrar.register)(&self.config);
@@ -206,14 +293,24 @@ impl ApplicationBuilder {
                 let grpc_app = sword_grpc::application::GrpcApplication::from(ctx);
                 let engine = super::ApplicationEngine::Grpc(grpc_app);
 
-                Application::new(engine, self.config)
+                Application::new(
+                    engine,
+                    self.config,
+                    #[cfg(feature = "events-in-memory")]
+                    event_shutdown_tx,
+                )
             }
 
             any(feature = "web", feature = "socketio") => {
                 let web_app = sword_web::application::WebApplication::from(ctx);
                 let engine = super::ApplicationEngine::Web(web_app);
 
-                Application::new(engine, self.config)
+                Application::new(
+                    engine,
+                    self.config,
+                    #[cfg(feature = "events-in-memory")]
+                    event_shutdown_tx,
+                )
             }
 
             _ => {

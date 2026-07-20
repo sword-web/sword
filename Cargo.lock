@@ -3206,6 +3206,7 @@ dependencies = [
  "inventory",
  "subsecond",
  "sword-core",
+ "sword-events",
  "sword-grpc",
  "sword-layers",
  "sword-macros",
@@ -3227,6 +3228,17 @@ dependencies = [
  "thisconfig",
  "tokio",
  "tower",
+ "tracing",
+]
+
+[[package]]
+name = "sword-events"
+version = "0.2.2"
+dependencies = [
+ "inventory",
+ "serde",
+ "sword-core",
+ "tokio",
  "tracing",
 ]
 

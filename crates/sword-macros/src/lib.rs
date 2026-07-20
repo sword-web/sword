@@ -686,6 +686,53 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     output.into()
 }
 
+#[cfg(feature = "event-handlers")]
+/// Defines an event struct for use with the event queue.
+///
+/// Generates the `Event` trait implementation and derives `Clone`.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// #[event(key = "mail.send.failed")]
+/// struct MailFailedEvent {
+///     to: String,
+///     error: String,
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn event(args: TokenStream, item: TokenStream) -> TokenStream {
+    core::event::expand_event_struct(args, item).unwrap_or_else(|err| err.to_compile_error().into())
+}
+
+#[cfg(feature = "event-handlers")]
+/// Registers an event handler method for a `MemEventHandler` controller.
+///
+/// The attribute takes the event sub-key as argument, which is combined
+/// with the controller's `namespace` to form the full event key.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// #[controller(kind = Controller::MemEventHandler, namespace = "mail")]
+/// struct MailHandler {
+///     mailer: Arc<Mailer>,
+/// }
+///
+/// impl MailHandler {
+///     #[handle("send.failed")]
+///     async fn on_failed(&self, event: MailFailedEvent) -> Result<()> {
+///         self.mailer.resend(&event.to).await?;
+///         Ok(())
+///     }
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
+    controllers::mem_event_handler::expand_handle(attr, item)
+        .unwrap_or_else(|err| err.to_compile_error().into())
+}
+
 #[cfg(feature = "socketio-controllers")]
 /// Unified handler attribute for Socket.IO events.
 ///

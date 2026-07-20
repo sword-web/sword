@@ -1,4 +1,8 @@
-#[cfg(any(feature = "web-controllers", feature = "socketio-controllers"))]
+#[cfg(any(
+    feature = "web-controllers",
+    feature = "socketio-controllers",
+    feature = "event-handlers"
+))]
 mod cmeta;
 mod parse;
 
@@ -9,7 +13,11 @@ use syn::{
     spanned::Spanned,
 };
 
-#[cfg(any(feature = "web-controllers", feature = "socketio-controllers"))]
+#[cfg(any(
+    feature = "web-controllers",
+    feature = "socketio-controllers",
+    feature = "event-handlers"
+))]
 pub(crate) use cmeta::CMetaStack;
 pub(crate) use parse::ControllerStruct;
 
@@ -17,6 +25,7 @@ pub enum ControllerKind {
     Web,
     SocketIo,
     Grpc,
+    MemEventHandler,
 }
 
 #[derive(Default)]
@@ -36,6 +45,9 @@ pub enum ParsedControllerKind {
 
     #[cfg(feature = "grpc-controllers")]
     Grpc { service: Path },
+
+    #[cfg(feature = "event-handlers")]
+    MemEventHandler { namespace: String },
 }
 
 // Try to parse from a path like `Controller::Web` or `Controller::SocketIo`.
@@ -56,9 +68,10 @@ impl Parse for ControllerKind {
             "Web" => Ok(Self::Web),
             "SocketIo" => Ok(Self::SocketIo),
             "Grpc" => Ok(Self::Grpc),
+            "MemEventHandler" => Ok(Self::MemEventHandler),
             _ => Err(Error::new(
                 path.span(),
-                "Invalid controller kind. Expected `Web`, `SocketIo`, or `Grpc`",
+                "Invalid controller kind. Expected `Web`, `SocketIo`, `Grpc`, or `MemEventHandler`",
             )),
         }
     }
@@ -234,6 +247,41 @@ impl TryFrom<ControllerArgs> for ParsedControllerKind {
 
                 #[cfg(feature = "grpc-controllers")]
                 Ok(ParsedControllerKind::Grpc { service })
+            }
+
+            ControllerKind::MemEventHandler => {
+                if let Some(path) = args.path {
+                    return Err(Error::new(
+                        path.span(),
+                        "`path` is not valid for MemEventHandler",
+                    ));
+                }
+
+                if let Some(service) = args.service {
+                    return Err(Error::new(
+                        service.span(),
+                        "`service` is not valid for MemEventHandler",
+                    ));
+                }
+
+                let namespace_lit = args.namespace.ok_or_else(|| {
+                    Error::new(Span::call_site(), "MemEventHandler requires `namespace`")
+                })?;
+
+                #[cfg(not(feature = "event-handlers"))]
+                {
+                    let _ = namespace_lit;
+                    Err(Error::new(
+                        Span::call_site(),
+                        "MemEventHandler controllers require enabling the `event-handlers` feature",
+                    ))
+                }
+
+                #[cfg(feature = "event-handlers")]
+                {
+                    let namespace = namespace_lit.value();
+                    Ok(ParsedControllerKind::MemEventHandler { namespace })
+                }
             }
         }
     }

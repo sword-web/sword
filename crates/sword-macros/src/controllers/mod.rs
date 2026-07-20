@@ -1,5 +1,8 @@
 pub mod shared;
 
+#[cfg(feature = "event-handlers")]
+pub mod mem_event_handler;
+
 #[cfg(feature = "grpc-controllers")]
 pub mod grpc;
 
@@ -34,6 +37,11 @@ pub fn expand_controller(attr: TokenStream, item: TokenStream) -> syn::Result<To
 
         #[cfg(feature = "grpc-controllers")]
         ParsedControllerKind::Grpc { .. } => grpc::expand_grpc_controller(&parsed_input)?,
+
+        #[cfg(feature = "event-handlers")]
+        ParsedControllerKind::MemEventHandler { .. } => {
+            mem_event_handler::expand_mem_event_handler(&parsed_input)?
+        }
     };
 
     let builder = proc_macro2::TokenStream::from(builder);

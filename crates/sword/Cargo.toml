@@ -21,6 +21,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 tokio = { workspace = true }
 
 sword-core = { workspace = true }
+sword-events = { workspace = true, optional = true }
 sword-layers = { workspace = true, features = ["tracing"] }
 sword-macros = { workspace = true, features = ["web-controllers", "socketio-controllers", "grpc-controllers"] }
 sword-web = { workspace = true, optional = true }
@@ -38,6 +39,7 @@ dioxus-devtools = { workspace = true, optional = true }
 [features]
 default = []
 
+events-in-memory = ["dep:sword-events", "sword-macros/event-handlers"]
 web = ["dep:sword-web"]
 socketio = ["web", "dep:sword-socketio"]
 grpc = ["dep:sword-grpc"]

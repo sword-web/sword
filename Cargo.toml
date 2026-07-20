@@ -27,6 +27,7 @@ sword-layers = { path = "crates/sword-layers", version = "0.2.2" }
 sword-web = { path = "crates/sword-web" }
 sword-grpc = { path = "crates/sword-grpc" }
 sword-socketio = { path = "crates/sword-socketio" }
+sword-events = { path = "crates/sword-events" }
 
 tokio = { version = "^1.0", features = ["full"] }
 tokio-stream = "0.1.18"

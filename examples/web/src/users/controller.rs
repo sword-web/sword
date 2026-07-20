@@ -1,10 +1,12 @@
 use serde_json::json;
 use std::sync::Arc;
+use sword::events::EventPublisher;
 use sword::prelude::*;
 use sword::web::*;
 use uuid::Uuid;
 
 use crate::{
+    mailer::UserCreatedEvent,
     shared::{Hasher, errors::AppError},
     users::*,
 };
@@ -13,6 +15,7 @@ use crate::{
 pub struct UsersController {
     hasher: Arc<Hasher>,
     users: Arc<UserRepository>,
+    publisher: Arc<EventPublisher>,
 }
 
 impl UsersController {
@@ -36,6 +39,14 @@ impl UsersController {
         }
 
         self.users.save(&user).await?;
+
+        self.publisher
+            .publish(UserCreatedEvent {
+                user_id: user.id.to_string(),
+                username: user.username.clone(),
+                email: format!("{}@example.com", user.username),
+            })
+            .await;
 
         Ok(user)
     }

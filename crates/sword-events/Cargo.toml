@@ -1,0 +1,21 @@
+[package]
+name = "sword-events"
+version.workspace = true
+edition.workspace = true
+description = "Event/job queue abstraction and in-memory implementation for Sword"
+repository.workspace = true
+homepage.workspace = true
+license-file = "../LICENSE"
+rust-version.workspace = true
+
+[features]
+default = ["in-memory"]
+in-memory = []
+
+[dependencies]
+sword-core = { workspace = true }
+
+tokio = { workspace = true }
+inventory = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
