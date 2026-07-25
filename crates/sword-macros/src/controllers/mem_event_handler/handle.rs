@@ -4,18 +4,15 @@ use quote::{format_ident, quote};
 use syn::{FnArg, ItemFn, LitStr, Type};
 
 pub fn expand_handle(attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
+    if CMetaStack::get("controller_name").is_none() {
+        return Ok(item);
+    }
+
     let event_lit = syn::parse::<LitStr>(attr)?;
     let relative_key = event_lit.value();
     let input_fn = syn::parse::<ItemFn>(item)?;
 
-    let controller_name = CMetaStack::get("controller_name").ok_or_else(|| {
-        syn::Error::new(
-            proc_macro2::Span::call_site(),
-            "#[handle] must be used inside an impl block for a struct with \
-             #[controller(kind = Controller::MemEventHandler, ...)]",
-        )
-    })?;
-
+    let controller_name = CMetaStack::get("controller_name").unwrap();
     let namespace = CMetaStack::get("mem_event_namespace").ok_or_else(|| {
         syn::Error::new(
             proc_macro2::Span::call_site(),

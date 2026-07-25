@@ -4,18 +4,15 @@ use quote::{format_ident, quote};
 use syn::{ItemFn, LitStr};
 
 pub fn expand_on_handler(attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
+    if CMetaStack::get("socketio_controller_name").is_none() {
+        return Ok(item);
+    }
+
     let event_lit = syn::parse::<LitStr>(attr)?;
     let event_name = event_lit.value();
     let input_fn = syn::parse::<ItemFn>(item)?;
 
-    let controller_name = CMetaStack::get("socketio_controller_name")
-        .ok_or_else(|| {
-            syn::Error::new(
-                proc_macro2::Span::call_site(),
-                "#[on] must be used inside an impl block for a struct with #[controller(kind = Controller::SocketIo, ...)]",
-            )
-        })?;
-
+    let controller_name = CMetaStack::get("socketio_controller_name").unwrap();
     let namespace = CMetaStack::get("socketio_namespace").ok_or_else(|| {
         syn::Error::new(
             proc_macro2::Span::call_site(),

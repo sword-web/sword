@@ -121,8 +121,8 @@ impl ApplicationBuilder {
 
     #[cfg(feature = "events-in-memory")]
     fn init_event_publisher(&self) -> tokio::sync::mpsc::Receiver<Arc<dyn sword_events::Event>> {
-        use sword_events::in_memory::EventPublisher;
         use sword_events::EventQueueConfig;
+        use sword_events::in_memory::EventPublisher;
 
         let config = self.state.get::<EventQueueConfig>().unwrap_or_else(|_| {
             let config = EventQueueConfig::default();
@@ -130,7 +130,8 @@ impl ApplicationBuilder {
             config
         });
 
-        let (tx, rx) = tokio::sync::mpsc::channel::<Arc<dyn sword_events::Event>>(config.buffer_size);
+        let (tx, rx) =
+            tokio::sync::mpsc::channel::<Arc<dyn sword_events::Event>>(config.buffer_size);
         let publisher = EventPublisher::new(tx);
         self.state.insert(publisher);
 
