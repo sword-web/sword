@@ -110,3 +110,47 @@ impl CMetaStack {
             .and_then(|parent| parent.get_list_recursive(kind, key))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kinds_are_isolated() {
+        CMetaStack::push("iso_web", "controller_name", "Users");
+        CMetaStack::push("iso_event", "controller_name", "Mail");
+        CMetaStack::push("iso_socket", "namespace", "/chat");
+
+        assert_eq!(
+            CMetaStack::get("iso_web", "controller_name"),
+            Some("Users".to_string())
+        );
+        assert_eq!(
+            CMetaStack::get("iso_event", "controller_name"),
+            Some("Mail".to_string())
+        );
+        assert_eq!(
+            CMetaStack::get("iso_socket", "namespace"),
+            Some("/chat".to_string())
+        );
+        assert_eq!(CMetaStack::get("iso_web", "namespace"), None);
+        assert_eq!(CMetaStack::get("iso_socket", "controller_name"), None);
+        assert_eq!(CMetaStack::get("iso_event", "namespace"), None);
+    }
+
+    #[test]
+    fn latest_push_wins_per_kind() {
+        CMetaStack::push("win_web", "controller_name", "First");
+        CMetaStack::push("win_event", "controller_name", "Mail");
+        CMetaStack::push("win_web", "controller_name", "Second");
+
+        assert_eq!(
+            CMetaStack::get("win_web", "controller_name"),
+            Some("Second".to_string())
+        );
+        assert_eq!(
+            CMetaStack::get("win_event", "controller_name"),
+            Some("Mail".to_string())
+        );
+    }
+}

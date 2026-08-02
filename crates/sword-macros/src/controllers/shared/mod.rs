@@ -30,10 +30,12 @@ pub enum ControllerKind {
 
 // Try to parse from a path like `EventSource::Memory`.
 // Mirrors the runtime `sword_core::EventSource` enum.
+#[cfg(feature = "event-handlers")]
 pub enum EventSourceKind {
     Memory,
 }
 
+#[cfg(feature = "event-handlers")]
 impl EventSourceKind {
     pub fn as_tokens(&self) -> proc_macro2::TokenStream {
         match self {
@@ -48,6 +50,7 @@ pub struct ControllerArgs {
     pub path: Option<LitStr>,
     pub namespace: Option<LitStr>,
     pub service: Option<Path>,
+    #[cfg(feature = "event-handlers")]
     pub source: Option<EventSourceKind>,
 }
 
@@ -92,6 +95,7 @@ impl Parse for ControllerKind {
     }
 }
 
+#[cfg(feature = "event-handlers")]
 impl Parse for EventSourceKind {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let path: Path = input.parse()?;
@@ -152,6 +156,7 @@ impl Parse for ControllerArgs {
                     }
                     out.service = Some(input.parse()?);
                 }
+                #[cfg(feature = "event-handlers")]
                 "source" => {
                     if out.source.is_some() {
                         return Err(Error::new(key_span, "Duplicate argument `source`"));
@@ -313,13 +318,8 @@ impl TryFrom<ControllerArgs> for ParsedControllerKind {
                     ));
                 }
 
-                let source = args.source.ok_or_else(|| {
-                    Error::new(Span::call_site(), "EventHandler requires `source`")
-                })?;
-
                 #[cfg(not(feature = "event-handlers"))]
                 {
-                    let _ = source;
                     Err(Error::new(
                         Span::call_site(),
                         "EventHandler controllers require enabling the `event-handlers` feature",
@@ -327,7 +327,13 @@ impl TryFrom<ControllerArgs> for ParsedControllerKind {
                 }
 
                 #[cfg(feature = "event-handlers")]
-                Ok(ParsedControllerKind::EventHandler { source })
+                {
+                    let source = args.source.ok_or_else(|| {
+                        Error::new(Span::call_site(), "EventHandler requires `source`")
+                    })?;
+
+                    Ok(ParsedControllerKind::EventHandler { source })
+                }
             }
         }
     }
