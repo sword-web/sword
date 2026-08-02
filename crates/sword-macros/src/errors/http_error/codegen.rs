@@ -1,9 +1,9 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Fields, Ident, Type};
 
 use super::parse::HttpErrorConfig;
-use crate::errors::{MessageValue, format_template};
+use crate::errors;
 
 pub struct HttpErrorCodegen;
 
@@ -20,7 +20,7 @@ impl HttpErrorCodegen {
             };
         }
 
-        let pattern = Self::generate_pattern(enum_name, variant_name, fields);
+        let pattern = errors::generate_pattern(enum_name, variant_name, fields);
         let tracing_stmt = Self::generate_tracing_stmt(variant_name, config, fields);
         let builder = Self::generate_json_builder(config);
 
@@ -32,51 +32,13 @@ impl HttpErrorCodegen {
         }
     }
 
-    pub fn generate_pattern(
-        enum_name: &Ident,
-        variant_name: &Ident,
-        fields: &Fields,
-    ) -> TokenStream {
-        match fields {
-            Fields::Named(named) => {
-                let field_names: Vec<_> = named
-                    .named
-                    .iter()
-                    .map(|field| field.ident.as_ref())
-                    .collect();
-                quote! { #enum_name::#variant_name { #(#field_names),* } }
-            }
-            Fields::Unnamed(_) => {
-                quote! { #enum_name::#variant_name(_inner) }
-            }
-            Fields::Unit => {
-                quote! { #enum_name::#variant_name }
-            }
-        }
-    }
-
     pub fn generate_json_builder(config: &HttpErrorConfig) -> TokenStream {
         let status_code = config.code.as_ref().unwrap().as_u16();
 
-        let message_expr = match &config.message {
-            Some(MessageValue::Static(message)) => quote! { #message },
-            Some(MessageValue::Field(field_name)) => {
-                let field_ident = Ident::new(field_name, proc_macro2::Span::call_site());
-                quote! { format!("{}", #field_ident) }
-            }
-            Some(MessageValue::Interpolated(template)) => {
-                let (fmt, fields) = format_template(template);
-                let field_idents: Vec<_> = fields
-                    .iter()
-                    .map(|f| Ident::new(f, proc_macro2::Span::call_site()))
-                    .collect();
-                quote! { format!(#fmt, #(#field_idents),*) }
-            }
-            None => {
-                let default_message = config.default_message();
-                quote! { #default_message }
-            }
-        };
+        let message_expr = errors::generate_message_expr(&config.message, || {
+            let default_message = config.default_message();
+            quote! { #default_message }
+        });
 
         let mut builder = quote! {
             ::sword::web::JsonResponse::status(#status_code).message(#message_expr)
@@ -100,61 +62,16 @@ impl HttpErrorCodegen {
         config: &HttpErrorConfig,
         fields: &Fields,
     ) -> TokenStream {
-        let Some(level) = &config.tracing_level else {
-            return quote! {};
-        };
-
-        let tracing_macro = match level.as_str() {
-            "trace" => quote! { ::sword::internal::tracing::trace },
-            "debug" => quote! { ::sword::internal::tracing::debug },
-            "info" => quote! { ::sword::internal::tracing::info },
-            "warn" => quote! { ::sword::internal::tracing::warn },
-            "error" => quote! { ::sword::internal::tracing::error },
-            _ => return quote! {},
-        };
-
-        let variant_str = variant_name.to_string();
         let status_code = config.code.as_ref().unwrap().as_u16();
 
-        match fields {
-            Fields::Named(named) => {
-                let field_logs = named.named.iter().map(|field| {
-                    let field_name = field.ident.as_ref().unwrap();
-                    quote! { #field_name = ?#field_name, }
-                });
-
-                quote! {
-                    #tracing_macro!(
-                        error = %__sword_internal_error,
-                        error_type = #variant_str,
-                        status_code = #status_code,
-                        #(#field_logs)*
-                        "HTTP error response"
-                    );
-                }
-            }
-            Fields::Unnamed(_) => {
-                quote! {
-                    #tracing_macro!(
-                        error = %__sword_internal_error,
-                        inner = ?_inner,
-                        error_type = #variant_str,
-                        status_code = #status_code,
-                        "HTTP error response"
-                    );
-                }
-            }
-            Fields::Unit => {
-                quote! {
-                    #tracing_macro!(
-                        error = %__sword_internal_error,
-                        error_type = #variant_str,
-                        status_code = #status_code,
-                        "HTTP error response"
-                    );
-                }
-            }
-        }
+        errors::generate_tracing_stmt(
+            variant_name,
+            &config.tracing_level,
+            fields,
+            &Ident::new("status_code", Span::call_site()),
+            quote! { #status_code },
+            "HTTP error response",
+        )
     }
 
     pub fn generate_variant_fn(variant_name: &Ident, fields: &Fields) -> TokenStream {

@@ -46,7 +46,7 @@ impl dyn Event {
     }
 }
 
-pub trait EventHandler: sword_core::HasDeps + sword_core::Build {}
+pub trait EventHandler: sword_core::Build {}
 
 inventory::collect!(EventControllerRegistrar);
 inventory::collect!(EventRouteRegistrar);

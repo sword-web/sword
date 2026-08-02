@@ -1,5 +1,3 @@
-mod traits;
-
 use std::{
     any::{Any, TypeId, type_name},
     collections::HashMap,
@@ -8,8 +6,6 @@ use std::{
 
 use crate::DependencyInjectionError;
 use parking_lot::RwLock;
-
-pub use traits::*;
 
 /// Application state container for type-safe dependency injection and data sharing.
 ///
@@ -39,17 +35,7 @@ impl State {
     where
         T: Clone + Send + Sync + 'static,
     {
-        let map = self.inner.read();
-        let type_name = type_name::<T>().to_string();
-
-        let state_ref = map
-            .get(&TypeId::of::<T>())
-            .ok_or_else(|| DependencyInjectionError::dependency_not_found(type_name.clone()))?;
-
-        state_ref
-            .downcast_ref::<T>()
-            .cloned()
-            .ok_or_else(|| DependencyInjectionError::dependency_not_found(type_name))
+        self.borrow::<T>().map(|value| (*value).clone())
     }
 
     /// Borrow an `Arc` to the stored value of type `T` from the state.
@@ -82,7 +68,7 @@ impl State {
             .insert(TypeId::of::<T>(), Arc::new(state));
     }
 
-    pub fn insert_instance(&self, type_id: TypeId, instance: Arc<dyn Any + Send + Sync>) {
+    pub(crate) fn insert_instance(&self, type_id: TypeId, instance: Arc<dyn Any + Send + Sync>) {
         self.inner.write().insert(type_id, instance);
     }
 }

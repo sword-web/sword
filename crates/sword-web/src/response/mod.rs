@@ -9,10 +9,6 @@ pub use json::{JsonResponse, JsonResponseBody};
 pub use redirect::Redirect;
 pub use sword_macros::HttpError;
 
-#[allow(unused)]
-#[cfg(feature = "multipart")]
-pub use multipart::*;
-
 pub type WebResult<T = JsonResponse, E = JsonResponse> = Result<T, E>;
 
 impl From<RequestError> for JsonResponse {

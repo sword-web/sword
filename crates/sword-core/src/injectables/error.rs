@@ -1,7 +1,5 @@
 use std::fmt::{self, Display, Formatter};
 
-use thisconfig::ConfigError;
-
 #[derive(Debug)]
 pub enum DependencyInjectionError {
     BuildFailed {
@@ -11,10 +9,6 @@ pub enum DependencyInjectionError {
 
     DependencyNotFound {
         type_name: String,
-    },
-
-    ConfigInjectionError {
-        source: ConfigError,
     },
 
     CircularDependency,
@@ -43,9 +37,7 @@ impl DependencyInjectionError {
     pub fn dependency_path(&self) -> Option<&str> {
         match self {
             Self::BuildFailed { type_name, .. } => Some(type_name.as_str()),
-            Self::DependencyNotFound { .. }
-            | Self::ConfigInjectionError { .. }
-            | Self::CircularDependency => None,
+            Self::DependencyNotFound { .. } | Self::CircularDependency => None,
         }
     }
 
@@ -53,7 +45,7 @@ impl DependencyInjectionError {
         match self {
             Self::BuildFailed { source, .. } => source.missing_dependency_path(),
             Self::DependencyNotFound { type_name } => Some(type_name.as_str()),
-            Self::ConfigInjectionError { .. } | Self::CircularDependency => None,
+            Self::CircularDependency => None,
         }
     }
 
@@ -65,9 +57,6 @@ impl DependencyInjectionError {
             }
             Self::DependencyNotFound { type_name } => {
                 context.push(("missing_dependency_path".to_string(), type_name.clone()));
-            }
-            Self::ConfigInjectionError { source } => {
-                context.push(("config_error".to_string(), source.to_string()));
             }
             Self::CircularDependency => {}
         }
@@ -88,9 +77,6 @@ impl Display for DependencyInjectionError {
                 "Dependency '{}' not found in dependency container",
                 short_type_name(type_name)
             ),
-            Self::ConfigInjectionError { source } => {
-                write!(f, "Failed to inject config: {source}")
-            }
             Self::CircularDependency => {
                 write!(f, "Circular dependency detected in dependency container")
             }
@@ -102,15 +88,8 @@ impl std::error::Error for DependencyInjectionError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::BuildFailed { source, .. } => Some(source.as_ref()),
-            Self::ConfigInjectionError { source } => Some(source),
             Self::DependencyNotFound { .. } | Self::CircularDependency => None,
         }
-    }
-}
-
-impl From<ConfigError> for DependencyInjectionError {
-    fn from(source: ConfigError) -> Self {
-        Self::ConfigInjectionError { source }
     }
 }
 

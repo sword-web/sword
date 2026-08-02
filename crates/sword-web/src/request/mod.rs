@@ -56,22 +56,107 @@ pub struct StreamRequest {
     pub extensions: Extensions,
 }
 
+macro_rules! impl_request_accessors {
+    ($next_error:expr) => {
+        pub fn uri(&self) -> String {
+            self.uri.to_string()
+        }
+
+        pub const fn method(&self) -> &Method {
+            &self.method
+        }
+
+        pub const fn headers(&self) -> &HeaderMap {
+            &self.headers
+        }
+
+        pub fn header(&self, key: &str) -> Option<&str> {
+            self.headers.get(key).and_then(|value| value.to_str().ok())
+        }
+
+        /// Retrieves and parses a route parameter by name.
+        ///
+        /// # Errors
+        ///
+        /// Returns an error if the parameter is missing from the request path or if
+        /// its value cannot be parsed into the requested type `T`.
+        pub fn param<T>(&self, key: &str) -> Result<T, RequestError>
+        where
+            T: FromStr,
+            T::Err: Display,
+        {
+            if let Some(value) = self.params.get(key) {
+                return value.parse::<T>().map_err(|e| {
+                    RequestError::parse_error(
+                        format!("Invalid parameter format for '{key}'"),
+                        format!("Parse  Error: {e}"),
+                    )
+                });
+            }
+
+            Err(RequestError::parse_error(
+                "Parameter not found",
+                format!("Parameter '{key}' not found in request parameters"),
+            ))
+        }
+
+        pub fn authorization(&self) -> Option<&str> {
+            self.header("Authorization")
+        }
+
+        pub fn user_agent(&self) -> Option<&str> {
+            self.header("User-Agent")
+        }
+
+        pub fn ip(&self) -> Option<&str> {
+            self.header("X-Forwarded-For")
+        }
+
+        pub fn ips(&self) -> Option<Vec<&str>> {
+            self.header("X-Forwarded-For")
+                .map(|ips| ips.split(',').map(|s| s.trim()).collect())
+        }
+
+        pub fn protocol(&self) -> &str {
+            self.header("X-Forwarded-Proto").unwrap_or("http")
+        }
+
+        pub fn content_length(&self) -> Option<u64> {
+            self.header("Content-Length")
+                .and_then(|value| value.parse::<u64>().ok())
+        }
+
+        pub fn content_type(&self) -> Option<&str> {
+            self.header("Content-Type")
+        }
+
+        #[doc(hidden)]
+        pub fn set_next(&mut self, next: Next) {
+            self.next = Some(next);
+        }
+
+        /// Runs the next interceptor or handler in the chain.
+        ///
+        /// # Errors
+        ///
+        /// Returns an internal server error response if called outside a Sword
+        /// interceptor chain. This usually means `next` was never set or was
+        /// already consumed earlier in the chain.
+        pub async fn next(mut self) -> WebInterceptorResult {
+            let Some(next) = self.next.take() else {
+                tracing::error!($next_error);
+                return Err(JsonResponse::InternalServerError());
+            };
+
+            Ok(next.run(self.try_into()?).await)
+        }
+    };
+}
+
 impl Request {
-    pub fn uri(&self) -> String {
-        self.uri.to_string()
-    }
-
-    pub const fn method(&self) -> &Method {
-        &self.method
-    }
-
-    pub fn header(&self, key: &str) -> Option<&str> {
-        self.headers.get(key).and_then(|value| value.to_str().ok())
-    }
-
-    pub const fn headers(&self) -> &HeaderMap {
-        &self.headers
-    }
+    impl_request_accessors!(
+        "Attempted to call `next()` on Request in a context that is not an `OnRequest` `Interceptor`"
+    );
 
     pub fn headers_mut(&mut self) -> &mut HeaderMap {
         &mut self.headers
@@ -108,68 +193,6 @@ impl Request {
         self.headers.insert(header_name, header_value);
 
         Ok(())
-    }
-
-    /// Retrieves and parses a route parameter by name.
-    ///
-    /// This method extracts URL parameters (path parameters) from the request
-    /// and converts them to the specified type. The parameter must implement
-    /// the `FromStr` trait for conversion.
-    ///
-    /// ### Type Parameters
-    ///
-    /// * `T` - The type to convert the parameter to (must implement `FromStr`)
-    ///
-    /// ### Arguments
-    ///
-    /// * `key` - The name of the route parameter to extract
-    ///
-    /// ### Returns
-    ///
-    /// Returns `Ok(T)` with the parsed value if the parameter exists and can be
-    /// converted, or `Err(RequestError)` if the parameter is missing or invalid.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if:
-    /// - The parameter is not found in the request
-    /// - The parameter value cannot be parsed to type `T`
-    ///
-    /// ### Example
-    ///
-    /// ```rust,ignore
-    /// use sword::prelude::*;
-    ///
-    /// ... asuming you have a controller struct ...
-    ///
-    /// #[get("/users/{id}/posts/{post_id}")]
-    /// async fn get_user_post(&self, req: Request) -> WebResult {
-    ///     let user_id: u32 = req.param("id")?;
-    ///     let post_id: u64 = req.param("post_id")?;
-    ///
-    ///     let message = format!("User ID: {}, Post ID: {}", user_id, post_id);
-    ///
-    ///     Ok(JsonResponse::Ok().message(message))
-    /// }
-    /// ```
-    pub fn param<T>(&self, key: &str) -> Result<T, RequestError>
-    where
-        T: FromStr,
-        T::Err: Display,
-    {
-        if let Some(value) = self.params.get(key) {
-            return value.parse::<T>().map_err(|e| {
-                RequestError::parse_error(
-                    format!("Invalid parameter format for '{key}'"),
-                    format!("Parse  Error: {e}"),
-                )
-            });
-        }
-
-        Err(RequestError::parse_error(
-            "Parameter not found",
-            format!("Parameter '{key}' not found in request parameters"),
-        ))
     }
 
     /// Returns a reference to the path parameters extracted from the request URL.
@@ -359,32 +382,6 @@ impl Request {
         })
     }
 
-    pub fn authorization(&self) -> Option<&str> {
-        self.header("Authorization")
-    }
-
-    pub fn user_agent(&self) -> Option<&str> {
-        self.header("User-Agent")
-    }
-
-    pub fn ip(&self) -> Option<&str> {
-        self.header("X-Forwarded-For")
-    }
-
-    pub fn ips(&self) -> Option<Vec<&str>> {
-        self.header("X-Forwarded-For")
-            .map(|ips| ips.split(',').map(|s| s.trim()).collect())
-    }
-
-    pub fn protocol(&self) -> &str {
-        self.header("X-Forwarded-Proto").unwrap_or("http")
-    }
-
-    pub fn content_length(&self) -> Option<u64> {
-        self.header("Content-Length")
-            .and_then(|value| value.parse::<u64>().ok())
-    }
-
     /// Returns the unique request ID from the `RequestId` extension if present.
     /// If not present, returns "unknown".
     ///
@@ -396,10 +393,6 @@ impl Request {
         }
 
         "unknown".to_string()
-    }
-
-    pub fn content_type(&self) -> Option<&str> {
-        self.header("Content-Type")
     }
 
     #[cfg(feature = "multipart")]
@@ -448,111 +441,12 @@ impl Request {
         mime.type_() == "application"
             && (mime.subtype() == "json" || mime.suffix().is_some_and(|name| name == "json"))
     }
-
-    #[doc(hidden)]
-    pub fn clear_next(&mut self) {
-        self.next = None;
-    }
-
-    #[doc(hidden)]
-    pub fn set_next(&mut self, next: Next) {
-        self.next = Some(next);
-    }
-
-    /// Runs the next interceptor or handler in the chain.
-    ///
-    /// This method must be used only in interceptor implementations to
-    /// pass control to the next interceptor or the final request handler.
-    ///
-    /// # Errors
-    ///
-    /// Returns an internal server error response if called outside a Sword
-    /// interceptor chain. This usually indicates the request was manually
-    /// constructed or `next` was already consumed earlier in the chain.
-    pub async fn next(mut self) -> WebInterceptorResult {
-        let Some(next) = self.next.take() else {
-            tracing::error!(
-                "Attempted to call `next()` on Request in a context that is not a `OnRequest` `Interceptor`"
-            );
-            return Err(JsonResponse::InternalServerError());
-        };
-
-        Ok(next.run(self.try_into()?).await)
-    }
 }
 
 impl StreamRequest {
-    pub fn uri(&self) -> String {
-        self.uri.to_string()
-    }
-
-    pub const fn method(&self) -> &Method {
-        &self.method
-    }
-
-    pub fn header(&self, key: &str) -> Option<&str> {
-        self.headers.get(key).and_then(|value| value.to_str().ok())
-    }
-
-    pub const fn headers(&self) -> &HeaderMap {
-        &self.headers
-    }
-
-    /// Retrieves and parses a route parameter by name from an unbuffered request.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the parameter is missing from the request path or if
-    /// its value cannot be parsed into the requested type `T`.
-    pub fn param<T>(&self, key: &str) -> Result<T, RequestError>
-    where
-        T: FromStr,
-        T::Err: Display,
-    {
-        if let Some(value) = self.params.get(key) {
-            return value.parse::<T>().map_err(|e| {
-                RequestError::parse_error(
-                    format!("Invalid parameter format for '{key}'"),
-                    format!("Parse  Error: {e}"),
-                )
-            });
-        }
-
-        Err(RequestError::parse_error(
-            "Parameter not found",
-            format!("Parameter '{key}' not found in request parameters"),
-        ))
-    }
-
-    pub fn authorization(&self) -> Option<&str> {
-        self.header("Authorization")
-    }
-
-    pub fn user_agent(&self) -> Option<&str> {
-        self.header("User-Agent")
-    }
-
-    pub fn ip(&self) -> Option<&str> {
-        self.header("X-Forwarded-For")
-    }
-
-    pub fn ips(&self) -> Option<Vec<&str>> {
-        self.header("X-Forwarded-For")
-            .map(|ips| ips.split(',').map(|s| s.trim()).collect())
-    }
-
-    pub fn protocol(&self) -> &str {
-        self.header("X-Forwarded-Proto").unwrap_or("http")
-    }
-
-    pub fn content_length(&self) -> Option<u64> {
-        self.header("Content-Length")
-            .and_then(|value| value.parse::<u64>().ok())
-    }
-
-    pub fn content_type(&self) -> Option<&str> {
-        self.header("Content-Type")
-    }
+    impl_request_accessors!(
+        "Attempted to call `next()` on StreamRequest in a context that is not an `OnRequestStream` `Interceptor`"
+    );
 
     pub fn body_limit(&self) -> usize {
         self.body_limit
@@ -560,33 +454,5 @@ impl StreamRequest {
 
     pub fn into_body(self) -> AxumBody {
         self.body
-    }
-
-    #[doc(hidden)]
-    pub fn clear_next(&mut self) {
-        self.next = None;
-    }
-
-    #[doc(hidden)]
-    pub fn set_next(&mut self, next: Next) {
-        self.next = Some(next);
-    }
-
-    /// Runs the next streaming interceptor or handler in the chain.
-    ///
-    /// # Errors
-    ///
-    /// Returns an internal server error response if called outside a Sword
-    /// streaming interceptor chain. This usually means `next` was never set or
-    /// was already consumed earlier in the chain.
-    pub async fn next(mut self) -> WebInterceptorResult {
-        let Some(next) = self.next.take() else {
-            tracing::error!(
-                "Attempted to call `next()` on StreamRequest in a context that is not a `OnRequestStream` `Interceptor`"
-            );
-            return Err(JsonResponse::InternalServerError());
-        };
-
-        Ok(next.run(self.try_into()?).await)
     }
 }

@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use sword::events::EventHandlerResult;
+use sword::events::*;
 use sword::prelude::*;
 
 use crate::mailer::{Mailer, events::UserCreatedEvent};

@@ -3,7 +3,7 @@ use quote::quote;
 use syn::{Error, Fields, Ident};
 
 use super::parse::GrpcErrorConfig;
-use crate::errors::{MessageValue, extract_template_fields, format_template};
+use crate::errors::{MessageValue, validate_message_references};
 
 pub struct GrpcErrorCodegen;
 
@@ -15,64 +15,16 @@ impl GrpcErrorCodegen {
         config: &GrpcErrorConfig,
     ) -> syn::Result<()> {
         if config.transparent {
-            let is_single_unnamed =
-                matches!(fields, Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1);
-
-            if !is_single_unnamed {
-                return Err(Error::new_spanned(
-                    variant_name,
-                    "transparent variants must have exactly one unnamed field",
-                ));
-            }
-
+            crate::errors::validate_transparent_single_unnamed(variant_name, fields)?;
             return Ok(());
         }
 
         match fields {
             Fields::Named(named) => {
-                if let Some(MessageValue::Field(field_name)) = &config.message {
-                    let exists = named
-                        .named
-                        .iter()
-                        .filter_map(|field| field.ident.as_ref())
-                        .any(|ident| ident == field_name);
-
-                    if !exists {
-                        return Err(Error::new_spanned(
-                            variant_name,
-                            format!(
-                                "`message = {field_name}` references a missing field on {enum_name}::{variant_name}`"
-                            ),
-                        ));
-                    }
-                }
-
-                if let Some(MessageValue::Interpolated(template)) = &config.message {
-                    for field in extract_template_fields(template) {
-                        let exists = named
-                            .named
-                            .iter()
-                            .filter_map(|f| f.ident.as_ref())
-                            .any(|f_ident| f_ident == field.as_str());
-
-                        if !exists {
-                            return Err(Error::new_spanned(
-                                variant_name,
-                                format!(
-                                    "`message = \"{template}\"` references a missing field `{field}` on {enum_name}::{variant_name}`"
-                                ),
-                            ));
-                        }
-                    }
-                }
+                validate_message_references(enum_name, variant_name, named, &config.message)?;
             }
             Fields::Unnamed(unnamed) => {
-                if unnamed.unnamed.len() != 1 {
-                    return Err(Error::new_spanned(
-                        variant_name,
-                        "non-transparent tuple variants are only supported with exactly one field",
-                    ));
-                }
+                crate::errors::validate_single_unnamed(variant_name, unnamed)?;
 
                 if matches!(
                     config.message,
@@ -113,7 +65,7 @@ impl GrpcErrorCodegen {
         }
 
         let code_variant = Self::parse_code_to_tonic_variant(config.default_code(), variant_name)?;
-        let pattern = Self::generate_pattern(enum_name, variant_name, fields);
+        let pattern = crate::errors::generate_pattern(enum_name, variant_name, fields);
         let message_expr = Self::generate_message_expr(config, fields);
         let tracing_stmt = Self::generate_tracing_stmt(variant_name, config, fields, &code_variant);
 
@@ -155,41 +107,11 @@ impl GrpcErrorCodegen {
         Ok(Ident::new(variant, Span::call_site()))
     }
 
-    pub fn generate_pattern(
-        enum_name: &Ident,
-        variant_name: &Ident,
-        fields: &Fields,
-    ) -> TokenStream {
-        match fields {
-            Fields::Named(named) => {
-                let field_names: Vec<_> = named.named.iter().map(|f| &f.ident).collect();
-                quote! { #enum_name::#variant_name { #(#field_names),* } }
-            }
-            Fields::Unnamed(_) => quote! { #enum_name::#variant_name(_inner) },
-            Fields::Unit => quote! { #enum_name::#variant_name },
-        }
-    }
-
     pub fn generate_message_expr(config: &GrpcErrorConfig, fields: &Fields) -> TokenStream {
-        match &config.message {
-            Some(MessageValue::Static(message)) => quote! { #message },
-            Some(MessageValue::Field(field_name)) => {
-                let field_ident = Ident::new(field_name, Span::call_site());
-                quote! { format!("{}", #field_ident) }
-            }
-            Some(MessageValue::Interpolated(template)) => {
-                let (fmt, fields) = format_template(template);
-                let field_idents: Vec<_> = fields
-                    .iter()
-                    .map(|f| Ident::new(f, Span::call_site()))
-                    .collect();
-                quote! { format!(#fmt, #(#field_idents),*) }
-            }
-            None => match fields {
-                Fields::Unnamed(_) => quote! { format!("{}", _inner) },
-                _ => quote! { __sword_internal_error.clone() },
-            },
-        }
+        crate::errors::generate_message_expr(&config.message, || match fields {
+            Fields::Unnamed(_) => quote! { format!("{}", _inner) },
+            _ => quote! { __sword_internal_error.clone() },
+        })
     }
 
     pub fn generate_tracing_stmt(
@@ -198,60 +120,15 @@ impl GrpcErrorCodegen {
         fields: &Fields,
         code_variant: &Ident,
     ) -> TokenStream {
-        let Some(level) = &config.tracing_level else {
-            return quote! {};
-        };
-
-        let tracing_macro = match level.as_str() {
-            "trace" => quote! { ::sword::internal::tracing::trace },
-            "debug" => quote! { ::sword::internal::tracing::debug },
-            "info" => quote! { ::sword::internal::tracing::info },
-            "warn" => quote! { ::sword::internal::tracing::warn },
-            "error" => quote! { ::sword::internal::tracing::error },
-            _ => return quote! {},
-        };
-
-        let variant_str = variant_name.to_string();
         let code_str = code_variant.to_string();
 
-        match fields {
-            Fields::Unit => {
-                quote! {
-                    #tracing_macro!(
-                        error = %__sword_internal_error,
-                        error_type = #variant_str,
-                        grpc_code = #code_str,
-                        "gRPC error response"
-                    );
-                }
-            }
-            Fields::Unnamed(_) => {
-                quote! {
-                    #tracing_macro!(
-                        error = %__sword_internal_error,
-                        inner = ?_inner,
-                        error_type = #variant_str,
-                        grpc_code = #code_str,
-                        "gRPC error response"
-                    );
-                }
-            }
-            Fields::Named(named) => {
-                let field_logs = named.named.iter().map(|field| {
-                    let field_name = field.ident.as_ref().unwrap();
-                    quote! { #field_name = ?#field_name, }
-                });
-
-                quote! {
-                    #tracing_macro!(
-                        error = %__sword_internal_error,
-                        #(#field_logs)*
-                        error_type = #variant_str,
-                        grpc_code = #code_str,
-                        "gRPC error response"
-                    );
-                }
-            }
-        }
+        crate::errors::generate_tracing_stmt(
+            variant_name,
+            &config.tracing_level,
+            fields,
+            &Ident::new("grpc_code", Span::call_site()),
+            quote! { #code_str },
+            "gRPC error response",
+        )
     }
 }

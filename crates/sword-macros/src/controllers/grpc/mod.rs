@@ -1,5 +1,5 @@
 use super::shared::{ControllerStruct, ParsedControllerKind};
-use crate::shared::{gen_build, gen_clone, gen_deps};
+use crate::shared::{gen_build, gen_clone};
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -14,13 +14,6 @@ pub fn expand_grpc_controller(input: &ControllerStruct) -> syn::Result<TokenStre
     let self_fields = &input.fields;
     let interceptors = &input.interceptors;
 
-    let service_name = service
-        .segments
-        .last()
-        .map(|s| s.ident.to_string())
-        .unwrap_or_else(|| "grpc_service".to_string());
-
-    let deps_impl = gen_deps(self_name, self_fields);
     let build_impl = gen_build(self_name, self_fields);
     let clone_impl = gen_clone(self_name, self_fields);
 
@@ -104,13 +97,11 @@ pub fn expand_grpc_controller(input: &ControllerStruct) -> syn::Result<TokenStre
 
     let expanded = quote! {
         #build_impl
-        #deps_impl
         #clone_impl
 
         ::sword::internal::inventory::submit! {
             ::sword::internal::grpc::GrpcControllerRegistrar {
                 controller_id: ::std::any::TypeId::of::<#self_name>(),
-                service_name: stringify!(#service),
                 reflection_descriptor_set: #reflection_descriptor_set,
                 build: |state: &::sword::internal::core::State| {
                     state.insert::<#self_name>(#self_name::build(state).unwrap_or_else(|e| {
@@ -168,19 +159,11 @@ pub fn expand_grpc_controller(input: &ControllerStruct) -> syn::Result<TokenStre
             }
         }
 
-        impl ::sword::internal::grpc::GrpcController for #self_name {
-            fn service_name() -> &'static str {
-                #service_name
-            }
-        }
+        impl ::sword::internal::grpc::GrpcController for #self_name {}
 
         impl ::sword::internal::core::ControllerSpec for #self_name {
             fn kind() -> ::sword::internal::core::Controller {
                 ::sword::internal::core::Controller::Grpc
-            }
-
-            fn type_id() -> ::std::any::TypeId {
-                ::std::any::TypeId::of::<#self_name>()
             }
         }
     };

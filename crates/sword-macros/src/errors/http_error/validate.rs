@@ -1,7 +1,7 @@
 use syn::{Error, Fields, Ident};
 
 use super::parse::HttpErrorConfig;
-use crate::errors::{MessageValue, extract_template_fields};
+use crate::errors::{MessageValue, validate_message_references, validate_named_field_refs};
 
 pub struct HttpErrorValidator;
 
@@ -13,16 +13,7 @@ impl HttpErrorValidator {
         config: &HttpErrorConfig,
     ) -> syn::Result<()> {
         if config.transparent {
-            let is_single_unnamed =
-                matches!(fields, Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1);
-
-            if !is_single_unnamed {
-                return Err(Error::new_spanned(
-                    variant_name,
-                    "transparent variants must have exactly one unnamed field",
-                ));
-            }
-
+            crate::errors::validate_transparent_single_unnamed(variant_name, fields)?;
             return Ok(());
         }
 
@@ -35,55 +26,25 @@ impl HttpErrorValidator {
 
         match fields {
             Fields::Named(named) => {
-                if let Some(field) = Self::message_field_name(config) {
-                    Self::ensure_named_field_exists(
-                        enum_name,
-                        variant_name,
-                        named,
-                        field,
-                        "message",
-                    )?;
-                }
+                validate_message_references(enum_name, variant_name, named, &config.message)?;
 
-                if let Some(MessageValue::Interpolated(template)) = &config.message {
-                    for field in extract_template_fields(template) {
-                        Self::ensure_named_field_exists(
-                            enum_name,
-                            variant_name,
-                            named,
-                            &field,
-                            "message",
-                        )?;
-                    }
-                }
+                let extra_refs: Vec<(&str, &str)> = config
+                    .error_field
+                    .as_deref()
+                    .map(|field| ("error", field))
+                    .into_iter()
+                    .chain(
+                        config
+                            .errors_field
+                            .as_deref()
+                            .map(|field| ("errors", field)),
+                    )
+                    .collect();
 
-                if let Some(field) = &config.error_field {
-                    Self::ensure_named_field_exists(
-                        enum_name,
-                        variant_name,
-                        named,
-                        field,
-                        "error",
-                    )?;
-                }
-
-                if let Some(field) = &config.errors_field {
-                    Self::ensure_named_field_exists(
-                        enum_name,
-                        variant_name,
-                        named,
-                        field,
-                        "errors",
-                    )?;
-                }
+                validate_named_field_refs(enum_name, variant_name, named, &extra_refs)?;
             }
             Fields::Unnamed(unnamed) => {
-                if unnamed.unnamed.len() != 1 {
-                    return Err(Error::new_spanned(
-                        variant_name,
-                        "non-transparent tuple variants are only supported with exactly one field",
-                    ));
-                }
+                crate::errors::validate_single_unnamed(variant_name, unnamed)?;
 
                 if Self::message_field_name(config).is_some()
                     || matches!(config.message, Some(MessageValue::Interpolated(_)))
@@ -111,31 +72,6 @@ impl HttpErrorValidator {
         }
 
         Ok(())
-    }
-
-    fn ensure_named_field_exists(
-        enum_name: &Ident,
-        variant_name: &Ident,
-        fields: &syn::FieldsNamed,
-        field_name: &str,
-        attr_name: &str,
-    ) -> syn::Result<()> {
-        let exists = fields
-            .named
-            .iter()
-            .filter_map(|field| field.ident.as_ref())
-            .any(|ident| ident == field_name);
-
-        if exists {
-            return Ok(());
-        }
-
-        Err(Error::new_spanned(
-            variant_name,
-            format!(
-                "`{attr_name} = {field_name}` references a missing field on {enum_name}::{variant_name}`"
-            ),
-        ))
     }
 
     pub fn message_field_name(config: &HttpErrorConfig) -> Option<&str> {

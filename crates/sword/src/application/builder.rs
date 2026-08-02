@@ -223,8 +223,8 @@ impl ApplicationBuilder {
 
         let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
         let subscriber = EventSubscriber::new(rx, handlers, config);
+
         subscriber.run(shutdown_rx);
-        tracing::info!(target: "sword.events", "Event queue initialized");
 
         Some(shutdown_tx)
     }

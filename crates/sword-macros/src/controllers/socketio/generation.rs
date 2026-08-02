@@ -1,6 +1,6 @@
 use crate::{
     controllers::shared::{ControllerStruct, ParsedControllerKind},
-    shared::{gen_build, gen_clone, gen_deps},
+    shared::{gen_build, gen_clone},
 };
 
 use proc_macro2::TokenStream;
@@ -22,7 +22,6 @@ pub fn generate_socketio_controller_builder(
     let self_fields = &input.fields;
     let controller_name_str = self_name.to_string();
 
-    let deps_impl = gen_deps(self_name, self_fields);
     let build_impl = gen_build(self_name, self_fields);
     let clone_impl = gen_clone(self_name, self_fields);
 
@@ -69,7 +68,7 @@ pub fn generate_socketio_controller_builder(
                 })
             );
 
-            let io = <::sword::socketio::SocketIo as ::sword::internal::core::FromState>::from_state(state)
+            let io = state.get::<::sword::socketio::SocketIo>()
                 .unwrap_or_else(|err| {
                     ::sword::internal::core::sword_error! {
                         title: "Socket.IO component not found in application state",
@@ -152,7 +151,6 @@ pub fn generate_socketio_controller_builder(
 
     let expanded = quote! {
         #build_impl
-        #deps_impl
         #clone_impl
 
         impl ::sword::internal::socketio::SocketIoController for #self_name {
@@ -164,10 +162,6 @@ pub fn generate_socketio_controller_builder(
         impl ::sword::internal::core::ControllerSpec for #self_name {
             fn kind() -> ::sword::internal::core::Controller {
                 ::sword::internal::core::Controller::SocketIo
-            }
-
-            fn type_id() -> ::std::any::TypeId {
-                ::std::any::TypeId::of::<Self>()
             }
         }
 

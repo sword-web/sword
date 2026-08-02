@@ -14,6 +14,7 @@ in-memory = []
 
 [dependencies]
 sword-core = { workspace = true }
+sword-macros = { workspace = true }
 
 tokio = { workspace = true }
 inventory = { workspace = true }

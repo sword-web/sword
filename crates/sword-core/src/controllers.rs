@@ -1,4 +1,3 @@
-use crate::HasDeps;
 use parking_lot::{RawRwLock, RwLock, lock_api::RwLockReadGuard};
 use std::{
     any::TypeId,
@@ -44,9 +43,8 @@ pub enum EventSource {
 ///     controllers.register::<ItemsController>();
 /// }
 /// ```
-pub trait ControllerSpec: HasDeps {
+pub trait ControllerSpec {
     fn kind() -> Controller;
-    fn type_id() -> TypeId;
 }
 
 /// Registry for managing and storing different controller kinds.
@@ -88,12 +86,12 @@ impl ControllerRegistry {
     /// ```rust,ignore
     /// controllers.register::<MyController>();
     /// ```
-    pub fn register<C: ControllerSpec>(&self) {
+    pub fn register<C: ControllerSpec + 'static>(&self) {
         self.controllers
             .write()
             .entry(C::kind())
             .or_default()
-            .insert(C::type_id());
+            .insert(TypeId::of::<C>());
     }
 
     #[doc(hidden)]

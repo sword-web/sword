@@ -3,7 +3,7 @@ mod interceptor;
 
 use super::shared::{CMetaStack, ControllerStruct};
 use crate::controllers::shared::ParsedControllerKind;
-use crate::shared::{gen_build, gen_clone, gen_deps};
+use crate::shared::{gen_build, gen_clone};
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -36,13 +36,11 @@ pub fn expand_web_controller(input: &ControllerStruct) -> syn::Result<TokenStrea
         serialized_controller_interceptors,
     );
 
-    let deps_impl = gen_deps(self_name, self_fields);
     let build_impl = gen_build(self_name, self_fields);
     let clone_impl = gen_clone(self_name, self_fields);
 
     let builder = quote! {
         #build_impl
-        #deps_impl
         #clone_impl
 
         ::sword::internal::inventory::submit! {
@@ -75,10 +73,6 @@ pub fn expand_web_controller(input: &ControllerStruct) -> syn::Result<TokenStrea
         impl ::sword::internal::core::ControllerSpec for #self_name {
             fn kind() -> ::sword::internal::core::Controller {
                 ::sword::internal::core::Controller::Web
-            }
-
-            fn type_id() -> ::std::any::TypeId {
-                ::std::any::TypeId::of::<#self_name>()
             }
         }
     };

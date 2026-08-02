@@ -3238,6 +3238,7 @@ dependencies = [
  "inventory",
  "serde",
  "sword-core",
+ "sword-macros",
  "tokio",
  "tracing",
 ]
@@ -3318,6 +3319,7 @@ name = "sword-macros"
 version = "0.2.2"
 dependencies = [
  "axum",
+ "heck",
  "proc-macro2",
  "quote",
  "syn 2.0.118",

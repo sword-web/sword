@@ -492,7 +492,7 @@ impl IntoResponse for JsonResponse {
         self.json
             .insert("timestamp".into(), Value::String(timestamp));
 
-        let mut response = (self.code, AxumJson(self.json.clone())).into_response();
+        let mut response = (self.code, AxumJson(self.json)).into_response();
 
         if let Some(headers) = self.headers {
             for (key, value) in headers.iter() {

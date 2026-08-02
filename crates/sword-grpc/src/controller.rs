@@ -20,14 +20,11 @@ pub type GrpcResult<T> = Result<Response<T>, Status>;
 pub type GrpcStream<T> = Pin<Box<dyn Stream<Item = Result<T, Status>> + Send + 'static>>;
 
 /// Trait implemented by gRPC controllers declared with `#[controller(kind = Controller::Grpc, ...)]`.
-pub trait GrpcController: ControllerSpec {
-    fn service_name() -> &'static str;
-}
+pub trait GrpcController: ControllerSpec {}
 
 #[derive(Clone)]
 pub struct GrpcControllerRegistrar {
     pub controller_id: TypeId,
-    pub service_name: &'static str,
     pub reflection_descriptor_set: Option<&'static [u8]>,
     pub build: fn(&State),
     pub register: fn(&State, &mut GrpcServiceRegistry),

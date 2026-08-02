@@ -20,7 +20,6 @@ pub fn expand_event_handler(input: &ControllerStruct) -> syn::Result<TokenStream
     let self_fields = &input.fields;
     let controller_name_str = self_name.to_string();
 
-    let deps_impl = crate::shared::gen_deps(self_name, self_fields);
     let build_impl = crate::shared::gen_build(self_name, self_fields);
     let clone_impl = crate::shared::gen_clone(self_name, self_fields);
 
@@ -30,7 +29,6 @@ pub fn expand_event_handler(input: &ControllerStruct) -> syn::Result<TokenStream
 
     let expanded: TokenStream2 = quote! {
         #build_impl
-        #deps_impl
         #clone_impl
 
         impl ::sword::internal::events::EventHandler for #self_name {}
@@ -38,10 +36,6 @@ pub fn expand_event_handler(input: &ControllerStruct) -> syn::Result<TokenStream
         impl ::sword::internal::core::ControllerSpec for #self_name {
             fn kind() -> ::sword::internal::core::Controller {
                 ::sword::internal::core::Controller::EventHandler
-            }
-
-            fn type_id() -> ::std::any::TypeId {
-                ::std::any::TypeId::of::<Self>()
             }
         }
 

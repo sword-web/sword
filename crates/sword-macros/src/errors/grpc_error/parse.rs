@@ -59,27 +59,19 @@ impl GrpcErrorConfig {
     }
 
     fn validate_container(&self) -> syn::Result<()> {
-        if self.transparent {
-            return Err(Error::new(
-                proc_macro2::Span::call_site(),
-                "`transparent` is only valid inside #[grpc(...)] on enum variants",
-            ));
-        }
-
-        Ok(())
+        crate::errors::validate_transparent_container(self.transparent, "grpc")
     }
 
     fn validate_variant(&self, ident: &Ident) -> syn::Result<()> {
-        if self.transparent
-            && (self.code.is_some() || self.message.is_some() || self.tracing_level.is_some())
-        {
-            return Err(Error::new_spanned(
-                ident,
-                "`transparent` cannot be combined with `code`, `message`, or `tracing`",
-            ));
-        }
+        let has_conflict =
+            self.code.is_some() || self.message.is_some() || self.tracing_level.is_some();
 
-        Ok(())
+        crate::errors::validate_transparent_variant(
+            self.transparent,
+            has_conflict,
+            ident,
+            "`code`, `message`, or `tracing`",
+        )
     }
 
     fn parse_grpc_attr(&mut self, attr: &Attribute, attr_name: &str) -> syn::Result<()> {
@@ -113,14 +105,7 @@ impl GrpcErrorConfig {
     }
 
     fn parse_tracing_attr(&mut self, attr: &Attribute) -> syn::Result<()> {
-        attr.parse_nested_meta(|meta| {
-            let ident = meta
-                .path
-                .get_ident()
-                .ok_or_else(|| Error::new(meta.path.span(), "expected identifier"))?;
-
-            self.set_tracing_level_value(ident, ident.to_string())
-        })
+        crate::errors::parse_tracing_attr(&mut self.tracing_level, attr)
     }
 
     fn set_code(&mut self, ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<()> {
@@ -137,46 +122,12 @@ impl GrpcErrorConfig {
             return Err(Error::new(ident.span(), "duplicate `message` attribute"));
         }
 
-        self.message = Some(parse_message_value(ident, meta)?);
+        self.message = Some(MessageValue::parse(ident, meta)?);
         Ok(())
     }
 
     fn set_tracing_level(&mut self, ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<()> {
-        if !meta.input.peek(Token![=]) {
-            return Err(Error::new(ident.span(), "expected '=' after 'tracing'"));
-        }
-
-        meta.input.parse::<Token![=]>()?;
-
-        if let Ok(level) = meta.input.parse::<Ident>() {
-            return self.set_tracing_level_value(&level, level.to_string());
-        }
-
-        if let Ok(level) = meta.input.parse::<LitStr>() {
-            return self.set_tracing_level_value(ident, level.value());
-        }
-
-        Err(Error::new(
-            ident.span(),
-            "expected tracing level identifier or string literal",
-        ))
-    }
-
-    fn set_tracing_level_value(&mut self, ident: &Ident, level: String) -> syn::Result<()> {
-        if self.tracing_level.is_some() {
-            return Err(Error::new(ident.span(), "duplicate `tracing` attribute"));
-        }
-
-        match level.as_str() {
-            "trace" | "debug" | "info" | "warn" | "error" => {
-                self.tracing_level = Some(level);
-                Ok(())
-            }
-            _ => Err(Error::new(
-                ident.span(),
-                "invalid tracing level, expected one of: trace, debug, info, warn, error",
-            )),
-        }
+        crate::errors::set_tracing_level(&mut self.tracing_level, ident, meta)
     }
 }
 
@@ -187,31 +138,4 @@ fn parse_code_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<String
 
     meta.input.parse::<Token![=]>()?;
     Ok(meta.input.parse::<LitStr>()?.value())
-}
-
-fn parse_message_value(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<MessageValue> {
-    if !meta.input.peek(Token![=]) {
-        return Err(Error::new(ident.span(), "expected '=' after 'message'"));
-    }
-
-    meta.input.parse::<Token![=]>()?;
-
-    if let Ok(lit) = meta.input.parse::<LitStr>() {
-        let value = lit.value();
-
-        if value.contains('{') || value.contains('}') {
-            return Ok(MessageValue::Interpolated(value));
-        }
-
-        return Ok(MessageValue::Static(value));
-    }
-
-    if let Ok(field) = meta.input.parse::<Ident>() {
-        return Ok(MessageValue::Field(field.to_string()));
-    }
-
-    Err(Error::new(
-        ident.span(),
-        "expected string literal or field identifier",
-    ))
 }

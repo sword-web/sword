@@ -1,4 +1,4 @@
-use sword::prelude::*;
+use sword::events::*;
 
 #[event(key = "user.created")]
 pub struct UserCreatedEvent {

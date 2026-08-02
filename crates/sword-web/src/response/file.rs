@@ -105,7 +105,7 @@ impl File {
 }
 
 impl IntoResponse for File {
-    fn into_response(self) -> AxumResponse {
+    fn into_response(mut self) -> AxumResponse {
         let disposition = match self.disposition {
             ContentDisposition::Inline => "inline",
             ContentDisposition::Attachment => "attachment",
@@ -114,11 +114,13 @@ impl IntoResponse for File {
         let filename = self.filename.unwrap_or("file");
         let content_disposition = format!("{disposition}; filename=\"{filename}\"");
 
-        let headers = [
-            ("Content-Type", self.content_type),
-            ("Content-Disposition", &content_disposition),
-        ];
+        self.headers
+            .insert("Content-Type", HeaderValue::from_static(self.content_type));
+        self.headers.insert(
+            "Content-Disposition",
+            HeaderValue::from_str(&content_disposition).unwrap(),
+        );
 
-        (StatusCode::OK, headers, Body::from(self.bytes)).into_response()
+        (StatusCode::OK, self.headers, Body::from(self.bytes)).into_response()
     }
 }

@@ -1,4 +1,5 @@
 use crate::controllers::shared::CMetaStack;
+use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{FnArg, ItemFn, LitStr, Type};
@@ -32,22 +33,11 @@ pub fn expand_handle(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
         fn_name
     );
 
-    let controller_snake = controller_name
-        .split("::")
-        .map(|s| {
-            let mut result = String::new();
-            for (i, c) in s.chars().enumerate() {
-                if c.is_uppercase() && i > 0 {
-                    result.push('_');
-                }
-                result.push(c.to_ascii_lowercase());
-            }
-            result
-        })
-        .collect::<Vec<_>>()
-        .join("__");
-
-    let build_fn_name = format_ident!("__sword_event_build_{}_{}", controller_snake, fn_name);
+    let build_fn_name = format_ident!(
+        "__sword_event_build_{}_{}",
+        controller_ident.to_string().to_snake_case(),
+        fn_name
+    );
 
     let expansion = quote! {
         #input_fn

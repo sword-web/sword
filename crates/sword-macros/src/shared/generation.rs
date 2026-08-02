@@ -43,20 +43,21 @@ fn is_std_arc_path(path: &syn::Path) -> bool {
 }
 
 pub fn generate_field_extractions(fields: &[(Ident, Type)]) -> TokenStream {
-    let extractions = fields.iter().map(|(field_name, field_type)| {
-        match extract_arc_inner_type(field_type) {
-            Some(_inner_type) => {
-                quote! {
-                    let #field_name = <#field_type as ::sword::internal::core::FromStateArc>::from_state_arc(state)?;
+    let extractions =
+        fields.iter().map(
+            |(field_name, field_type)| match extract_arc_inner_type(field_type) {
+                Some(inner_type) => {
+                    quote! {
+                        let #field_name = state.borrow::<#inner_type>()?;
+                    }
                 }
-            }
-            None => {
-                quote! {
-                    let #field_name = <#field_type as ::sword::internal::core::FromState>::from_state(state)?;
+                None => {
+                    quote! {
+                        let #field_name = state.get::<#field_type>()?;
+                    }
                 }
-            }
-        }
-    });
+            },
+        );
 
     quote! {
         #(#extractions)*
@@ -79,10 +80,8 @@ pub fn generate_field_assignments(fields: &[(Ident, Type)]) -> TokenStream {
 /// to create the `build()` method that constructs an instance from the `State`.
 ///
 /// The generated code extracts each field dependency from the `State` using
-/// `FromState` / `FromStateArc` and assembles them into a new component instance.
-///
-/// This differs from `FromState`'s blanket impl which only retrieves pre-existing
-/// instances - `Build` actually constructs new instances from their dependencies.
+/// `State::get` (by-value fields) or `State::borrow` (`Arc<T>` fields) and
+/// assembles them into a new component instance.
 pub fn gen_build(name: &Ident, fields: &[(Ident, Type)]) -> TokenStream {
     let extracts = generate_field_extractions(fields);
     let assigns = generate_field_assignments(fields);

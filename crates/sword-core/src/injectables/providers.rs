@@ -1,4 +1,4 @@
-use crate::{FromState, Injectable, RwMap};
+use crate::{Injectable, RwMap};
 use std::{any::TypeId, collections::HashMap, sync::Arc};
 
 /// Marker trait for pre-instantiated dependencies (providers).
@@ -6,11 +6,12 @@ use std::{any::TypeId, collections::HashMap, sync::Arc};
 /// Providers are dependencies that have been pre-constructed and registered
 /// into the State. Unlike Components which are built from their dependencies,
 /// Providers are already complete instances that only need to be retrieved
-/// from the State via the FromState trait.
+/// from the State.
 ///
-/// Common use cases: database connections, external API clients, or any
-/// resource that requires async initialization or complex setup.
-pub trait Provider: FromState + Send + Sync {}
+/// Providers are injected as `Arc<T>` (via `State::borrow`), so they do not
+/// need to be `Clone`. Common use cases: database connections, external API
+/// clients, or any resource that requires async initialization or complex setup.
+pub trait Provider: Send + Sync {}
 
 pub struct ProviderRegistry {
     providers: RwMap<TypeId, Injectable>,

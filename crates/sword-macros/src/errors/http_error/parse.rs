@@ -1,7 +1,5 @@
 use axum::http::StatusCode;
-use syn::{
-    Attribute, Error, Ident, LitInt, LitStr, Token, meta::ParseNestedMeta, spanned::Spanned,
-};
+use syn::{Attribute, Error, Ident, LitInt, Token, meta::ParseNestedMeta, spanned::Spanned};
 
 use crate::errors::MessageValue;
 
@@ -69,31 +67,22 @@ impl HttpErrorConfig {
     }
 
     fn validate_container(&self) -> syn::Result<()> {
-        if self.transparent {
-            return Err(Error::new(
-                proc_macro2::Span::call_site(),
-                "`transparent` is only valid inside #[http(...)] on enum variants",
-            ));
-        }
-
-        Ok(())
+        crate::errors::validate_transparent_container(self.transparent, "http")
     }
 
     fn validate_variant(&self, ident: &Ident) -> syn::Result<()> {
-        if self.transparent
-            && (self.code.is_some()
-                || self.message.is_some()
-                || self.error_field.is_some()
-                || self.errors_field.is_some()
-                || self.tracing_level.is_some())
-        {
-            return Err(Error::new_spanned(
-                ident,
-                "`transparent` cannot be combined with `code`, `message`, `error`, `errors`, or `tracing`",
-            ));
-        }
+        let has_conflict = self.code.is_some()
+            || self.message.is_some()
+            || self.error_field.is_some()
+            || self.errors_field.is_some()
+            || self.tracing_level.is_some();
 
-        Ok(())
+        crate::errors::validate_transparent_variant(
+            self.transparent,
+            has_conflict,
+            ident,
+            "`code`, `message`, `error`, `errors`, or `tracing`",
+        )
     }
 
     fn parse_http_attr(&mut self, attr: &Attribute) -> syn::Result<()> {
@@ -119,14 +108,7 @@ impl HttpErrorConfig {
     }
 
     fn parse_tracing_attr(&mut self, attr: &Attribute) -> syn::Result<()> {
-        attr.parse_nested_meta(|meta| {
-            let ident = meta
-                .path
-                .get_ident()
-                .ok_or_else(|| Error::new(meta.path.span(), "expected identifier"))?;
-
-            self.set_tracing_level_value(ident, ident.to_string())
-        })
+        crate::errors::parse_tracing_attr(&mut self.tracing_level, attr)
     }
 
     fn set_transparent(&mut self, ident: &Ident) -> syn::Result<()> {
@@ -178,70 +160,7 @@ impl HttpErrorConfig {
     }
 
     fn set_tracing_level(&mut self, ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<()> {
-        if !meta.input.peek(Token![=]) {
-            return Err(Error::new(ident.span(), "expected '=' after 'tracing'"));
-        }
-
-        meta.input.parse::<Token![=]>()?;
-
-        if let Ok(level) = meta.input.parse::<Ident>() {
-            return self.set_tracing_level_value(&level, level.to_string());
-        }
-
-        if let Ok(level) = meta.input.parse::<LitStr>() {
-            return self.set_tracing_level_value(ident, level.value());
-        }
-
-        Err(Error::new(
-            ident.span(),
-            "expected tracing level identifier or string literal",
-        ))
-    }
-
-    fn set_tracing_level_value(&mut self, ident: &Ident, level: String) -> syn::Result<()> {
-        if self.tracing_level.is_some() {
-            return Err(Error::new(ident.span(), "duplicate `tracing` attribute"));
-        }
-
-        match level.as_str() {
-            "trace" | "debug" | "info" | "warn" | "error" => {
-                self.tracing_level = Some(level);
-                Ok(())
-            }
-            _ => Err(Error::new(
-                ident.span(),
-                "invalid tracing level, expected one of: trace, debug, info, warn, error",
-            )),
-        }
-    }
-}
-
-impl MessageValue {
-    fn parse(ident: &Ident, meta: &ParseNestedMeta) -> syn::Result<MessageValue> {
-        if !meta.input.peek(Token![=]) {
-            return Err(Error::new(ident.span(), "expected '=' after 'message'"));
-        }
-
-        meta.input.parse::<Token![=]>()?;
-
-        if let Ok(lit) = meta.input.parse::<LitStr>() {
-            let value = lit.value();
-
-            if value.contains('{') || value.contains('}') {
-                return Ok(MessageValue::Interpolated(value));
-            }
-
-            return Ok(MessageValue::Static(value));
-        }
-
-        if let Ok(field) = meta.input.parse::<Ident>() {
-            return Ok(MessageValue::Field(field.to_string()));
-        }
-
-        Err(Error::new(
-            ident.span(),
-            "expected string literal or field identifier",
-        ))
+        crate::errors::set_tracing_level(&mut self.tracing_level, ident, meta)
     }
 }
 

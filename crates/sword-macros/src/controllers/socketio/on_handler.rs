@@ -1,4 +1,5 @@
 use crate::controllers::shared::CMetaStack;
+use heck::ToPascalCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{ItemFn, LitStr};
@@ -44,17 +45,7 @@ pub fn expand_on_handler(attr: TokenStream, item: TokenStream) -> syn::Result<To
         fn_name
     );
 
-    let fn_name_str = fn_name.to_string();
-    let fn_name_pascal = fn_name_str
-        .split('_')
-        .map(|s| {
-            let mut chars = s.chars();
-            match chars.next() {
-                Some(first) => first.to_uppercase().chain(chars).collect::<String>(),
-                None => String::new(),
-            }
-        })
-        .collect::<String>();
+    let fn_name_pascal = fn_name.to_string().to_pascal_case();
 
     let handler_struct_name = format_ident!(
         "SwordSocketIoHandler{}_{}",
