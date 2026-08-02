@@ -4,13 +4,13 @@ use sword::prelude::*;
 
 use crate::mailer::{Mailer, events::UserCreatedEvent};
 
-#[controller(kind = Controller::MemEventHandler, namespace = "user")]
+#[controller(kind = Controller::EventHandler, source = EventSource::Memory)]
 pub struct MailHandler {
     mailer: Arc<Mailer>,
 }
 
 impl MailHandler {
-    #[handle("created")]
+    #[handle("user.created")]
     async fn on_user_created(&self, event: UserCreatedEvent) -> EventHandlerResult<()> {
         tracing::info!(
             target: "sword.example.mailer",

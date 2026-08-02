@@ -4,27 +4,22 @@ use quote::{format_ident, quote};
 use syn::{FnArg, ItemFn, LitStr, Type};
 
 pub fn expand_handle(attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
-    if CMetaStack::get("controller_name").is_none() {
+    if CMetaStack::get("event_handler", "controller_name").is_none() {
         return Ok(item);
     }
 
     let event_lit = syn::parse::<LitStr>(attr)?;
-    let relative_key = event_lit.value();
+    let event_key = event_lit.value();
     let input_fn = syn::parse::<ItemFn>(item)?;
 
-    let controller_name = CMetaStack::get("controller_name").unwrap();
-    let namespace = CMetaStack::get("mem_event_namespace").ok_or_else(|| {
-        syn::Error::new(
-            proc_macro2::Span::call_site(),
-            "mem_event_namespace not found in CMetaStack",
-        )
-    })?;
+    if event_key.is_empty() {
+        return Err(syn::Error::new_spanned(
+            &event_lit,
+            "event key must not be empty; specify the full key, e.g. #[handle(\"user.created\")]",
+        ));
+    }
 
-    let full_key = if relative_key.is_empty() {
-        namespace.clone()
-    } else {
-        format!("{}.{}", namespace, relative_key)
-    };
+    let controller_name = CMetaStack::get("event_handler", "controller_name").unwrap();
 
     let fn_name = &input_fn.sig.ident;
     let controller_ident: syn::Ident = syn::parse_str(&controller_name)?;
@@ -73,7 +68,7 @@ pub fn expand_handle(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
                             ),
                             context: {
                                 "controller" => ::std::stringify!(#controller_ident),
-                                "event_key" => #full_key,
+                                "event_key" => #event_key,
                             },
                             hints: [
                                 "Ensure the controller is registered via Module::register_controllers",
@@ -92,7 +87,7 @@ pub fn expand_handle(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
                                     "Failed to downcast event to {} for handler {} (key: {})",
                                     ::std::any::type_name::<#event_type>(),
                                     ::std::stringify!(#fn_name),
-                                    #full_key,
+                                    #event_key,
                                 )
                             })?;
 
@@ -115,8 +110,8 @@ pub fn expand_handle(attr: TokenStream, item: TokenStream) -> syn::Result<TokenS
             }
 
             ::sword::internal::inventory::submit! {
-                ::sword::internal::events::MemEventRouteRegistrar {
-                    event_key: #full_key,
+                ::sword::internal::events::EventRouteRegistrar {
+                    event_key: #event_key,
                     handler_type_id: ::std::any::TypeId::of::<#controller_ident>(),
                     build_and_handle: #build_fn_name,
                 }

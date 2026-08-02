@@ -74,9 +74,11 @@ pub fn connect(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// such as `#[get]`, `#[post]`, `#[put]`, `#[patch]`, `#[delete]`, `#[head]`, `#[options]`, `#[trace]`, and `#[connect]`.
 ///
 /// ### Parameters
-/// - `kind`: Controller kind. Use `Controller::Web` or `Controller::SocketIo`.
+/// - `kind`: Controller kind. Use `Controller::Web`, `Controller::SocketIo`, `Controller::Grpc`, or `Controller::EventHandler`.
 /// - `path`: Required when `kind = Controller::Web`.
 /// - `namespace`: Required when `kind = Controller::SocketIo`.
+/// - `service`: Required when `kind = Controller::Grpc`.
+/// - `source`: Required when `kind = Controller::EventHandler`. Use `EventSource::Memory`.
 ///
 /// ### Usage
 /// ```rust,ignore
@@ -706,21 +708,27 @@ pub fn event(args: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[cfg(feature = "event-handlers")]
-/// Registers an event handler method for a `MemEventHandler` controller.
+/// Registers an event handler method for an `EventHandler` controller.
 ///
-/// The attribute takes the event sub-key as argument, which is combined
-/// with the controller's `namespace` to form the full event key.
+/// The attribute takes the full event key as argument, which must match
+/// the `key` of the event being published via `EventPublisher`.
 ///
 /// # Example
 ///
 /// ```rust,ignore
-/// #[controller(kind = Controller::MemEventHandler, namespace = "mail")]
+/// #[event(key = "mail.send.failed")]
+/// struct MailFailedEvent {
+///     to: String,
+///     error: String,
+/// }
+///
+/// #[controller(kind = Controller::EventHandler, source = EventSource::Memory)]
 /// struct MailHandler {
 ///     mailer: Arc<Mailer>,
 /// }
 ///
 /// impl MailHandler {
-///     #[handle("send.failed")]
+///     #[handle("mail.send.failed")]
 ///     async fn on_failed(&self, event: MailFailedEvent) -> Result<()> {
 ///         self.mailer.resend(&event.to).await?;
 ///         Ok(())
@@ -729,7 +737,7 @@ pub fn event(args: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::mem_event_handler::expand_handle(attr, item)
+    controllers::event_handler::expand_handle(attr, item)
         .unwrap_or_else(|err| err.to_compile_error().into())
 }
 

@@ -25,7 +25,21 @@ pub enum ControllerKind {
     Web,
     SocketIo,
     Grpc,
-    MemEventHandler,
+    EventHandler,
+}
+
+// Try to parse from a path like `EventSource::Memory`.
+// Mirrors the runtime `sword_core::EventSource` enum.
+pub enum EventSourceKind {
+    Memory,
+}
+
+impl EventSourceKind {
+    pub fn as_tokens(&self) -> proc_macro2::TokenStream {
+        match self {
+            Self::Memory => quote::quote! { ::sword::internal::core::EventSource::Memory },
+        }
+    }
 }
 
 #[derive(Default)]
@@ -34,6 +48,7 @@ pub struct ControllerArgs {
     pub path: Option<LitStr>,
     pub namespace: Option<LitStr>,
     pub service: Option<Path>,
+    pub source: Option<EventSourceKind>,
 }
 
 pub enum ParsedControllerKind {
@@ -47,7 +62,7 @@ pub enum ParsedControllerKind {
     Grpc { service: Path },
 
     #[cfg(feature = "event-handlers")]
-    MemEventHandler { namespace: String },
+    EventHandler { source: EventSourceKind },
 }
 
 // Try to parse from a path like `Controller::Web` or `Controller::SocketIo`.
@@ -68,10 +83,31 @@ impl Parse for ControllerKind {
             "Web" => Ok(Self::Web),
             "SocketIo" => Ok(Self::SocketIo),
             "Grpc" => Ok(Self::Grpc),
-            "MemEventHandler" => Ok(Self::MemEventHandler),
+            "EventHandler" => Ok(Self::EventHandler),
             _ => Err(Error::new(
                 path.span(),
-                "Invalid controller kind. Expected `Web`, `SocketIo`, `Grpc`, or `MemEventHandler`",
+                "Invalid controller kind. Expected `Web`, `SocketIo`, `Grpc`, or `EventHandler`",
+            )),
+        }
+    }
+}
+
+impl Parse for EventSourceKind {
+    fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+        let path: Path = input.parse()?;
+
+        let last = path
+            .segments
+            .last()
+            .ok_or_else(|| Error::new(path.span(), "Expected a valid event source"))?
+            .ident
+            .to_string();
+
+        match last.as_str() {
+            "Memory" => Ok(Self::Memory),
+            _ => Err(Error::new(
+                path.span(),
+                "Invalid event source. Expected `EventSource::Memory`",
             )),
         }
     }
@@ -115,6 +151,12 @@ impl Parse for ControllerArgs {
                         return Err(Error::new(key_span, "Duplicate argument `service`"));
                     }
                     out.service = Some(input.parse()?);
+                }
+                "source" => {
+                    if out.source.is_some() {
+                        return Err(Error::new(key_span, "Duplicate argument `source`"));
+                    }
+                    out.source = Some(input.parse()?);
                 }
                 _ => {
                     return Err(Error::new(key_span, "Unknown controller argument"));
@@ -249,39 +291,43 @@ impl TryFrom<ControllerArgs> for ParsedControllerKind {
                 Ok(ParsedControllerKind::Grpc { service })
             }
 
-            ControllerKind::MemEventHandler => {
+            ControllerKind::EventHandler => {
                 if let Some(path) = args.path {
                     return Err(Error::new(
                         path.span(),
-                        "`path` is not valid for MemEventHandler",
+                        "`path` is not valid for EventHandler",
                     ));
                 }
 
                 if let Some(service) = args.service {
                     return Err(Error::new(
                         service.span(),
-                        "`service` is not valid for MemEventHandler",
+                        "`service` is not valid for EventHandler",
                     ));
                 }
 
-                let namespace_lit = args.namespace.ok_or_else(|| {
-                    Error::new(Span::call_site(), "MemEventHandler requires `namespace`")
+                if let Some(namespace) = args.namespace {
+                    return Err(Error::new(
+                        namespace.span(),
+                        "`namespace` is not valid for EventHandler; specify the full event key in `#[handle(\"...\")]` instead",
+                    ));
+                }
+
+                let source = args.source.ok_or_else(|| {
+                    Error::new(Span::call_site(), "EventHandler requires `source`")
                 })?;
 
                 #[cfg(not(feature = "event-handlers"))]
                 {
-                    let _ = namespace_lit;
+                    let _ = source;
                     Err(Error::new(
                         Span::call_site(),
-                        "MemEventHandler controllers require enabling the `event-handlers` feature",
+                        "EventHandler controllers require enabling the `event-handlers` feature",
                     ))
                 }
 
                 #[cfg(feature = "event-handlers")]
-                {
-                    let namespace = namespace_lit.value();
-                    Ok(ParsedControllerKind::MemEventHandler { namespace })
-                }
+                Ok(ParsedControllerKind::EventHandler { source })
             }
         }
     }

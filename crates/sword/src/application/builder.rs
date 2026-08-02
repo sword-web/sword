@@ -148,12 +148,12 @@ impl ApplicationBuilder {
 
         use sword_events::in_memory::EventSubscriber;
         use sword_events::{
-            EventHandlerFn, EventQueueConfig, MemEventControllerRegistrar, MemEventRouteRegistrar,
+            EventControllerRegistrar, EventHandlerFn, EventQueueConfig, EventRouteRegistrar,
         };
 
         let event_controllers = self
             .controller_registry
-            .get_by_kind(Controller::MemEventHandler);
+            .get_by_kind(Controller::EventHandler);
 
         if event_controllers.is_empty() {
             return None;
@@ -165,13 +165,13 @@ impl ApplicationBuilder {
             config
         });
 
-        let controller_registrars: HashMap<TypeId, &MemEventControllerRegistrar> =
-            inventory::iter::<MemEventControllerRegistrar>()
+        let controller_registrars: HashMap<TypeId, &EventControllerRegistrar> =
+            inventory::iter::<EventControllerRegistrar>()
                 .map(|r| (r.handler_type_id, r))
                 .collect();
 
-        let mut route_map: HashMap<TypeId, Vec<&MemEventRouteRegistrar>> = HashMap::new();
-        for route in inventory::iter::<MemEventRouteRegistrar>() {
+        let mut route_map: HashMap<TypeId, Vec<&EventRouteRegistrar>> = HashMap::new();
+        for route in inventory::iter::<EventRouteRegistrar>() {
             route_map
                 .entry(route.handler_type_id)
                 .or_default()
@@ -184,11 +184,21 @@ impl ApplicationBuilder {
             let Some(registrar) = controller_registrars.get(type_id) else {
                 tracing::warn!(
                     target: "sword.events",
-                    "No MemEventControllerRegistrar found for handler type {:?}",
+                    "No EventControllerRegistrar found for handler type {:?}",
                     type_id,
                 );
                 continue;
             };
+
+            if registrar.source != EventSource::Memory {
+                tracing::warn!(
+                    target: "sword.events",
+                    source = ?registrar.source,
+                    "Event handler source is not supported yet, skipping handler type {:?}",
+                    type_id,
+                );
+                continue;
+            }
 
             (registrar.build)(&self.state);
 

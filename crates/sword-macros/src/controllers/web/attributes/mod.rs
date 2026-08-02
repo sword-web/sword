@@ -8,7 +8,7 @@ use generation::WebRouteGenerator;
 pub use parsing::{ParsedRouteAttribute, RequestMode};
 
 pub fn attribute(attribute_str: &str, attr: TokenStream, item: TokenStream) -> TokenStream {
-    if CMetaStack::get("controller_name").is_none() {
+    if CMetaStack::get("web", "controller_name").is_none() {
         return item;
     }
 

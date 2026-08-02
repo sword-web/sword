@@ -94,7 +94,7 @@ pub struct WebRouteContext {
 
 impl WebRouteContext {
     fn from_cmeta(method: &str) -> syn::Result<Self> {
-        let Some(controller_name) = CMetaStack::get("controller_name") else {
+        let Some(controller_name) = CMetaStack::get("web", "controller_name") else {
             let error = format!(
                 "\n[ERROR] The #[{}] attribute must be used inside a #[controller] impl block.\n\
                 \n\
@@ -108,7 +108,7 @@ impl WebRouteContext {
             return Err(syn::Error::new(Span::call_site(), error));
         };
 
-        let controller_interceptors = CMetaStack::get_list("controller_interceptors")
+        let controller_interceptors = CMetaStack::get_list("web", "controller_interceptors")
             .unwrap_or_default()
             .into_iter()
             .map(|interceptor| syn::parse_str::<InterceptorArgs>(&interceptor))

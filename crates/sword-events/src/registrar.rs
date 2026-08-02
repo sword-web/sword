@@ -5,24 +5,25 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use sword_core::State;
+use sword_core::{EventSource, State};
 
 pub type EventHandlerResult<T> = Result<T, Box<dyn Error + Send + Sync + 'static>>;
 type BoxedFuture<T> = Pin<Box<dyn Future<Output = EventHandlerResult<T>> + Send>>;
 
 pub type EventHandlerFn = Arc<dyn Fn(Arc<dyn Event>) -> BoxedFuture<()> + Send + Sync>;
 
-/// Builds a MemEventHandler controller from DI state once and returns
+/// Builds an EventHandler controller from DI state once and returns
 /// a reusable closure that invokes a specific handler method.
-pub struct MemEventControllerRegistrar {
+pub struct EventControllerRegistrar {
     pub handler_type_id: TypeId,
+    pub source: EventSource,
     pub build: fn(&State),
 }
 
-/// Registers a single event route for a MemEventHandler controller.
+/// Registers a single event route for an EventHandler controller.
 /// `build_and_handle` constructs the controller from state once and
 /// returns a closure that can be called for each incoming event.
-pub struct MemEventRouteRegistrar {
+pub struct EventRouteRegistrar {
     pub event_key: &'static str,
     pub handler_type_id: TypeId,
     pub build_and_handle: fn(&State) -> EventHandlerFn,
@@ -45,9 +46,7 @@ impl dyn Event {
     }
 }
 
-pub trait MemEventHandler: sword_core::HasDeps + sword_core::Build {
-    fn namespace() -> &'static str;
-}
+pub trait EventHandler: sword_core::HasDeps + sword_core::Build {}
 
-inventory::collect!(MemEventControllerRegistrar);
-inventory::collect!(MemEventRouteRegistrar);
+inventory::collect!(EventControllerRegistrar);
+inventory::collect!(EventRouteRegistrar);

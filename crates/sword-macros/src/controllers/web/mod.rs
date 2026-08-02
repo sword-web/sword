@@ -28,10 +28,10 @@ pub fn expand_web_controller(input: &ControllerStruct) -> syn::Result<TokenStrea
         .map(|interceptor| interceptor.to_token_stream().to_string())
         .collect();
 
-    CMetaStack::push("controller_kind", "web");
-    CMetaStack::push("controller_path", path);
-    CMetaStack::push("controller_name", &self_name.to_string());
+    CMetaStack::push("web", "controller_path", path);
+    CMetaStack::push("web", "controller_name", &self_name.to_string());
     CMetaStack::push_list(
+        "web",
         "controller_interceptors",
         serialized_controller_interceptors,
     );

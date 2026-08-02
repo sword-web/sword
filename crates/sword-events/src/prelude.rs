@@ -1,4 +1,4 @@
-pub use crate::{Event, EventHandlerResult, EventQueueConfig, MemEventHandler};
+pub use crate::{Event, EventHandler, EventHandlerResult, EventQueueConfig};
 
 #[cfg(feature = "in-memory")]
 pub use crate::in_memory::EventPublisher;

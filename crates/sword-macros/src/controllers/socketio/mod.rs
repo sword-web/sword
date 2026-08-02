@@ -18,11 +18,8 @@ pub fn expand_socketio_controller(input: &ControllerStruct) -> syn::Result<Token
 
     let controller_name = input.name.to_string();
 
-    CMetaStack::push("controller_kind", "socketio");
-    CMetaStack::push("controller_path", namespace);
-    CMetaStack::push("controller_name", &controller_name);
-    CMetaStack::push("socketio_controller_name", &controller_name);
-    CMetaStack::push("socketio_namespace", namespace);
+    CMetaStack::push("socketio", "namespace", namespace);
+    CMetaStack::push("socketio", "controller_name", &controller_name);
 
     let interceptors: Vec<Path> = input
         .interceptors

@@ -14,7 +14,14 @@ pub enum Controller {
     Web,
     SocketIo,
     Grpc,
-    MemEventHandler,
+    EventHandler,
+}
+
+/// Event source enum used by `#[controller(kind = Controller::EventHandler, ...)]`
+/// attributes and runtime internals to select which event backend a handler consumes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum EventSource {
+    Memory,
 }
 
 /// A trait for defining controllers in the application.

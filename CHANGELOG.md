@@ -36,6 +36,9 @@
 
 ### Changed
 
+- **BREAKING:** Renamed `Controller::MemEventHandler` to `Controller::EventHandler`. The whole `Mem` family was renamed: trait `MemEventHandler` → `EventHandler`, `MemEventControllerRegistrar` → `EventControllerRegistrar`, `MemEventRouteRegistrar` → `EventRouteRegistrar`.
+- **BREAKING:** Event handler controllers now require a `source` attribute, e.g. `#[controller(kind = Controller::EventHandler, source = EventSource::Memory)]`. `EventSource` is exported from the Sword prelude.
+- **BREAKING:** Removed the `namespace` attribute from `Controller::EventHandler`. `#[handle("...")]` now takes the full event key directly and it must match the `key` declared in `#[event(key = "...")]`, e.g. `#[handle("user.created")]`.
 - **BREAKING:** Route macros now generate a `match` over the handler result — `Ok(T)` is wrapped in `JsonResponse` based on `T`'s classification. Handlers that returned `JsonResponse` directly (Passthrough) are unaffected.
 - `DisplayConfig` for `ServeDirConfig` lowered from `info!` to `debug!` to reduce production noise.
 
@@ -92,6 +95,7 @@
 
 ### Fixed
 
+- Fixed a macro-expansion ordering bug where the `CMetaStack` shared `controller_name` across controller kinds. It is now scoped per controller kind (`web`, `socketio`, `event_handler`), preventing `#[handle]` from misreading a stale Web/SocketIO context (previously surfaced as `event_namespace not found in CMetaStack`).
 - Fixed an issue where the middleware macro was not working correctly with some configuration types.
 
 - Fixed the error messages when some macros failed to compile. Now, the error messages are more descriptive and helpful.

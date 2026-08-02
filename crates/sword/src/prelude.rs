@@ -1,5 +1,6 @@
 pub use crate::application::*;
 pub use sword_core::Controller;
+pub use sword_core::EventSource;
 pub use sword_core::Module;
 
 pub use sword_core::{ComponentRegistry, Config, ControllerRegistry, Provider, ProviderRegistry};
