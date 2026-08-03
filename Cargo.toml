@@ -65,7 +65,7 @@ serde_urlencoded = "0.7.1"
 form_urlencoded = "1.2.2"
 mime = "0.3.17"
 
-thisconfig = { git = "https://github.com/MrRevillod/thisconfig", features = ["byte-unit", "time-unit"] }
+thisconfig = { version = "0.3.0", features = ["byte-unit", "time-unit"] }
 console = "0.15.8"
 futures-lite = "2.6"
 subsecond = "0.7.2"

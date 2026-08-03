@@ -3498,8 +3498,9 @@ dependencies = [
 
 [[package]]
 name = "thisconfig"
-version = "0.2.2"
-source = "git+https://github.com/MrRevillod/thisconfig#c1a769fa47effedcb807de0f047d6f194b25aa1c"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1cf85165bad7445c8b9faec437641b4b91ee0e657e799e3796bafbe08c6752a"
 dependencies = [
  "byte-unit",
  "duration-str",
@@ -3513,8 +3514,9 @@ dependencies = [
 
 [[package]]
 name = "thisconfig-macros"
-version = "0.2.2"
-source = "git+https://github.com/MrRevillod/thisconfig#c1a769fa47effedcb807de0f047d6f194b25aa1c"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63c8e40f338227c5ed1fdbd3dffea16170b5f364196d67efa5681a0adc294b0f"
 dependencies = [
  "quote",
  "syn 2.0.118",
