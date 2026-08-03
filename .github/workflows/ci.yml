@@ -52,7 +52,6 @@ jobs:
       grpc: ${{ steps.filter.outputs.grpc }}
       web: ${{ steps.filter.outputs.web }}
       socketio: ${{ steps.filter.outputs.socketio }}
-      macros: ${{ steps.filter.outputs.macros }}
       formatting: ${{ steps.filter.outputs.formatting }}
     steps:
       - uses: actions/checkout@v4
@@ -67,25 +66,36 @@ jobs:
               - 'crates/sword-core/**'
               - 'crates/sword/**'
               - 'crates/sword-layers/**'
-            macros:
-              - 'crates/sword-macros/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
             grpc:
               - 'crates/sword-grpc/**'
+              - 'crates/sword-macros/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
             web:
               - 'crates/sword-core/**'
               - 'crates/sword/**'
               - 'crates/sword-web/**'
+              - 'crates/sword-macros/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
             socketio:
               - 'crates/sword-core/**'
               - 'crates/sword/**'
               - 'crates/sword-socketio/**'
+              - 'crates/sword-macros/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
             formatting:
               - '**/*.rs'
               - 'rustfmt.toml'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
 
   formatting:
     needs: changes
-    if: needs.changes.outputs.formatting == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.formatting == 'true' || inputs.run_formatting == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -93,16 +103,13 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.95
-          components: rustfmt
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
   core-checks:
     needs: changes
-    if: needs.changes.outputs.core == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.core == 'true' || inputs.run_core == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -111,19 +118,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.95
-          components: rustfmt, clippy
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          cache: true
 
       - name: Run clippy (sword-core)
         run: cargo clippy -p sword-core --all-targets -- -D warnings
@@ -151,7 +146,7 @@ jobs:
 
   grpc-checks:
     needs: changes
-    if: needs.changes.outputs.grpc == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.grpc == 'true' || inputs.run_grpc == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -160,22 +155,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.95
-          components: rustfmt, clippy
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          cache: true
 
       - name: Run clippy (sword-grpc)
         run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
@@ -193,7 +173,7 @@ jobs:
 
   web-checks:
     needs: changes
-    if: needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.web == 'true' || inputs.run_web == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -202,19 +182,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.95
-          components: rustfmt, clippy
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          cache: true
 
       - name: Run clippy (sword-web)
         run: cargo clippy -p sword-web --all-targets --all-features -- -D warnings
@@ -232,7 +200,7 @@ jobs:
 
   socketio-checks:
     needs: changes
-    if: needs.changes.outputs.socketio == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.socketio == 'true' || inputs.run_socketio == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -241,19 +209,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.95
-          components: rustfmt, clippy
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          cache: true
 
       - name: Run clippy (sword-socketio)
         run: cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
