@@ -1,25 +1,6 @@
 [workspace]
 
 [[package]]
-name = "sword-events"
-release = false
-
-[[package]]
-name = "sword-web"
-release = false
-publish = false
-
-[[package]]
-name = "sword-grpc"
-release = false
-publish = false
-
-[[package]]
-name = "sword-socketio"
-release = false
-publish = false
-
-[[package]]
 name = "interceptors"
 release = false
 
