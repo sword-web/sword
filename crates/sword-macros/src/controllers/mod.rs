@@ -17,7 +17,14 @@ pub mod web;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use shared::{ControllerStruct, ParsedControllerKind};
+use shared::ControllerStruct;
+#[cfg(any(
+    feature = "web-controllers",
+    feature = "socketio-controllers",
+    feature = "grpc-controllers",
+    feature = "event-handlers",
+))]
+use shared::ParsedControllerKind;
 use syn::ItemStruct;
 
 pub fn expand_controller(attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
@@ -41,6 +48,19 @@ pub fn expand_controller(attr: TokenStream, item: TokenStream) -> syn::Result<To
         #[cfg(feature = "event-handlers")]
         ParsedControllerKind::EventHandler { .. } => {
             event_handler::expand_event_handler(&parsed_input)?
+        }
+
+        #[cfg(not(any(
+            feature = "web-controllers",
+            feature = "socketio-controllers",
+            feature = "grpc-controllers",
+            feature = "event-handlers",
+        )))]
+        _ => {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "no controller feature is enabled on `sword-macros`; enable `web-controllers`, `socketio-controllers`, `grpc-controllers`, or `event-handlers`",
+            ));
         }
     };
 
