@@ -157,6 +157,9 @@ jobs:
         with:
           cache: true
 
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+
       - name: Run clippy (sword-grpc)
         run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
 
