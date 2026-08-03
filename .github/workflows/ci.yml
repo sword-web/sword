@@ -53,6 +53,7 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       socketio: ${{ steps.filter.outputs.socketio }}
       formatting: ${{ steps.filter.outputs.formatting }}
+      deps: ${{ steps.filter.outputs.deps }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -92,6 +93,9 @@ jobs:
               - 'rustfmt.toml'
               - 'rust-toolchain.toml'
               - '.github/workflows/**'
+            deps:
+              - 'Cargo.toml'
+              - 'Cargo.lock'
 
   formatting:
     needs: changes
@@ -227,3 +231,22 @@ jobs:
         env:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo doc -p sword-socketio --no-deps --all-features
+
+  deps-checks:
+    needs: changes
+    if: needs.changes.outputs.deps == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          cache: true
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+
+      - name: Check workspace compiles
+        run: cargo check --workspace --all-targets
