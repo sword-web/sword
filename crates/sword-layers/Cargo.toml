@@ -9,8 +9,8 @@ homepage = "https://github.com/sword-web"
 documentation = "https://docs.rs/sword-layers"
 keywords = ["sword", "web", "framework", "axum", "tower"]
 categories = ["web-programming", "web-programming::http-server"]
-readme = "../README.md"
-license = "MIT"
+readme = "README.md"
+license.workspace = true
 
 [features]
 default = []

@@ -14,6 +14,7 @@ ignored  = ["prost",  "tonic-prost"]
 [workspace.package]
 version = "0.3.0"
 edition = "2024"
+license = "MIT"
 repository = "https://github.com/sword-web/sword"
 homepage = "https://sword-web.github.io"
 rust-version = "1.95"

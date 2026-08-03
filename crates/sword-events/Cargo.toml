@@ -5,7 +5,7 @@ edition.workspace = true
 description = "Event/job queue abstraction and in-memory implementation for Sword"
 repository.workspace = true
 homepage.workspace = true
-license-file = "../LICENSE"
+license.workspace = true
 rust-version.workspace = true
 
 [features]

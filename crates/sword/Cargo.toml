@@ -9,8 +9,8 @@ homepage.workspace = true
 documentation = "https://docs.rs/sword"
 keywords = ["sword", "web", "framework", "axum", "microservices"]
 categories = ["web-programming", "web-programming::http-server"]
-readme = "../README.md"
-license-file = "../LICENSE"
+readme = "README.md"
+license.workspace = true
 rust-version.workspace = true
 
 [package.metadata.docs.rs]

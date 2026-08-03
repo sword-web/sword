@@ -8,8 +8,8 @@ repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/sword-macros"
 keywords = ["web", "framework", "axum", "http", "async"]
-readme = "../README.md"
-license-file = "../LICENSE"
+readme = "README.md"
+license.workspace = true
 rust-version.workspace = true
 
 [package.metadata.docs.rs]

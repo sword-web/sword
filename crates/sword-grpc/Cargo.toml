@@ -9,8 +9,8 @@ homepage.workspace = true
 documentation = "https://docs.rs/sword"
 keywords = ["sword", "grpc", "framework", "tonic", "rpc"]
 categories = ["web-programming", "web-programming::http-server"]
-readme = "../README.md"
-license-file = "../LICENSE"
+readme = "README.md"
+license.workspace = true
 rust-version.workspace = true
 publish = false
 
