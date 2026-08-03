@@ -12,7 +12,7 @@ members = [
 ignored  = ["prost",  "tonic-prost"]
 
 [workspace.package]
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 repository = "https://github.com/sword-web/sword"
 homepage = "https://sword-web.github.io"
@@ -20,14 +20,14 @@ rust-version = "1.95"
 
 [workspace.dependencies]
 sword = { path = "crates/sword", default-features = false }
-sword-core = { path = "crates/sword-core", version = "0.2.1" }
-sword-macros = { path = "crates/sword-macros", version = "0.2.1" }
-sword-layers = { path = "crates/sword-layers", version = "0.2.2" }
+sword-core = { path = "crates/sword-core", version = "0.3.0" }
+sword-macros = { path = "crates/sword-macros", version = "0.3.0" }
+sword-layers = { path = "crates/sword-layers", version = "0.3.0" }
 
-sword-web = { path = "crates/sword-web" }
-sword-grpc = { path = "crates/sword-grpc" }
-sword-socketio = { path = "crates/sword-socketio" }
-sword-events = { path = "crates/sword-events" }
+sword-web = { path = "crates/sword-web", version = "0.3.0" }
+sword-grpc = { path = "crates/sword-grpc", version = "0.3.0" }
+sword-socketio = { path = "crates/sword-socketio", version = "0.3.0" }
+sword-events = { path = "crates/sword-events", version = "0.3.0" }
 
 tokio = { version = "^1.0", features = ["full"] }
 tokio-stream = "0.1.18"

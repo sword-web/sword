@@ -1,0 +1,45 @@
+[workspace]
+
+[[package]]
+name = "sword-events"
+release = false
+
+[[package]]
+name = "sword-web"
+release = false
+
+[[package]]
+name = "sword-grpc"
+release = false
+
+[[package]]
+name = "sword-socketio"
+release = false
+
+[[package]]
+name = "interceptors"
+release = false
+
+[[package]]
+name = "sword-web-example"
+release = false
+
+[[package]]
+name = "sword-grpc-example"
+release = false
+
+[[package]]
+name = "sword-socketio-example"
+release = false
+
+[[package]]
+name = "sword-web-tests"
+release = false
+
+[[package]]
+name = "sword-grpc-tests"
+release = false
+
+[[package]]
+name = "sword-socketio-tests"
+release = false
