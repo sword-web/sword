@@ -69,9 +69,41 @@ pub fn connect(attr: TokenStream, item: TokenStream) -> TokenStream {
     controllers::web::attributes::attribute("CONNECT", attr, item)
 }
 
+#[cfg(feature = "web-controllers")]
+/// Marks a handler as a Server-Sent Events (SSE) route.
+///
+/// The handler must return an `axum::response::Sse` response (see `SseResult`),
+/// typically as `Sse<impl Stream<Item = Result<Event, Infallible>>>`. The route is
+/// served over `GET` with `text/event-stream` content type.
+///
+/// ```rust,ignore
+/// use std::convert::Infallible;
+/// use sword::web::*;
+/// use tokio_stream::{Stream, StreamExt};
+///
+/// #[controller(kind = Controller::Web, path = "/sse")]
+/// struct SseController;
+///
+/// impl SseController {
+///     #[sse("/clock")]
+///     async fn clock(&self) -> Sse<impl Stream<Item = Result<Event, Infallible>> + use<>> {
+///         let stream = tokio_stream::iter(0..5).map(|i| Ok(Event::default().event("tick").data(i.to_string())));
+///         Sse::new(stream)
+///     }
+/// }
+/// ```
+///
+/// > **Note:** SSE connections are long-lived. If `request-timeout` is enabled in the
+/// > application config, the global timeout layer will terminate the stream, so leave it
+/// > disabled or set a generous timeout for streaming routes.
+#[proc_macro_attribute]
+pub fn sse(attr: TokenStream, item: TokenStream) -> TokenStream {
+    controllers::web::attributes::attribute("SSE", attr, item)
+}
+
 /// Defines a Sword controller.
 /// Route handlers are declared directly inside the `impl` block using method attributes
-/// such as `#[get]`, `#[post]`, `#[put]`, `#[patch]`, `#[delete]`, `#[head]`, `#[options]`, `#[trace]`, and `#[connect]`.
+/// such as `#[get]`, `#[post]`, `#[put]`, `#[patch]`, `#[delete]`, `#[head]`, `#[options]`, `#[trace]`, `#[connect]`, and `#[sse]`.
 ///
 /// ### Parameters
 /// - `kind`: Controller kind. Use `Controller::Web`, `Controller::SocketIo`, `Controller::Grpc`, or `Controller::EventHandler`.

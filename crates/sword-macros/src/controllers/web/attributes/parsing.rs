@@ -19,7 +19,7 @@ pub enum ReturnKind {
     Empty,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum HttpMethod {
     Get,
     Post,
@@ -30,6 +30,7 @@ pub enum HttpMethod {
     Options,
     Trace,
     Connect,
+    Sse,
 }
 
 impl HttpMethod {
@@ -44,6 +45,7 @@ impl HttpMethod {
             "OPTIONS" => Ok(Self::Options),
             "TRACE" => Ok(Self::Trace),
             "CONNECT" => Ok(Self::Connect),
+            "SSE" => Ok(Self::Sse),
             _ => Err(syn::Error::new(
                 Span::call_site(),
                 format!("Unsupported HTTP method `{method}`"),
@@ -62,6 +64,7 @@ impl HttpMethod {
             Self::Options => "OPTIONS",
             Self::Trace => "TRACE",
             Self::Connect => "CONNECT",
+            Self::Sse => "SSE",
         }
     }
 
@@ -76,6 +79,7 @@ impl HttpMethod {
             Self::Options => quote! { options },
             Self::Trace => quote! { trace },
             Self::Connect => quote! { connect },
+            Self::Sse => quote! { get },
         }
     }
 
@@ -84,6 +88,14 @@ impl HttpMethod {
             Self::Post => 201,
             _ => 200,
         }
+    }
+
+    /// Whether the route is a Server-Sent Events stream.
+    ///
+    /// SSE routes are served over GET but must remain streaming responses, so the
+    /// generator treats them as passthrough regardless of the return type.
+    pub fn is_sse(self) -> bool {
+        matches!(self, Self::Sse)
     }
 }
 
@@ -330,7 +342,7 @@ impl ParsedRouteAttribute {
                     return ReturnKind::Serialize;
                 };
                 match last_segment.ident.to_string().as_str() {
-                    "JsonResponse" | "File" | "Redirect" => ReturnKind::Passthrough,
+                    "JsonResponse" | "File" | "Redirect" | "Sse" => ReturnKind::Passthrough,
                     _ => ReturnKind::Serialize,
                 }
             }

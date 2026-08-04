@@ -4,6 +4,8 @@
 
 ### Added
 
+- `#[sse]` route attribute for Server-Sent Events handlers. Handlers return `Sse<impl Stream<Item = Result<Event, Infallible>>>` (or the `SseResult` type alias) and are served over GET as `text/event-stream`. Exposes `Sse`, `Event`, `KeepAlive`, `SseResult`, and the `stream`/`try_stream` macros via `sword::web`. Note that the global `request-timeout` layer will terminate long-lived SSE connections when enabled.
+
 - `SwordServiceRegistrar` — auto-registration system for services (parallel to `SwordLayerRegistrar`). Services are mounted directly into the router via `inventory`, not layered.
 - `ServeDir` now auto-registers via `SwordServiceRegistrar` when `sword-layers/servedir` is enabled. It nests at the configured `router-path` (default `/static`) without manual setup.
 - Route macros (`#[get]`, `#[post]`, etc.) now auto-detect the return type and wrap `Ok(T)` in `JsonResponse` with the correct status code (POST=201, other methods=200). Supports `Result<T, JsonResponse>`, `WebResult<T>`, and plain return types.
