@@ -1,12 +1,14 @@
 mod file;
 mod json;
 mod redirect;
+mod sse;
 
 use crate::request::RequestError;
 
 pub use file::*;
 pub use json::{JsonResponse, JsonResponseBody};
 pub use redirect::Redirect;
+pub use sse::*;
 pub use sword_macros::HttpError;
 
 pub type WebResult<T = JsonResponse, E = JsonResponse> = Result<T, E>;

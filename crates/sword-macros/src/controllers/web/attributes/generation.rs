@@ -47,7 +47,9 @@ impl WebRouteGenerator {
         let routing_fn = self.route.method.routing_fn_tokens();
         let call_parts = HandlerCallParts::from_function(&self.route.function);
 
-        let handler_body = if self.route.is_result_return {
+        let handler_body = if self.route.method.is_sse() {
+            self.build_sse_handler_body(&call_parts)
+        } else if self.route.is_result_return {
             self.build_result_handler_body(&call_parts)
         } else {
             self.build_plain_handler_body(&call_parts)
@@ -72,6 +74,37 @@ impl WebRouteGenerator {
                         #handler_body
                     }
                 })
+            }
+        }
+    }
+
+    fn build_sse_handler_body(&self, call_parts: &HandlerCallParts) -> TokenStream {
+        let fn_name = &call_parts.fn_name;
+        let call_args = &call_parts.call_args;
+
+        let call = if call_parts.has_params() {
+            quote! { ctrl.#fn_name(#(#call_args),*).await }
+        } else {
+            quote! { ctrl.#fn_name().await }
+        };
+
+        if self.route.is_result_return {
+            quote! {
+                match #call {
+                    Ok(__data) => {
+                        use ::sword::internal::web::IntoResponse;
+                        __data.into_response()
+                    }
+                    Err(__err) => {
+                        use ::sword::internal::web::IntoResponse;
+                        __err.into_response()
+                    }
+                }
+            }
+        } else {
+            quote! {
+                use ::sword::internal::web::IntoResponse;
+                #call.into_response()
             }
         }
     }

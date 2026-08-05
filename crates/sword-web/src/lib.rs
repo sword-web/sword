@@ -6,7 +6,7 @@ pub mod response;
 
 pub mod prelude {
     pub use crate::controller::{
-        WebController, connect, delete, get, head, options, patch, post, put, trace,
+        WebController, connect, delete, get, head, options, patch, post, put, sse, trace,
     };
     pub use crate::interceptor::{
         OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
@@ -14,8 +14,10 @@ pub mod prelude {
     };
     pub use crate::request::{Request, RequestError, StreamRequest};
     pub use crate::response::{
-        ContentDisposition, File, HttpError, JsonResponse, JsonResponseBody, Redirect, WebResult,
+        ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
+        KeepAlive, Redirect, Sse, WebResult,
     };
+    pub use async_stream::{stream, try_stream};
     pub use axum::middleware::Next;
 
     #[cfg(feature = "validation-validator")]

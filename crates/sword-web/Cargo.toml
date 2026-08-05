@@ -19,16 +19,17 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 tokio = { workspace = true }
-axum = { workspace = true }
+tokio-stream = { workspace = true }
 
+axum = { workspace = true }
 sword-core = { workspace = true }
 sword-macros = { workspace = true, features = ["web-controllers"] }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
+
 thiserror = { workspace = true }
 chrono = { workspace = true }
-
 form_urlencoded = { workspace = true }
 serde_urlencoded = { workspace = true }
 mime = { workspace = true }
@@ -41,6 +42,7 @@ tracing = { workspace = true }
 inventory = { workspace = true }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"], optional = true }
 tower = { workspace = true }
+async-stream = { workspace = true }
 
 [dependencies.sword-layers]
 workspace = true

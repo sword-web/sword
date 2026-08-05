@@ -9,6 +9,7 @@ sword = { workspace = true, features = ["web", "web-multipart", "validation-vali
 sword-layers = { workspace = true, features = ["helmet", "compression"] }
 tokio = { workspace = true }
 axum = { workspace = true }
+tokio-stream = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

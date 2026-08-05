@@ -3381,6 +3381,7 @@ dependencies = [
 name = "sword-web"
 version = "0.3.0"
 dependencies = [
+ "async-stream",
  "axum",
  "axum-test",
  "bytes",
@@ -3397,6 +3398,7 @@ dependencies = [
  "sword-macros",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tower",
  "tower-http",
  "tracing",
@@ -3408,6 +3410,7 @@ dependencies = [
 name = "sword-web-example"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "bcrypt",
  "dotenv",
  "serde",
@@ -3416,6 +3419,7 @@ dependencies = [
  "sword",
  "sword-layers",
  "thiserror",
+ "tokio",
  "tracing",
  "uuid",
  "validator",
@@ -3434,6 +3438,7 @@ dependencies = [
  "sword-layers",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tower-http",
  "validator",
 ]
