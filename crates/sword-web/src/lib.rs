@@ -14,8 +14,8 @@ pub mod prelude {
     };
     pub use crate::request::{Request, RequestError, StreamRequest};
     pub use crate::response::{
-        ContentDisposition, Event, File, HttpError, JsonResponse, JsonResponseBody, KeepAlive,
-        Redirect, Sse, SseResult, WebResult,
+        ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
+        KeepAlive, Redirect, Sse, WebResult,
     };
     pub use async_stream::{stream, try_stream};
     pub use axum::middleware::Next;

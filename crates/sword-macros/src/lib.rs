@@ -72,12 +72,11 @@ pub fn connect(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[cfg(feature = "web-controllers")]
 /// Marks a handler as a Server-Sent Events (SSE) route.
 ///
-/// The handler must return an `axum::response::Sse` response (see `SseResult`),
-/// typically as `Sse<impl Stream<Item = Result<Event, Infallible>>>`. The route is
-/// served over `GET` with `text/event-stream` content type.
+/// The handler must return an `Sse` response wrapping a stream, typically as
+/// `Sse<impl EventStream + use<>>`. The route is served over `GET` with
+/// `text/event-stream` content type.
 ///
 /// ```rust,ignore
-/// use std::convert::Infallible;
 /// use sword::web::*;
 /// use tokio_stream::{Stream, StreamExt};
 ///
@@ -86,7 +85,7 @@ pub fn connect(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// impl SseController {
 ///     #[sse("/clock")]
-///     async fn clock(&self) -> Sse<impl Stream<Item = Result<Event, Infallible>> + use<>> {
+///     async fn clock(&self) -> Sse<impl EventStream + use<>> {
 ///         let stream = tokio_stream::iter(0..5).map(|i| Ok(Event::default().event("tick").data(i.to_string())));
 ///         Sse::new(stream)
 ///     }
