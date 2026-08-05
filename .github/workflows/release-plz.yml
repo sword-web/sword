@@ -3,6 +3,7 @@ name: Release-plz
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: release-plz-${{ github.ref }}
@@ -10,6 +11,7 @@ concurrency:
 
 jobs:
   release-plz-pr:
+    if: github.event_name == 'workflow_dispatch'
     name: Release-plz PR
     runs-on: ubuntu-latest
     permissions:
@@ -31,6 +33,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release-plz-release:
+    if: github.event_name == 'push'
     name: Release-plz release
     runs-on: ubuntu-latest
     permissions:
