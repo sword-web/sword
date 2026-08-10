@@ -75,7 +75,7 @@ subsecond = "0.7.2"
 dioxus-devtools = { version = "0.7.2", features = ["serve"] }
 
 tower-http = "0.7.0"
-axum-test = "17.3.0"
+axum-test = "21.0.0"
 
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "uuid"] }
 dotenv = "0.15.0"

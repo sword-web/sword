@@ -9,8 +9,6 @@ updates:
         patterns: ["*"]
         exclude-patterns:
           - "syn"
-          - "axum-test"
           - "sqlx"
           - "bcrypt"
-          - "serial_test"
     open-pull-requests-limit: 10
