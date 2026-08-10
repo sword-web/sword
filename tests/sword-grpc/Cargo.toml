@@ -12,7 +12,7 @@ tonic = { workspace = true }
 tokio-stream = { workspace = true }
 tonic-prost = { workspace = true }
 prost = "0.14.1"
-serial_test = "3.2.0"
+serial_test = "4.0.1"
 thiserror = { workspace = true }
 
 [build-dependencies]
