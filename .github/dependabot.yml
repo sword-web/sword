@@ -8,7 +8,6 @@ updates:
       dependencies:
         patterns: ["*"]
         exclude-patterns:
-          - "axum-helmet"
           - "syn"
           - "axum-test"
           - "sqlx"
