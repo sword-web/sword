@@ -2962,9 +2962,9 @@ dependencies = [
 
 [[package]]
 name = "socketioxide"
-version = "0.18.5"
+version = "0.18.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2417508caba506aa37fd23b17c7dffdae0a9c5c1accfc0e778fc5c254336b7ac"
+checksum = "8b4ccb119c03dd29d44ad7de4dd7049ec0812d1aa05bdca5cc6f1cb5210d4f96"
 dependencies = [
  "bytes",
  "engineioxide",
@@ -3015,9 +3015,9 @@ dependencies = [
 
 [[package]]
 name = "socketioxide-parser-msgpack"
-version = "0.17.1"
+version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8030133a0ef9186803f6c32285b2cc4a3f8d56cd04130b0cb3f5a275a03e6567"
+checksum = "c2bd0f504ec4f33db560bdaa1ea5d1c501a210aac9bdb85d5d7c0feaab53b7d1"
 dependencies = [
  "bytes",
  "rmp",
