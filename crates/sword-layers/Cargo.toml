@@ -45,7 +45,7 @@ tracing = ["dep:tracing", "dep:tracing-subscriber"]
 axum = { workspace = true }
 inventory = { workspace = true }
 sword-core = { workspace = true }
-axum-helmet = { version = "0.2.0", optional = true }
+axum-helmet = { version = "1.0.2", optional = true }
 axum_responses = { workspace = true, optional = true }
 byte-unit = { version = "5.2.0", optional = true }
 serde = { workspace = true, features = ["derive"] }

@@ -7,4 +7,6 @@ updates:
     groups:
       dependencies:
         patterns: ["*"]
+        exclude-patterns:
+          - "syn"
     open-pull-requests-limit: 10

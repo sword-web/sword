@@ -5,7 +5,7 @@ pub fn application_builder() -> sword::ApplicationBuilder {
 
 #[cfg(test)]
 pub fn test_server(app: sword::Application) -> axum_test::TestServer {
-    axum_test::TestServer::new(app.router()).unwrap()
+    axum_test::TestServer::new(app.router())
 }
 
 #[cfg(test)]

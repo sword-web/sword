@@ -40,6 +40,7 @@
 
 ### Changed
 
+- **BREAKING:** `sword-layers` `Helmet::build()` now returns `Result<HelmetLayer, HelmetError>` (axum-helmet 1.0.2 validates header names/values eagerly via `into_layer`). The `ContentSecurityPolicyDirective` re-export was removed (dropped upstream) and `HelmetError` is re-exported in its place.
 - **BREAKING:** Renamed `Controller::MemEventHandler` to `Controller::EventHandler`. The whole `Mem` family was renamed: trait `MemEventHandler` → `EventHandler`, `MemEventControllerRegistrar` → `EventControllerRegistrar`, `MemEventRouteRegistrar` → `EventRouteRegistrar`.
 - **BREAKING:** Event handler controllers now require a `source` attribute, e.g. `#[controller(kind = Controller::EventHandler, source = EventSource::Memory)]`. `EventSource` is exported from the Sword prelude.
 - **BREAKING:** Removed the `namespace` attribute from `Controller::EventHandler`. `#[handle("...")]` now takes the full event key directly and it must match the `key` declared in `#[event(key = "...")]`, e.g. `#[handle("user.created")]`.
