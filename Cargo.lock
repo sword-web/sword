@@ -3269,7 +3269,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "sword"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "dioxus-devtools",
  "futures-lite",
@@ -3289,7 +3289,7 @@ dependencies = [
 
 [[package]]
 name = "sword-core"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "axum",
  "inventory",
@@ -3303,7 +3303,7 @@ dependencies = [
 
 [[package]]
 name = "sword-events"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "inventory",
  "serde",
@@ -3315,7 +3315,7 @@ dependencies = [
 
 [[package]]
 name = "sword-grpc"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "inventory",
  "serde",
@@ -3366,7 +3366,7 @@ dependencies = [
 
 [[package]]
 name = "sword-layers"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "axum",
  "axum-helmet",
@@ -3388,7 +3388,7 @@ dependencies = [
 
 [[package]]
 name = "sword-macros"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "axum",
  "heck",
@@ -3399,7 +3399,7 @@ dependencies = [
 
 [[package]]
 name = "sword-socketio"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "axum",
  "axum-test",
@@ -3451,7 +3451,7 @@ dependencies = [
 
 [[package]]
 name = "sword-web"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-stream",
  "axum",
