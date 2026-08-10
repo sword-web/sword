@@ -57,6 +57,7 @@ impl UserRepository {
             id,
             username: dto.username,
             password,
+            created_at: prost_types::Timestamp::from(std::time::SystemTime::now()),
         };
 
         self.db.set(user.clone()).await;
@@ -83,6 +84,7 @@ impl UserRepository {
             id: dto.id,
             username,
             password,
+            created_at: existing.created_at,
         };
 
         self.db.upsert(updated.clone()).await;

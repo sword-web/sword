@@ -4,6 +4,8 @@
 
 ### Added
 
+- `GrpcStatus` — buildable gRPC status implementing the Richer Error Model, gated behind the `grpc-error-details` feature. It provides an associated function per status code (`GrpcStatus::InvalidArgument()`, `GrpcStatus::NotFound()`, ...) plus chainable detail builders (`bad_request`, `localized_message`, `error_info`, `retry_after`, `help`, `debug_info`, `precondition_failure`, `quota_failure`, `request_info`, `resource_info`) and converts into `tonic::Status` via `.into()`/`build()`. `GrpcStatus::from_status` reconstructs a status client-side. Requires the `grpc-error-details` feature on the `sword` facade (`tonic-types` is re-exported alongside `StatusExt`/`ErrorDetails`).
+
 - `#[sse]` route attribute for Server-Sent Events handlers. Handlers return `Sse<impl EventStream + use<>>` (the `EventStream` marker trait covers `Stream<Item = Result<Event, Infallible>> + Send + 'static`) and are served over GET as `text/event-stream`. The concrete stream is returned without boxing, so SSE handlers allocate no heap memory. Exposes `Sse`, `Event`, `KeepAlive`, and the `stream`/`try_stream` macros via `sword::web`. Note that the global `request-timeout` layer will terminate long-lived SSE connections when enabled.
 
 - `SwordServiceRegistrar` — auto-registration system for services (parallel to `SwordLayerRegistrar`). Services are mounted directly into the router via `inventory`, not layered.

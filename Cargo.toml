@@ -9,7 +9,7 @@ members = [
 ]
 
 [workspace.metadata.cargo-machete]
-ignored  = ["prost",  "tonic-prost"]
+ignored  = ["prost", "prost-types", "tonic-prost"]
 
 [workspace.package]
 version = "0.3.0"
@@ -32,11 +32,13 @@ sword-events = { path = "crates/sword-events", version = "0.3.0" }
 
 tokio = { version = "^1.0", features = ["full"] }
 tokio-stream = "0.1.18"
-tonic = "0.14.5"
-tonic-prost = "0.14.5"
+tonic = "0.14.6"
+tonic-prost = "0.14.6"
+tonic-types = "0.14.6"
+tonic-prost-build = "0.14.6"
 tonic-async-interceptor = "0.14.1"
-tonic-health = "0.14.2"
-tonic-reflection = "0.14.2"
+tonic-health = "0.14.6"
+tonic-reflection = "0.14.6"
 serde = { version = "1.0.219", features = ["derive"] }
 
 axum = "0.8.7"

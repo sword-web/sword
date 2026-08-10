@@ -68,6 +68,10 @@ impl proto::user_service_server::UserService for ErrorController {
                 detail: "missing name".into(),
             }
             .into()),
+            "rich" => Err(GrpcStatus::InvalidArgument()
+                .message("bad request")
+                .bad_request("username", "missing")
+                .into()),
             "unavailable" => Err(TestGrpcError::Unavailable.into()),
             _ => Ok(GrpcResponse::message(proto::GetErrorReply {
                 id,
@@ -157,6 +161,39 @@ async fn grpc_error_route_validation_returns_custom_message() {
     let status = result.expect_err("request should fail with invalid_argument");
     assert_eq!(status.code(), Code::InvalidArgument);
     assert_eq!(status.message(), "Field validation failed");
+
+    server.abort();
+}
+
+#[tokio::test]
+#[serial]
+async fn grpc_error_route_rich_details_round_trip() {
+    let server = start_error_server().await;
+    let mut client =
+        proto::user_service_client::UserServiceClient::connect("http://127.0.0.1:50051")
+            .await
+            .expect("client must connect");
+
+    let result = client
+        .get_error(Request::new(proto::GetErrorRequest { id: "rich".into() }))
+        .await;
+
+    let status = result.expect_err("request should fail with invalid_argument");
+    assert_eq!(status.code(), Code::InvalidArgument);
+    assert_eq!(status.message(), "bad request");
+
+    let details = status.get_error_details();
+    let bad_request = details
+        .bad_request()
+        .expect("bad_request details should be present");
+    assert_eq!(bad_request.field_violations.len(), 1);
+    assert_eq!(bad_request.field_violations[0].field, "username");
+    assert_eq!(bad_request.field_violations[0].description, "missing");
+
+    let grpc_status = GrpcStatus::from_status(&status);
+    assert_eq!(grpc_status.code(), Code::InvalidArgument);
+    assert_eq!(grpc_status.message_text(), "bad request");
+    assert!(grpc_status.details().bad_request().is_some());
 
     server.abort();
 }

@@ -13,12 +13,23 @@ pub mod prelude {
     pub use tonic::{
         Code, Extensions, Request, Response, Status, Streaming, async_trait, include_proto,
     };
+
+    #[cfg(feature = "error-details")]
+    pub use crate::response::GrpcStatus;
+    #[cfg(feature = "error-details")]
+    pub use tonic_types::{
+        BadRequest, DebugInfo, ErrorDetail, ErrorDetails, ErrorInfo, FieldViolation, Help,
+        HelpLink, LocalizedMessage, PreconditionFailure, PreconditionViolation, QuotaFailure,
+        QuotaViolation, RequestInfo, ResourceInfo, RetryInfo, StatusExt,
+    };
 }
 
 #[doc(hidden)]
 pub mod internal {
     pub use tonic;
     pub use tonic_async_interceptor;
+    #[cfg(feature = "error-details")]
+    pub use tonic_types;
 
     pub use crate::controller::{GrpcController, GrpcControllerRegistrar};
     pub use crate::registry::GrpcServiceRegistry;

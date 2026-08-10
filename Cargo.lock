@@ -709,9 +709,9 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.20.11"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc7f46116c46ff9ab3eb1597a45688b6715c6e628b5c133e288e709a29bcb4ee"
+checksum = "25ae13da2f202d56bd7f91c25fba009e7717a1e4a1cc98a76d844b65ae912e9d"
 dependencies = [
  "darling_core",
  "darling_macro",
@@ -719,11 +719,10 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.20.11"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d00b9596d185e565c2207a0b01f8bd1a135483d02d9b7b0a54b11da8d53412e"
+checksum = "9865a50f7c335f53564bb694ef660825eb8610e0a53d3e11bf1b0d3df31e03b0"
 dependencies = [
- "fnv",
  "ident_case",
  "proc-macro2",
  "quote",
@@ -733,9 +732,9 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.20.11"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc34b93ccb385b40dc71c6fceac4b2ad23662c7eeb248cf10d529b7e055b6ead"
+checksum = "ac3984ec7bd6cfa798e62b4a642426a5be0e68f9401cfc2a01e3fa9ea2fcdb8d"
 dependencies = [
  "darling_core",
  "quote",
@@ -2138,25 +2137,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-error-attr2"
-version = "2.0.0"
+name = "proc-macro-error-attr3"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96de42df36bb9bba5542fe9f1a054b8cc87e172759a1868aa05c1f3acc89dfc5"
+checksum = "b0084e6206a967a2dad822180626b2f6b07a3b379325e8f1ec0438e33a469ba7"
 dependencies = [
  "proc-macro2",
  "quote",
 ]
 
 [[package]]
-name = "proc-macro-error2"
-version = "2.0.1"
+name = "proc-macro-error3"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ec05c52be0a07b08061f7dd003e7d7092e0472bc731b4af7bb1ef876109802"
+checksum = "0cf066225f2373bc711684792b69bdeac0356019b007e721090c24d92d5d5a50"
 dependencies = [
- "proc-macro-error-attr2",
+ "proc-macro-error-attr3",
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn 3.0.3",
 ]
 
 [[package]]
@@ -3257,6 +3256,7 @@ dependencies = [
  "tonic-async-interceptor",
  "tonic-health",
  "tonic-reflection",
+ "tonic-types",
  "tracing",
 ]
 
@@ -3266,6 +3266,7 @@ version = "0.1.0"
 dependencies = [
  "async-stream",
  "prost",
+ "prost-types",
  "sword",
  "thiserror",
  "tokio",
@@ -3462,6 +3463,16 @@ checksum = "1b9ae57f904213ebb649ce6895b8a66c66f0203b9319718f69a5612a065b1422"
 dependencies = [
  "proc-macro2",
  "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "syn"
+version = "3.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3"
+dependencies = [
+ "proc-macro2",
  "unicode-ident",
 ]
 
@@ -3847,6 +3858,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tonic-types"
+version = "0.14.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73ab1b02061f83d519bba3caa167f88f261ef05720ab8ebc954ade70de3348e8"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tonic",
+]
+
+[[package]]
 name = "tower"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4192,13 +4214,12 @@ dependencies = [
 
 [[package]]
 name = "validator_derive"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7df16e474ef958526d1205f6dda359fdfab79d9aa6d54bafcb92dcd07673dca"
+checksum = "240e4b81c20a1d6d50d1d7265c658dfbd204e8b9ac4d80f3c931f39462196335"
 dependencies = [
  "darling",
- "once_cell",
- "proc-macro-error2",
+ "proc-macro-error3",
  "proc-macro2",
  "quote",
  "syn 2.0.118",
