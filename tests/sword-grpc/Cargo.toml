@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = ["grpc", "grpc-reflection"] }
+sword = { workspace = true, features = ["grpc", "grpc-reflection", "grpc-error-details"] }
 sword-grpc = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
@@ -16,4 +16,4 @@ serial_test = "3.2.0"
 thiserror = { workspace = true }
 
 [build-dependencies]
-tonic-prost-build = "0.14.2"
+tonic-prost-build = { workspace = true }

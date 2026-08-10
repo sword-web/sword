@@ -1,14 +1,14 @@
-use async_stream::try_stream;
-use std::sync::Arc;
-use sword::grpc::*;
-use sword::prelude::*;
-use tokio::time::{self, Duration};
-
 use crate::shared::LoggingInterceptor;
 use crate::{
     shared::AuthInterceptor,
     users::{CreateUserDto, UpdateUserDto, UserRepository, proto::*},
 };
+
+use async_stream::try_stream;
+use std::sync::Arc;
+use sword::grpc::*;
+use sword::prelude::*;
+use tokio::time::{self, Duration};
 
 #[controller(kind = Controller::Grpc, service = UserServiceServer)]
 #[interceptor(LoggingInterceptor, config = "UsersController")]
@@ -24,13 +24,7 @@ impl UserService for UsersController {
     async fn list_users(&self, _: Request<ListUsersRequest>) -> GrpcResult<ListUsersReply> {
         let users = self.users.find_all().await;
 
-        let users = users
-            .into_iter()
-            .map(|u| UserItem {
-                id: u.id,
-                username: u.username,
-            })
-            .collect();
+        let users = users.into_iter().map(|u| UserItem::from(&u)).collect();
 
         Ok(GrpcResponse::message(ListUsersReply { users }))
     }
@@ -43,10 +37,7 @@ impl UserService for UsersController {
 
         let output = try_stream! {
             for user in users {
-                yield UserItem {
-                    id: user.id,
-                    username: user.username,
-                };
+                yield UserItem::from(&user);
 
                 time::sleep(Duration::from_secs(1)).await;
             }
@@ -58,17 +49,19 @@ impl UserService for UsersController {
     async fn create_user(&self, req: Request<CreateUserRequest>) -> GrpcResult<UserReply> {
         let payload = req.into_inner();
 
+        if payload.username.trim().is_empty() {
+            Err(GrpcStatus::InvalidArgument()
+                .message("invalid request")
+                .bad_request("username", "username cannot be empty"))?
+        }
+
         let dto = CreateUserDto {
             username: payload.username,
             password: payload.password,
         };
 
         let user = self.users.create(dto).await?;
-
-        let user_item = UserItem {
-            id: user.id,
-            username: user.username.clone(),
-        };
+        let user_item = UserItem::from(&user);
 
         Ok(GrpcResponse::message(UserReply {
             user: Some(user_item),
@@ -79,10 +72,7 @@ impl UserService for UsersController {
         let id = req.into_inner().id;
         let user = self.users.find_by_id(&id).await?;
 
-        let user_item = UserItem {
-            id: user.id,
-            username: user.username.clone(),
-        };
+        let user_item = UserItem::from(&user);
 
         Ok(GrpcResponse::message(UserReply {
             user: Some(user_item),
@@ -100,10 +90,7 @@ impl UserService for UsersController {
 
         let user = self.users.update(dto).await?;
 
-        let user_item = UserItem {
-            id: user.id,
-            username: user.username.clone(),
-        };
+        let user_item = UserItem::from(&user);
 
         Ok(GrpcResponse::message(UserReply {
             user: Some(user_item),

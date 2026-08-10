@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package users;
 
+import "google/protobuf/timestamp.proto";
+
 service UserService {
   rpc ListUsers (ListUsersRequest) returns (ListUsersReply);
   rpc StreamUsers (StreamUsersRequest) returns (stream UserItem);
@@ -14,6 +16,7 @@ service UserService {
 message UserItem {
   string id = 1;
   string username = 2;
+  google.protobuf.Timestamp created_at = 3;
 }
 
 message ListUsersRequest {}

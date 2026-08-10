@@ -4,15 +4,16 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-sword = { workspace = true, features = ["grpc", "grpc-reflection"] }
+sword = { workspace = true, features = ["grpc", "grpc-reflection", "grpc-error-details"] }
 tonic-prost = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
 prost = "0.14.1"
+prost-types = "0.14.1"
 thiserror = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 async-stream = { workspace = true }
 
 [build-dependencies]
-tonic-prost-build = "0.14.2"
+tonic-prost-build = { workspace = true }

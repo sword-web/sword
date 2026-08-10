@@ -35,7 +35,7 @@ impl UsersController {
                 user.username
             );
 
-            return Err(AppError::UserConflictError("username", &user.username))?;
+            Err(AppError::UserConflictError("username", &user.username))?;
         }
 
         self.users.save(&user).await?;
@@ -57,7 +57,7 @@ impl UsersController {
         let body = req.body_validator::<UpdateUserDto>()?;
 
         let Some(existing_user) = self.users.find_by_id(&id).await? else {
-            return Err(AppError::NotFoundError("User not found"))?;
+            Err(AppError::NotFoundError("User not found"))?
         };
 
         let username = body.username.unwrap_or(existing_user.username.clone());
@@ -83,7 +83,7 @@ impl UsersController {
         let id = req.param::<Uuid>("id")?;
 
         let Some(_) = self.users.find_by_id(&id).await? else {
-            return Err(AppError::NotFoundError("User not found"))?;
+            Err(AppError::NotFoundError("User not found"))?
         };
 
         self.users.delete(&id).await?;

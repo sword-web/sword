@@ -22,6 +22,7 @@ tonic = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 tonic-health = { workspace = true }
 tonic-reflection = { workspace = true, optional = true }
+tonic-types = { workspace = true, optional = true }
 tokio-stream = { workspace = true }
 serde = { workspace = true }
 
@@ -35,3 +36,4 @@ inventory = { workspace = true }
 [features]
 default = []
 reflection = ["dep:tonic-reflection", "sword-macros/grpc-reflection"]
+error-details = ["dep:tonic-types"]

@@ -44,6 +44,7 @@ web = ["dep:sword-web"]
 socketio = ["web", "dep:sword-socketio"]
 grpc = ["dep:sword-grpc"]
 grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
+grpc-error-details = ["grpc", "sword-grpc/error-details"]
 
 web-multipart = ["sword-web/multipart"]
 web-swagger-ui = ["sword-web/swagger-ui"]
