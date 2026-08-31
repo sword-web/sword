@@ -32,7 +32,7 @@ sword-macros = { workspace = true, features = ["socketio-controllers"] }
 sword-layers = { workspace = true }
 
 socketioxide = { version = "0.18.0", features = ["extensions", "msgpack"] }
-socketioxide-core = "0.18.0"
+socketioxide-core = "0.19.0"
 socketioxide-parser-common = "0.17.1"
 socketioxide-parser-msgpack = "0.17.1"
 
