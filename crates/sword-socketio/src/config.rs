@@ -216,12 +216,14 @@ impl SocketIoServerLayer {
             };
         }
 
-        let parser_config = match config.parser {
-            SocketIoParser::Common(_) => ParserConfig::common(),
-            SocketIoParser::MsgPack(_) => ParserConfig::msgpack(),
+        match config.parser {
+            SocketIoParser::Common(_) => {
+                layer_builder = layer_builder.with_parser(ParserConfig::common());
+            }
+            SocketIoParser::MsgPack(_) => {
+                layer_builder = layer_builder.with_parser(ParserConfig::msgpack());
+            }
         };
-
-        layer_builder = layer_builder.with_parser(parser_config);
 
         if let Some(ws_read_buffer_size) = config.ws_read_buffer_size {
             layer_builder = layer_builder.ws_read_buffer_size(ws_read_buffer_size);
