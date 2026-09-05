@@ -3,6 +3,9 @@ name = "sword-web-example"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.cargo-machete]
+ignored = ["sword-layers"]
+
 [dependencies]
 sword = { workspace = true, features = ["web", "validation-validator", "web-swagger-ui", "events-in-memory"] }
 sword-layers = { workspace = true, features = ["compression", "cors",  "servedir"] }
