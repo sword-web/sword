@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1](https://github.com/sword-web/sword/compare/sword-v0.4.0...sword-v0.4.1) - 2026-09-06
+
+### Added
+
+- *(config)* load per-environment config files
+
 ## [0.4.0](https://github.com/sword-web/sword/compare/sword-v0.3.0...sword-v0.4.0) - 2026-08-10
 
 ### Added
