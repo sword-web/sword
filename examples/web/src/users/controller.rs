@@ -1,15 +1,15 @@
-use serde_json::json;
-use std::sync::Arc;
-use sword::events::EventPublisher;
-use sword::prelude::*;
-use sword::web::*;
-use uuid::Uuid;
-
 use crate::{
     mailer::UserCreatedEvent,
     shared::{Hasher, errors::AppError},
     users::*,
 };
+
+use std::sync::Arc;
+use uuid::Uuid;
+
+use sword::events::EventPublisher;
+use sword::prelude::*;
+use sword::web::*;
 
 #[controller(kind = Controller::Web, path = "/users")]
 pub struct UsersController {
@@ -27,16 +27,17 @@ impl UsersController {
     #[post("/")]
     async fn create_user(&self, req: Request) -> WebResult<User> {
         let body = req.body_validator::<CreateUserDto>()?;
-        let user = User::new(body.username, self.hasher.hash(&body.password)?);
 
-        if self.users.find_by_username(&user.username).await?.is_some() {
+        if self.users.find_by_username(&body.username).await?.is_some() {
             tracing::error!(
                 "Attempt to create user with existing username: {}",
-                user.username
+                body.username
             );
 
-            Err(AppError::UserConflictError("username", &user.username))?;
+            Err(AppError::UserConflictError("username", &body.username))?;
         }
+
+        let user = User::new(body.username, self.hasher.hash(&body.password).await?);
 
         self.users.save(&user).await?;
 
@@ -52,7 +53,7 @@ impl UsersController {
     }
 
     #[put("/{id}")]
-    async fn update_user(&self, req: Request) -> WebResult {
+    async fn update_user(&self, req: Request) -> WebResult<()> {
         let id = req.param::<Uuid>("id")?;
         let body = req.body_validator::<UpdateUserDto>()?;
 
@@ -63,7 +64,7 @@ impl UsersController {
         let username = body.username.unwrap_or(existing_user.username.clone());
 
         let password = match &body.password {
-            Some(pwd) => self.hasher.hash(pwd)?,
+            Some(pwd) => self.hasher.hash(pwd).await?,
             None => existing_user.password.clone(),
         };
 
@@ -75,11 +76,11 @@ impl UsersController {
 
         self.users.save(&updated_user).await?;
 
-        Ok(JsonResponse::Ok().message("User updated"))
+        Ok(())
     }
 
     #[delete("/{id}")]
-    async fn delete_user(&self, req: Request) -> WebResult {
+    async fn delete_user(&self, req: Request) -> WebResult<()> {
         let id = req.param::<Uuid>("id")?;
 
         let Some(_) = self.users.find_by_id(&id).await? else {
@@ -88,19 +89,6 @@ impl UsersController {
 
         self.users.delete(&id).await?;
 
-        Ok(JsonResponse::Ok().message("User deleted"))
-    }
-
-    #[get("/test-compression")]
-    async fn test_compression(&self) -> WebResult {
-        let repeated_data = "x".repeat(5000); // 5KB de 'x'
-        let large_json = json!({
-            "size_kb": 5,
-            "data": repeated_data,
-        });
-
-        Ok(JsonResponse::Ok()
-            .data(large_json)
-            .message("Test compression data"))
+        Ok(())
     }
 }

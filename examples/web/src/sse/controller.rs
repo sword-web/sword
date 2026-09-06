@@ -10,7 +10,7 @@ pub struct SseController;
 
 impl SseController {
     #[sse("/countdown")]
-    async fn countdown(&self) -> Sse<impl EventStream + use<>> {
+    async fn countdown(&self) -> Sse<impl EventStream> {
         let events = stream! {
             for i in (1..=5).rev() {
                 sleep(Duration::from_millis(250)).await;

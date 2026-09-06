@@ -2,8 +2,8 @@ openapi: "3.1.0"
 info:
   title: Sword Utility Endpoints
   description: |
-    Utility and testing endpoints for the Sword web framework example:
-    compression test and health check.
+    Utility endpoint for the Sword web framework example:
+    health check.
   version: "1.0.0"
 
 servers:
@@ -11,22 +11,6 @@ servers:
     description: Local development server
 
 paths:
-  /api/users/test-compression:
-    get:
-      operationId: testCompression
-      summary: Test HTTP response compression
-      description: Returns a 5KB payload of repeated characters to verify compression middleware works correctly.
-      tags: [Tests]
-      responses:
-        "200":
-          description: Compression test data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CompressionTestResponse"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
   /api/health:
     get:
       operationId: healthCheck
@@ -76,24 +60,6 @@ components:
             type: object
           nullable: true
 
-    CompressionTestResponse:
-      allOf:
-        - $ref: "#/components/schemas/ApiResponse"
-        - type: object
-          properties:
-            message:
-              example: "Test compression data"
-            data:
-              type: object
-              properties:
-                size_kb:
-                  type: integer
-                  example: 5
-                data:
-                  type: string
-                  description: 5KB of repeated "x" characters
-                  example: "xxxxx..."
-
     HealthResponse:
       allOf:
         - $ref: "#/components/schemas/ApiResponse"
@@ -122,20 +88,3 @@ components:
         error:
           type: object
           nullable: true
-
-  responses:
-    InternalError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ApiError"
-              - type: object
-                properties:
-                  code:
-                    example: 500
-                  success:
-                    example: false
-                  message:
-                    example: "Internal server error"

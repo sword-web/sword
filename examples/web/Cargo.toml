@@ -22,4 +22,4 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 sqlx = { workspace = true }
 dotenv = { workspace = true }
-bcrypt = { workspace = true }
+argon2 = { workspace = true }

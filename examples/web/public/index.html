@@ -2,14 +2,96 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sword Web Example</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Sword Web Example</title>
+	<style>
+		body {
+			font-family: system-ui, sans-serif;
+			max-width: 900px;
+			margin: 2rem auto;
+			padding: 0 1rem;
+			color: #1a1a1a;
+		}
+
+		h1 {
+			font-size: 1.5rem;
+		}
+
+		form {
+			display: flex;
+			gap: .5rem;
+			margin-bottom: 1rem;
+		}
+
+		input,
+		button {
+			padding: .4rem .6rem;
+			font-size: .9rem;
+		}
+
+		table {
+			border-collapse: collapse;
+			width: 100%;
+			margin-bottom: 1.5rem;
+		}
+
+		th,
+		td {
+			border: 1px solid #ddd;
+			padding: .4rem .6rem;
+			text-align: left;
+		}
+
+		#message {
+			margin-bottom: 1rem;
+		}
+
+		#sse-log {
+			font-family: monospace;
+			background: #f6f6f6;
+			padding: .6rem;
+			min-height: 3rem;
+		}
+
+		.ok {
+			color: #1a7f37;
+		}
+
+		.error {
+			color: #c62828;
+		}
+	</style>
 </head>
 
 <body>
-    <h1>Sword Framework</h1>
-    <p>Static files served via ServeDir Tower Layer.</p>
+	<h1>Sword Framework</h1>
+	<p>Static files served via ServeDir Tower Layer. This page consumes the example API.</p>
+
+	<form id="create-user-form">
+		<input name="username" placeholder="Username" required minlength="1" maxlength="100">
+		<input name="password" type="password" placeholder="Password (min 6)" required minlength="6" maxlength="100">
+		<button type="submit">Create user</button>
+	</form>
+
+	<div id="message"></div>
+
+	<h2>Users (<code>GET /api/users</code>)</h2>
+	<table id="users">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Username</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody></tbody>
+	</table>
+
+	<h2>SSE countdown (<code>GET /api/sse/countdown</code>)</h2>
+	<div id="sse-log"></div>
+
+	<script src="/api/static/app.js" defer></script>
 </body>
 
 </html>

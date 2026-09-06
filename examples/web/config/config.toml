@@ -39,4 +39,6 @@ static-dir = "public"
 router-path = "/static"
 
 [hasher]
-cost = 12
+memory-kib = 19456
+time = 2
+parallelism = 1

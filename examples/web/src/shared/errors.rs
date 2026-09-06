@@ -10,7 +10,10 @@ pub enum AppError {
     DatabaseError(#[from] sqlx::Error),
 
     #[error("Hasher error occurred: {0}")]
-    HasherError(#[from] bcrypt::BcryptError),
+    HasherError(#[from] argon2::password_hash::Error),
+
+    #[error("Hasher task error occurred: {0}")]
+    HasherTaskError(#[from] tokio::task::JoinError),
 
     #[http(code = 404)]
     #[tracing(warn)]

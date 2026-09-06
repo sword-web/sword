@@ -10,7 +10,7 @@ pub struct SseController;
 
 impl SseController {
     #[sse("/stream")]
-    async fn stream(&self) -> Sse<impl EventStream + use<>> {
+    async fn stream(&self) -> Sse<impl EventStream> {
         let events = vec![
             Event::default().event("greeting").data("one"),
             Event::default().event("greeting").data("two"),
@@ -20,7 +20,7 @@ impl SseController {
     }
 
     #[sse("/keep-alive")]
-    async fn keep_alive(&self) -> Sse<impl EventStream + use<>> {
+    async fn keep_alive(&self) -> Sse<impl EventStream> {
         let events = vec![
             Event::default().event("greeting").data("one"),
             Event::default().event("greeting").data("two"),

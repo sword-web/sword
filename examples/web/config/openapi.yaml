@@ -73,7 +73,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserUpdatedResponse"
+                $ref: "#/components/schemas/ApiResponse"
         "404":
           $ref: "#/components/responses/NotFoundError"
         "500":
@@ -97,7 +97,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserDeletedResponse"
+                $ref: "#/components/schemas/ApiResponse"
         "404":
           $ref: "#/components/responses/NotFoundError"
         "500":
@@ -122,7 +122,7 @@ components:
           example: jdoe
         password:
           type: string
-          description: bcrypt-hashed password
+          description: Argon2id-hashed password
           example: "$2b$12$..."
 
     CreateUserInput:
@@ -139,7 +139,7 @@ components:
           type: string
           minLength: 6
           maxLength: 100
-          description: Plain text password (will be bcrypt-hashed)
+          description: Plain text password (will be Argon2id-hashed)
           example: securePass123
 
     UpdateUserInput:
@@ -210,22 +210,6 @@ components:
               example: "User created"
             data:
               $ref: "#/components/schemas/User"
-
-    UserUpdatedResponse:
-      allOf:
-        - $ref: "#/components/schemas/ApiResponse"
-        - type: object
-          properties:
-            message:
-              example: "User updated"
-
-    UserDeletedResponse:
-      allOf:
-        - $ref: "#/components/schemas/ApiResponse"
-        - type: object
-          properties:
-            message:
-              example: "User deleted"
 
     ApiError:
       type: object
