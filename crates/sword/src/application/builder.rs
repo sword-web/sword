@@ -1,4 +1,4 @@
-use crate::application::Application;
+use crate::application::{Application, Environment};
 
 #[cfg(feature = "events-in-memory")]
 use std::sync::Arc;
@@ -41,12 +41,25 @@ impl ApplicationBuilder {
             })
     }
 
-    fn load_default_config() -> Config {
-        Self::load_required_config(DEFAULT_CONFIG_PATH)
-    }
-
     pub fn new() -> Self {
-        Self::from_config(Self::load_default_config())
+        let config_path = match Environment::current() {
+            Ok(Some(env)) => env.default_config_path(),
+            Ok(None) => DEFAULT_CONFIG_PATH,
+            Err(err) => {
+                sword_error! {
+                    title: "Invalid SWORD_ENV variable",
+                    reason: err,
+                    context: {
+                        "source" => "ApplicationBuilder::new",
+                    },
+                    hints: ["Valid values are: dev, prod, test"],
+                }
+            }
+        };
+
+        let config = Self::load_required_config(config_path);
+
+        Self::from_config(config)
     }
 
     pub fn from_config(config: Config) -> Self {
