@@ -1,6 +1,7 @@
 [application]
-name = "Web Application Example"
+name = "Web Application Example - DEV"
 graceful-shutdown = false
+environment = "dev"
 
 [web]
 host = "0.0.0.0"
