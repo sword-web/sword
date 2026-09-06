@@ -4,19 +4,19 @@ import { io } from "socket.io-client";
 const app = document.querySelector("#app");
 
 app.innerHTML = `
-  <main class="chat-app">
-    <header class="header">
-      <h1>Sword Socket.IO Chat</h1>
-      <span id="status" class="status status-connecting">connecting...</span>
-    </header>
+<main class="chat-app">
+<header class="header">
+    <h1>Sword Socket.IO Chat</h1>
+    <span id="status" class="status status-connecting">connecting...</span>
+</header>
 
-    <section id="messages" class="messages" aria-live="polite"></section>
+<section id="messages" class="messages" aria-live="polite"></section>
 
-    <form id="composer" class="composer">
-      <input id="messageInput" type="text" placeholder="Type your message..." autocomplete="off" />
-      <button type="submit">Send</button>
-    </form>
-  </main>
+<form id="composer" class="composer">
+    <input id="messageInput" type="text" placeholder="Type your message..." autocomplete="off" />
+    <button type="submit">Send</button>
+</form>
+</main>
 `;
 
 const statusEl = document.querySelector("#status");
@@ -27,67 +27,67 @@ const inputEl = document.querySelector("#messageInput");
 document.cookie = "CHAT_EXAMPLE_COOKIE=HELLO_CHAT_EXAMPLE_COOKIE; path=/";
 
 const socket = io("http://localhost:8081/chat", {
-    path: "/api/socket.io",
-    transports: ["websocket"],
-    auth: {
-        "auth_key": "custom_auth_value"
-    },
-    withCredentials: true,
+	path: "/api/socket.io",
+	transports: ["websocket"],
+	auth: {
+		"auth_key": "custom_auth_value"
+	},
+	withCredentials: true,
 });
 
 function setStatus(text, cssClass) {
-    statusEl.textContent = text;
-    statusEl.className = `status ${cssClass}`;
+	statusEl.textContent = text;
+	statusEl.className = `status ${cssClass}`;
 }
 
 function renderMessages(messages) {
-    if (!messages.length) {
-        messagesEl.innerHTML = `<p class="empty">No messages yet</p>`;
-        return;
-    }
+	if (!messages.length) {
+		messagesEl.innerHTML = `<p class="empty">No messages yet</p>`;
+		return;
+	}
 
-    messagesEl.innerHTML = messages
-        .map(
-            (message) => `
+	messagesEl.innerHTML = messages
+		.map(
+			(message) => `
         <article class="message">
           <time>${new Date(message.timestamp).toLocaleTimeString()}</time>
           <p>${message.content}</p>
         </article>
       `,
-        )
-        .join("");
+		)
+		.join("");
 
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+	messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
 socket.on("connect", () => {
-    setStatus("connected", "status-connected");
+	setStatus("connected", "status-connected");
 });
 
 socket.on("disconnect", () => {
-    setStatus("disconnected", "status-disconnected");
+	setStatus("disconnected", "status-disconnected");
 });
 
 socket.on("messages", (messages) => {
-    renderMessages(messages);
+	renderMessages(messages);
 });
 
 socket.on("connect_error", (err) => {
-    console.error("Connection error:", err.message);
-    setStatus(`error: ${err.message}`, "status-disconnected");
+	console.error("Connection error:", err.message);
+	setStatus(`error: ${err.message}`, "status-disconnected");
 });
 
 composerEl.addEventListener("submit", (event) => {
-    event.preventDefault();
+	event.preventDefault();
 
-    const content = inputEl.value.trim();
-    if (!content) {
-        return;
-    }
+	const content = inputEl.value.trim();
+	if (!content) {
+		return;
+	}
 
-    socket.emit("message", { content });
-    inputEl.value = "";
-    inputEl.focus();
+	socket.emit("message", { content });
+	inputEl.value = "";
+	inputEl.focus();
 });
 
 renderMessages([]);
