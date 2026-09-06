@@ -1,11 +1,13 @@
 mod builder;
 mod config;
+mod env;
 
 use std::path::Path;
 use sword_core::{Config, sword_error};
 
 pub use builder::ApplicationBuilder;
 pub use config::{ApplicationConfig, ApplicationEngine};
+pub use env::Environment;
 
 /// The main application struct that holds the runtime(s) and configuration.
 ///
@@ -15,6 +17,7 @@ pub use config::{ApplicationConfig, ApplicationEngine};
 pub struct Application {
     engine: ApplicationEngine,
     pub config: Config,
+
     #[cfg(feature = "events-in-memory")]
     event_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
 }
@@ -31,6 +34,7 @@ impl Application {
         Self {
             engine,
             config,
+
             #[cfg(feature = "events-in-memory")]
             event_shutdown_tx,
         }
@@ -42,9 +46,17 @@ impl Application {
     /// The builder pattern allows you to configure various aspects of the
     /// application before building the final `Application` instance.
     ///
+    /// The default configuration file is selected from the `SWORD_ENV`
+    /// environment variable:
+    /// - `SWORD_ENV=dev` loads `config/config.dev.toml`
+    /// - `SWORD_ENV=prod` loads `config/config.prod.toml`
+    /// - `SWORD_ENV=test` loads `config/config.test.toml`
+    /// - If `SWORD_ENV` is not set, the legacy `config/config.toml` is used.
+    ///
     /// This function will panic if:
-    /// - The configuration file `config/config.toml` cannot be found
+    /// - The selected configuration file cannot be found
     /// - The configuration file contains invalid TOML syntax
+    /// - `SWORD_ENV` is set to an invalid value
     /// - Environment variable interpolation fails
     /// - The configuration cannot be loaded for any other reason
     pub fn builder() -> ApplicationBuilder {

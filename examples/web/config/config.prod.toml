@@ -1,0 +1,43 @@
+[application]
+name = "Web Application Example - PROD"
+graceful-shutdown = false
+environment = "prod"
+
+[web]
+host = "0.0.0.0"
+port = 8081
+body-limit = "5MB"
+request-timeout = { enabled = true, timeout = "15s" }
+router-prefix = "/api"
+
+[web.openapi]
+title = "Web Application API"
+version = "1.0.0"
+description = "API documentation for the Web Application Example"
+spec-file-paths = ["config/openapi.yaml", "config/openapi-test.yaml"]
+
+[tracing]
+enabled = true
+filter = "info,sqlx=error"
+format = "dev"
+time-style = "none"
+with-fields = []
+
+[database]
+uri = "${POSTGRES_DATABASE_URL}"
+migrations_path = "config/migrations"
+
+[compression]
+display = true
+algorithms = ["gzip", "br"]
+
+[cors]
+display = true
+
+[serve-dir]
+display = true
+static-dir = "public"
+router-path = "/static"
+
+[hasher]
+cost = 12
