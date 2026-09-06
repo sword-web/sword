@@ -10,7 +10,7 @@ use axum::{
 /// # Example
 ///
 /// ```rust
-/// use axum_responses::Redirect;
+/// use sword::web::*;
 ///
 /// async fn login_redirect() -> Redirect {
 ///     Redirect::found("/login")

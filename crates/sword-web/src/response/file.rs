@@ -9,10 +9,11 @@ use axum::{
 /// # Example
 ///
 /// ```rust
-/// use axum_responses::{File, ContentDisposition};
+/// use sword::web::*;
 ///
 /// async fn download() -> File {
 ///     let data = std::fs::read("report.pdf").unwrap();
+///
 ///     File::new()
 ///         .bytes(&data)
 ///         .content_type("application/pdf")

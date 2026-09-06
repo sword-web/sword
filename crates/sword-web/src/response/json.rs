@@ -18,7 +18,7 @@ use serde_json::{Map, Value};
 /// # Example
 ///
 /// ```rust
-/// use axum_responses::JsonResponse;
+/// use sword::web::*;
 /// use serde_json::json;
 ///
 /// async fn handler() -> JsonResponse {
