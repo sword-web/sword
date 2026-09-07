@@ -174,13 +174,13 @@ impl WebApplicationRouter {
 
         router = router.layer(RequestIdLayer::new());
 
-        if let Some(logger_config) = &self.web_config.logger {
-            if logger_config.enabled {
-                router = router.layer(axum::middleware::from_fn_with_state(
-                    logger_config.clone(),
-                    crate::application::logger::web_logger_mw,
-                ));
-            }
+        if let Some(logger_config) = &self.web_config.logger
+            && logger_config.enabled
+        {
+            router = router.layer(axum::middleware::from_fn_with_state(
+                logger_config.clone(),
+                crate::application::logger::web_logger_mw,
+            ));
         }
 
         router
