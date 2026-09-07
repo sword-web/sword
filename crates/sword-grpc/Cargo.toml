@@ -30,7 +30,7 @@ http = { workspace = true }
 tower = { workspace = true }
 
 sword-core = { workspace = true }
-sword-layers = { workspace = true, features = ["tracing", "body-limit"] }
+sword-layers = { workspace = true, features = ["tracing", "body-limit", "request-id"] }
 sword-macros = { workspace = true, features = ["grpc-controllers"] }
 
 tracing = { workspace = true }

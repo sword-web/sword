@@ -189,14 +189,14 @@ fn log_grpc_request<ResBody>(
             status = %code_name,
             latency = %format_latency(latency),
             request_id = %request_id,
-            "{path}",
+            "gRPC {path}",
         ),
         _ => tracing::info!(
             target: "sword.grpc.logger",
             status = %code_name,
             latency = %format_latency(latency),
             request_id = %request_id,
-            "{path}"
+            "gRPC {path}"
         ),
     }
 }

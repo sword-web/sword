@@ -10,7 +10,7 @@ use sword_core::{
     sword_error,
 };
 
-use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue};
+use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
 
 pub struct GrpcApplication {
     pub state: State,
@@ -152,8 +152,10 @@ impl GrpcApplication {
         };
 
         let server = tonic::transport::Server::builder()
+            .layer(RequestIdLayer::new())
             .layer(GrpcLoggerLayer::new(&logger_config))
             .add_routes(routes);
+
         let router = server.add_service(health_service);
 
         #[cfg(feature = "reflection")]
