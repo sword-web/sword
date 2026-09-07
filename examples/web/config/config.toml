@@ -9,6 +9,11 @@ body-limit = "5MB"
 request-timeout = { enabled = true, timeout = "15s" }
 router-prefix = "/api"
 
+[web.logger]
+enabled = true
+log-query = false
+skip-paths = ["/api/health"]
+
 [web.openapi]
 title = "Web Application API"
 version = "1.0.0"

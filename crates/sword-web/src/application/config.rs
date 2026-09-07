@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
 use sword_layers::{body_limit::BodyLimitConfig, timeout::RequestTimeoutConfig};
 
+use super::logger::WebLoggerConfig;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg(feature = "swagger-ui")]
 pub struct OpenApiConfig {
@@ -38,6 +40,10 @@ pub struct WebApplicationConfig {
     /// Request timeout policy applied to web controllers.
     #[serde(rename = "request-timeout")]
     pub request_timeout: RequestTimeoutConfig,
+
+    /// Web access logger configuration. Disabled when absent.
+    #[serde(default)]
+    pub logger: Option<WebLoggerConfig>,
 }
 
 impl Default for WebApplicationConfig {
@@ -48,6 +54,7 @@ impl Default for WebApplicationConfig {
             router_prefix: None,
             body_limit: BodyLimitConfig::default(),
             request_timeout: RequestTimeoutConfig::default(),
+            logger: None,
             #[cfg(feature = "swagger-ui")]
             openapi: None,
         }

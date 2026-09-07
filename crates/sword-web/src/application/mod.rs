@@ -1,5 +1,6 @@
 mod config;
 mod extensions;
+mod logger;
 mod router;
 
 use axum::Router;

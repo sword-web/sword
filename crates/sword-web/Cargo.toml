@@ -24,6 +24,7 @@ tokio-stream = { workspace = true }
 axum = { workspace = true }
 sword-core = { workspace = true }
 sword-macros = { workspace = true, features = ["web-controllers"] }
+tower-http = { workspace = true, features = ["trace", "tracing"] }
 
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -39,6 +40,7 @@ http-body-util = { workspace = true }
 validator = { workspace = true, optional = true }
 
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 inventory = { workspace = true }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"], optional = true }
 tower = { workspace = true }
@@ -64,4 +66,4 @@ swagger-ui = ["dep:utoipa-swagger-ui"]
 
 [dev-dependencies]
 axum-test = { workspace = true }
-tower-http = { workspace = true, features = ["limit", "cors", "trace"] }
+tower-http = { workspace = true, features = ["limit", "cors"] }
