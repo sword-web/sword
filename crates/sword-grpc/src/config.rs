@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
 use sword_layers::body_limit::GrpcBodyLimitConfig;
 
+use crate::logger::GrpcLoggerConfig;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GrpcApplicationConfig {
@@ -14,6 +16,10 @@ pub struct GrpcApplicationConfig {
     /// Message size limits for gRPC requests/responses.
     #[serde(rename = "body-limit")]
     pub body_limit: GrpcBodyLimitConfig,
+
+    /// gRPC access logger configuration. Disabled when absent.
+    #[serde(default)]
+    pub logger: Option<GrpcLoggerConfig>,
 }
 
 impl Default for GrpcApplicationConfig {
@@ -22,6 +28,7 @@ impl Default for GrpcApplicationConfig {
             host: "0.0.0.0".to_string(),
             port: 50051,
             body_limit: GrpcBodyLimitConfig::default(),
+            logger: None,
         }
     }
 }

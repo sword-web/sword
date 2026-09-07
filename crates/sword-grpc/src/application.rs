@@ -1,5 +1,6 @@
 use crate::config::GrpcApplicationConfig;
 use crate::controller::GrpcControllerRegistrar;
+use crate::logger::{GrpcLoggerConfig, GrpcLoggerLayer};
 use crate::registry::GrpcServiceRegistry;
 
 use std::collections::HashMap;
@@ -145,7 +146,14 @@ impl GrpcApplication {
             }))
         };
 
-        let server = tonic::transport::Server::builder().add_routes(routes);
+        let logger_config = match &self.config.logger {
+            Some(config) => config.clone(),
+            None => GrpcLoggerConfig::disabled(),
+        };
+
+        let server = tonic::transport::Server::builder()
+            .layer(GrpcLoggerLayer::new(&logger_config))
+            .add_routes(routes);
         let router = server.add_service(health_service);
 
         #[cfg(feature = "reflection")]

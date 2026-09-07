@@ -5,7 +5,7 @@ Minimal gRPC users CRUD example for Sword using `grpc-controllers` and an in-mem
 ## Run
 
 ```bash
-cargo run -p grpc-controllers
+cargo run -p sword-grpc-example
 ```
 
 ## Available services
@@ -24,37 +24,38 @@ cargo run -p grpc-controllers
 - `users.UserService/DeleteUser`
 - `grpc.health.v1.Health/Check`
 
+## Testing with grpcurl
+
+Start the server (see [Run](#run)) and use [grpcurl](https://github.com/fullstorydev/grpcurl).
+Reflection is enabled, so services are discovered automatically.
+
+List services and methods:
+
+```bash
+grpcurl -plaintext 127.0.0.1:50051 list
+grpcurl -plaintext 127.0.0.1:50051 list users.UserService
+```
+
+`users.UserService` methods require an `authorization` metadata value — replace `<token>` (any value works):
+
+```bash
+grpcurl -plaintext -H "authorization: <token>" -d '{}' 127.0.0.1:50051 users.UserService/ListUsers
+grpcurl -plaintext -H "authorization: <token>" \
+  -d '{"username": "<username>", "password": "<password>"}' \
+  127.0.0.1:50051 users.UserService/CreateUser
+grpcurl -plaintext -H "authorization: <token>" -d '{"id": "<id>"}' 127.0.0.1:50051 users.UserService/GetUser
+grpcurl -plaintext -H "authorization: <token>" -d '{}' 127.0.0.1:50051 users.UserService/StreamUsers
+```
+
+Health check (no authorization required):
+
+```bash
+grpcurl -plaintext -d '{}' 127.0.0.1:50051 grpc.health.v1.Health/Check
+```
+
 ## Notes
 
 - UserService methods expect `authorization` metadata.
 - Server default address is `127.0.0.1:50051`.
 - If the binary is built with the `grpc-reflection` feature, `grpcurl list` includes health and users services.
 - Reflection metadata is registered automatically by Sword from `build.rs` when generating `sword_descriptor_set.bin`.
-
-## Richer errors (feature `grpc-error-details`)
-
-With the `grpc-error-details` feature enabled, handlers can return errors that
-implement the [gRPC Richer Error Model](https://grpc.io/docs/guides/error/)
-using the `GrpcStatus` builder, chaining standard error details on any status
-code:
-
-```rust
-return Err(
-    GrpcStatus::InvalidArgument()
-        .message("invalid request")
-        .bad_request("username", "username cannot be empty")
-        .into(),
-);
-```
-
-Simple errors keep propagating with `?` through the `#[derive(GrpcError)]` type.
-Clients can read the details back with `tonic_types::StatusExt`:
-
-```rust
-use sword::grpc::*;
-
-let details = status.get_error_details();
-if let Some(bad_request) = details.bad_request() {
-    // ...
-}
-```
