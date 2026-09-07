@@ -305,6 +305,9 @@ pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///   - Logs variant fields as structured tracing fields when available
 ///   - Compatible with `RUST_LOG` for filtering
 ///   - Not allowed with `transparent` variants
+/// - When `tracing` is not specified, the level defaults from the HTTP status code
+///   (`2xx`/`3xx` → `info`, `4xx` → `warn`, `5xx` → `error`), matching the web access
+///   logger's `auto` policy.
 ///
 /// ### Tracing Output
 /// The generated logs include:
@@ -371,6 +374,9 @@ pub fn derive_http_error(input: TokenStream) -> TokenStream {
 /// - `transparent` (variant-only)
 /// - `tracing = <level>` inside `#[grpc_error(...)]` or `#[grpc(...)]`
 /// - `#[tracing(level)]`: backward-compatible shorthand at variant level
+/// - When `tracing` is not specified, the level defaults from the gRPC code
+///   (`ok` → `info`, client errors → `warn`, server errors → `error`), matching the
+///   gRPC access logger's `auto` policy.
 ///
 /// gRPC code values accepted by `#[grpc(code = "...")]`:
 ///

@@ -4,7 +4,7 @@ use thiserror::Error;
 pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Debug, Error, GrpcError)]
-#[grpc_error(code = "internal", tracing = error)]
+#[grpc_error(code = "internal")]
 pub enum AppError {
     #[grpc(code = "invalid_argument", message = reason)]
     #[error("Invalid argument: {reason}")]
@@ -14,7 +14,7 @@ pub enum AppError {
     #[error("Not found: {message}")]
     NotFoundError { message: String },
 
-    #[grpc(code = "already_exists", message = value)]
+    #[grpc(code = "already_exists", message = "Conflict error username - {value}")]
     #[error("Conflict error username - {value}")]
     UserConflictError { value: String },
 
@@ -22,7 +22,8 @@ pub enum AppError {
     #[error("Invalid name: {reason}")]
     InvalidName { reason: String },
 
-    #[grpc(code = "unavailable", tracing = warn)]
+    #[grpc(code = "unavailable")]
     #[error("Greeter service is temporarily unavailable")]
+    #[tracing(warn)]
     SystemUnavailable,
 }

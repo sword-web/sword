@@ -4,7 +4,7 @@ use thiserror::Error as ThisError;
 pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Debug, ThisError, HttpError)]
-#[http_error(code = 500, tracing = error, message = "Internal server error")]
+#[http_error(code = 500, message = "Internal server error")]
 pub enum AppError {
     #[error("Database error occurred: {0}")]
     DatabaseError(#[from] sqlx::Error),

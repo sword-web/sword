@@ -64,9 +64,14 @@ impl HttpErrorCodegen {
     ) -> TokenStream {
         let status_code = config.code.as_ref().unwrap().as_u16();
 
+        let tracing_level = config
+            .tracing_level
+            .clone()
+            .or_else(|| Some(default_tracing_level(status_code).to_string()));
+
         errors::generate_tracing_stmt(
             variant_name,
-            &config.tracing_level,
+            &tracing_level,
             fields,
             &Ident::new("status_code", Span::call_site()),
             quote! { #status_code },
@@ -120,5 +125,15 @@ impl HttpErrorCodegen {
             return segment.ident == "String";
         }
         false
+    }
+}
+
+/// Default tracing level for an HTTP status code, matching the access logger's `Auto`
+/// policy: 2xx/3xx → info, 4xx → warn, 5xx → error.
+fn default_tracing_level(status_code: u16) -> &'static str {
+    match status_code {
+        200..=399 => "info",
+        400..=499 => "warn",
+        _ => "error",
     }
 }

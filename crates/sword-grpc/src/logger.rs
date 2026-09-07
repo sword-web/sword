@@ -182,7 +182,7 @@ fn log_grpc_request<ResBody>(
             status = %code_name,
             latency = %format_latency(latency),
             request_id = %request_id,
-            "{path}",
+            "gRPC {path}",
         ),
         Level::WARN => tracing::warn!(
             target: "sword.grpc.logger",
