@@ -10,6 +10,13 @@ port = 50051
 max-decoding-message-size = "2 MiB"
 max-encoding-message-size = "2 MiB"
 
+[grpc.logger]
+enabled = true
+skip-paths = [
+    "/grpc.health.v1.Health/Check",
+    "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo"
+]
+
 [tracing]
 enabled = true
 filter = "info,sword=info"

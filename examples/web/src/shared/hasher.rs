@@ -46,3 +46,9 @@ impl Hasher {
         Ok(result.is_ok())
     }
 }
+
+impl Default for Hasher {
+    fn default() -> Self {
+        Self::new()
+    }
+}

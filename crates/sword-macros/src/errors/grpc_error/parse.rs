@@ -1,6 +1,5 @@
-use syn::{Attribute, Error, Ident, LitStr, Token, meta::ParseNestedMeta, spanned::Spanned};
-
 use crate::errors::MessageValue;
+use syn::{Attribute, Error, Ident, LitStr, Token, meta::ParseNestedMeta, spanned::Spanned};
 
 #[derive(Debug, Clone, Default)]
 pub struct GrpcErrorConfig {

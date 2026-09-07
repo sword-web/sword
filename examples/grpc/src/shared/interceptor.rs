@@ -21,12 +21,15 @@ pub struct LoggingInterceptor;
 
 impl OnRequestWithConfig<&'static str> for LoggingInterceptor {
     async fn on_request(&self, config: &'static str, req: Request<()>) -> GrpcInterceptorResult {
+        let req_id = req
+            .metadata()
+            .get("request-id")
+            .map(|v| v.to_str().unwrap_or("invalid UTF-8"))
+            .unwrap_or("unknown");
+
         tracing::info!(
             "[gRPC] - Incoming request: ID: {} - Controller: {}",
-            req.metadata()
-                .get("request-id")
-                .map(|v| v.to_str().unwrap_or("invalid UTF-8"))
-                .unwrap_or("unknown"),
+            req_id,
             config
         );
 

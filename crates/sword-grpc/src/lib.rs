@@ -2,6 +2,7 @@ pub mod application;
 pub mod config;
 pub mod controller;
 pub mod interceptor;
+pub mod logger;
 pub mod registry;
 pub mod response;
 

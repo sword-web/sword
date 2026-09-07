@@ -1,14 +1,14 @@
-use crate::shared::LoggingInterceptor;
 use crate::{
-    shared::AuthInterceptor,
+    shared::{AuthInterceptor, LoggingInterceptor},
     users::{CreateUserDto, UpdateUserDto, UserRepository, proto::*},
 };
 
 use async_stream::try_stream;
 use std::sync::Arc;
+use tokio::time::{self, Duration};
+
 use sword::grpc::*;
 use sword::prelude::*;
-use tokio::time::{self, Duration};
 
 #[controller(kind = Controller::Grpc, service = UserServiceServer)]
 #[interceptor(LoggingInterceptor, config = "UsersController")]
@@ -23,7 +23,6 @@ impl UserService for UsersController {
 
     async fn list_users(&self, _: Request<ListUsersRequest>) -> GrpcResult<ListUsersReply> {
         let users = self.users.find_all().await;
-
         let users = users.into_iter().map(|u| UserItem::from(&u)).collect();
 
         Ok(GrpcResponse::message(ListUsersReply { users }))
@@ -89,7 +88,6 @@ impl UserService for UsersController {
         };
 
         let user = self.users.update(dto).await?;
-
         let user_item = UserItem::from(&user);
 
         Ok(GrpcResponse::message(UserReply {

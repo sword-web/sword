@@ -64,4 +64,4 @@ swagger-ui = ["dep:utoipa-swagger-ui"]
 
 [dev-dependencies]
 axum-test = { workspace = true }
-tower-http = { workspace = true, features = ["limit", "cors", "trace"] }
+tower-http = { workspace = true, features = ["limit", "cors"] }

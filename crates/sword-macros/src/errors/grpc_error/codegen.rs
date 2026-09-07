@@ -122,13 +122,31 @@ impl GrpcErrorCodegen {
     ) -> TokenStream {
         let code_str = code_variant.to_string();
 
+        let tracing_level = config
+            .tracing_level
+            .clone()
+            .or_else(|| Some(default_tracing_level(&code_str).to_string()));
+
         crate::errors::generate_tracing_stmt(
             variant_name,
-            &config.tracing_level,
+            &tracing_level,
             fields,
             &Ident::new("grpc_code", Span::call_site()),
             quote! { #code_str },
             "gRPC error response",
         )
+    }
+}
+
+/// Default tracing level for a gRPC code, matching the access logger's `Auto` policy:
+/// `ok` → info, client errors → warn, server errors → error.
+fn default_tracing_level(code_str: &str) -> &'static str {
+    match code_str {
+        "Ok" => "info",
+        "InvalidArgument" | "NotFound" | "AlreadyExists" | "PermissionDenied"
+        | "FailedPrecondition" | "OutOfRange" | "Unauthenticated" | "Aborted" | "Cancelled" => {
+            "warn"
+        }
+        _ => "error",
     }
 }
