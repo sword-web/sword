@@ -3461,7 +3461,6 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
- "tracing-subscriber",
  "utoipa-swagger-ui",
  "validator",
 ]
@@ -3474,7 +3473,6 @@ dependencies = [
  "async-stream",
  "dotenv",
  "serde",
- "serde_json",
  "sqlx",
  "sword",
  "sword-layers",
