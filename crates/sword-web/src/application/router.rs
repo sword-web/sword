@@ -19,6 +19,7 @@ pub(crate) struct WebApplicationRouter {
 
 impl WebApplicationRouter {
     pub fn build(&mut self) -> Router<State> {
+        // Collect extensions once and let each seed State before controllers and routes are built.
         let extensions = inventory::iter::<WebExtensionRegistrar>()
             .map(|entry| entry.extension)
             .collect::<Vec<&'static dyn WebExtension>>();
@@ -48,6 +49,8 @@ impl WebApplicationRouter {
         #[cfg(feature = "swagger-ui")]
         let (mut api_router, openapi_urls) = self.apply_openapi_specs(api_router);
 
+        // Each sword-layers service downcasts the api_router to its own concrete router type,
+        // so registration is type-erased here.
         for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
             tracing::info!(target: "sword.layers", name = registrar.name, "Registering service");
             (registrar.display)(&self.config);
@@ -73,6 +76,8 @@ impl WebApplicationRouter {
             router = extension.extend_router(&extension_ctx, router);
         }
 
+        // Cookie parsing first, then user layers; NotFound is outermost so it only sees unmatched
+        // requests.
         router = router.layer(CookieManagerLayer::new());
         router = self.layer_stack.apply(router);
         router = router.layer(NotFoundLayer);
@@ -85,6 +90,8 @@ impl WebApplicationRouter {
             .map(|reg| (reg.controller_id, reg))
             .collect::<HashMap<TypeId, &WebControllerRegistrar>>();
 
+        // inventory has no guaranteed order, so routes are bucketed by controller_id instead of
+        // trusting iteration order.
         let mut routes_by_controller: HashMap<TypeId, Vec<&RouteRegistrar>> = HashMap::new();
 
         for route in inventory::iter::<RouteRegistrar>() {
@@ -110,6 +117,7 @@ impl WebApplicationRouter {
                     }
                 });
 
+            // Build the controller into State before resolving its route handlers.
             (controller_registrar.build)(&self.state);
 
             let controller_routes = routes_by_controller
@@ -132,10 +140,13 @@ impl WebApplicationRouter {
             let mut controller_router = Router::new();
 
             for route in controller_routes {
+                // Each route handler closes over State and produces its own MethodRouter.
                 let route_handler = (route.handler)(self.state.clone());
                 controller_router = controller_router.route(route.path, route_handler);
             }
 
+            // "/" merges into the app root; any other path nests routes under the controller's
+            // declared base path.
             match controller_registrar.controller_path {
                 "/" => {
                     router = router.merge(controller_router);
@@ -158,11 +169,14 @@ impl WebApplicationRouter {
 
         router = router.layer(BodyLimitLayer::new(&body_limit_config));
 
+        // Timeout wraps the whole chain; the response layer turns a timeout into a reply instead
+        // of dropping the connection.
         if self.web_config.request_timeout.enabled {
             router = router.layer(TimeoutLayer::from(self.web_config.request_timeout.clone()));
             router = router.layer(RequestTimeoutResponseLayer::new());
         }
 
+        // Re-expose the parsed body limit per request so handlers can read it from extensions.
         router = router.layer(axum::middleware::from_fn(
             move |mut req: Request, next: Next| async move {
                 req.extensions_mut()
@@ -172,6 +186,7 @@ impl WebApplicationRouter {
             },
         ));
 
+        // Request id is inserted before the logger runs so log lines can reference it.
         router = router.layer(RequestIdLayer::new());
 
         if let Some(logger_config) = &self.web_config.logger
