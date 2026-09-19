@@ -10,6 +10,11 @@ use std::path::Path;
 use sword_core::*;
 use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
+/// Builder pattern of a sword application.
+/// It's in charge of assembling the pieces needed to build the application.
+///
+/// `Config` -> `State` <- `DependencyContainer`
+/// `State` -> `Controllers` / `Interceptors` / `Layers`
 pub struct ApplicationBuilder {
     state: State,
     container: DependencyContainer,
@@ -21,6 +26,8 @@ pub struct ApplicationBuilder {
 impl ApplicationBuilder {
     const DEFAULT_CONFIG_PATH: &str = "config/config.toml";
 
+    /// Initialization of the application builder. It can panic at runtime if the
+    /// environment is invalid, the config file can't be loaded, or tracing fails to init.
     pub fn new() -> Self {
         let config_path = match Environment::current() {
             Ok(Some(env)) => env.default_config_path(),
@@ -55,9 +62,13 @@ impl ApplicationBuilder {
         Self::from_config(config)
     }
 
+    /// Initializes a sword application from a built `Config`.
+    /// When using this method you don't get environment config detection via `SWORD_ENV`.
     pub fn from_config(config: Config) -> Self {
         let state = State::initialize_with(config.clone());
 
+        // Tracing subscriber initialization from the config value. If it's not configured,
+        // the default values are used.
         TracingSubscriber::from(config.get_or_default::<TracingConfig>())
             .init()
             .unwrap_or_else(|err| {
@@ -72,6 +83,8 @@ impl ApplicationBuilder {
                 }
             });
 
+        // Collection and registration in the state of configuration structs
+        // marked with the `#[config]` macro.
         for ConfigRegistrar { register } in inventory::iter::<ConfigRegistrar> {
             register(&state, &config)
         }
@@ -135,6 +148,8 @@ impl ApplicationBuilder {
         self
     }
 
+    /// Iterates and looks for layers defined in `sword_layers` and activated with their
+    /// corresponding feature flags. The collection is automatic, so there's no need to use `with_layer`.
     fn register_sword_built_in_layers(&mut self) {
         for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
             let display_fn = registrar.display;
@@ -169,6 +184,10 @@ impl ApplicationBuilder {
             }
         }
 
+        // Since any piece of the application may require the EventPublisher
+        // (if the feature is enabled), the events runtime must be built before
+        // building the dependency container. Otherwise there will be a runtime error.
+
         #[cfg(feature = "events-in-memory")]
         let events = sword_events::EventApplicationRuntime::new(&self.state, &self.config);
 
@@ -198,14 +217,17 @@ impl ApplicationBuilder {
             }
         });
 
+        // Once the dependency container is built, the interceptors declared with the
+        // #[derive(Interceptor)] macro are registered.
+
         for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
             register(&self.state);
         }
 
         #[cfg(feature = "events-in-memory")]
-        events.start(&self.controller_registry);
+        events.start(&self.controller_registry); // Builds event handlers and starts the subscriber.
 
-        self.register_sword_built_in_layers();
+        self.register_sword_built_in_layers(); // Initialization of built-in layers by the `sword_layers` crate.
 
         #[allow(unused_variables)]
         let ctx = EngineBuildContext {
