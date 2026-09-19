@@ -1,8 +1,5 @@
 use crate::application::{Application, Environment};
 
-#[cfg(feature = "events-in-memory")]
-use std::sync::Arc;
-
 #[cfg(any(feature = "web", feature = "socketio"))]
 use sword_web::internal::{
     AxumRequest, IntoResponse, TowerLayer as Layer, TowerService as Service, routing::Route,
@@ -13,6 +10,11 @@ use std::path::Path;
 use sword_core::*;
 use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
+/// Builder pattern of a sword application.
+/// It's in charge of assembling the pieces needed to build the application.
+///
+/// `Config` -> `State` <- `DependencyContainer`
+/// `State` -> `Controllers` / `Interceptors` / `Layers`
 pub struct ApplicationBuilder {
     state: State,
     container: DependencyContainer,
@@ -21,30 +23,15 @@ pub struct ApplicationBuilder {
     pub config: Config,
 }
 
-const DEFAULT_CONFIG_PATH: &str = "config/config.toml";
-
 impl ApplicationBuilder {
-    fn load_required_config(path: &str) -> Config {
-        Config::builder()
-            .add_required_file(Path::new(path))
-            .build()
-            .unwrap_or_else(|err| {
-                sword_error! {
-                    title: "Failed to load required configuration file",
-                    reason: err,
-                    context: {
-                        "path" => path,
-                        "source" => "Application initialization"
-                    },
-                    hints: ["Ensure the file exists and contains valid TOML"],
-                }
-            })
-    }
+    const DEFAULT_CONFIG_PATH: &str = "config/config.toml";
 
+    /// Initialization of the application builder. It can panic at runtime if the
+    /// environment is invalid, the config file can't be loaded, or tracing fails to init.
     pub fn new() -> Self {
         let config_path = match Environment::current() {
             Ok(Some(env)) => env.default_config_path(),
-            Ok(None) => DEFAULT_CONFIG_PATH,
+            Ok(None) => Self::DEFAULT_CONFIG_PATH,
             Err(err) => {
                 sword_error! {
                     title: "Invalid SWORD_ENV variable",
@@ -57,16 +44,31 @@ impl ApplicationBuilder {
             }
         };
 
-        let config = Self::load_required_config(config_path);
+        let config = Config::builder()
+            .add_required_file(Path::new(config_path))
+            .build()
+            .unwrap_or_else(|err| {
+                sword_error! {
+                    title: "Failed to load required configuration file",
+                    reason: err,
+                    context: {
+                        "path" => config_path,
+                        "source" => "Application initialization"
+                    },
+                    hints: ["Ensure the file exists and contains valid TOML"],
+                }
+            });
 
         Self::from_config(config)
     }
 
+    /// Initializes a sword application from a built `Config`.
+    /// When using this method you don't get environment config detection via `SWORD_ENV`.
     pub fn from_config(config: Config) -> Self {
-        let state = State::new();
+        let state = State::initialize_with(config.clone());
 
-        state.insert(config.clone());
-
+        // Tracing subscriber initialization from the config value. If it's not configured,
+        // the default values are used.
         TracingSubscriber::from(config.get_or_default::<TracingConfig>())
             .init()
             .unwrap_or_else(|err| {
@@ -81,6 +83,8 @@ impl ApplicationBuilder {
                 }
             });
 
+        // Collection and registration in the state of configuration structs
+        // marked with the `#[config]` macro.
         for ConfigRegistrar { register } in inventory::iter::<ConfigRegistrar> {
             register(&state, &config)
         }
@@ -132,116 +136,6 @@ impl ApplicationBuilder {
         self
     }
 
-    #[cfg(feature = "events-in-memory")]
-    fn init_event_publisher(&self) -> tokio::sync::mpsc::Receiver<Arc<dyn sword_events::Event>> {
-        use sword_events::EventQueueConfig;
-        use sword_events::in_memory::EventPublisher;
-
-        let config = self.state.get::<EventQueueConfig>().unwrap_or_else(|_| {
-            let config = EventQueueConfig::default();
-            self.state.insert(config.clone());
-            config
-        });
-
-        let (tx, rx) =
-            tokio::sync::mpsc::channel::<Arc<dyn sword_events::Event>>(config.buffer_size);
-        let publisher = EventPublisher::new(tx);
-        self.state.insert(publisher);
-
-        rx
-    }
-
-    #[cfg(feature = "events-in-memory")]
-    fn init_event_subscriber(
-        &self,
-        rx: tokio::sync::mpsc::Receiver<Arc<dyn sword_events::Event>>,
-    ) -> Option<tokio::sync::watch::Sender<bool>> {
-        use std::any::TypeId;
-        use std::collections::HashMap;
-
-        use sword_events::in_memory::EventSubscriber;
-        use sword_events::{
-            EventControllerRegistrar, EventHandlerFn, EventQueueConfig, EventRouteRegistrar,
-        };
-
-        let event_controllers = self
-            .controller_registry
-            .get_by_kind(Controller::EventHandler);
-
-        if event_controllers.is_empty() {
-            return None;
-        }
-
-        let config = self.state.get::<EventQueueConfig>().unwrap_or_else(|_| {
-            let config = EventQueueConfig::default();
-            self.state.insert(config.clone());
-            config
-        });
-
-        let controller_registrars: HashMap<TypeId, &EventControllerRegistrar> =
-            inventory::iter::<EventControllerRegistrar>()
-                .map(|r| (r.handler_type_id, r))
-                .collect();
-
-        let mut route_map: HashMap<TypeId, Vec<&EventRouteRegistrar>> = HashMap::new();
-        for route in inventory::iter::<EventRouteRegistrar>() {
-            route_map
-                .entry(route.handler_type_id)
-                .or_default()
-                .push(route);
-        }
-
-        let mut handlers: HashMap<&'static str, Vec<EventHandlerFn>> = HashMap::new();
-
-        for type_id in &event_controllers {
-            let Some(registrar) = controller_registrars.get(type_id) else {
-                tracing::warn!(
-                    target: "sword.events",
-                    "No EventControllerRegistrar found for handler type {:?}",
-                    type_id,
-                );
-                continue;
-            };
-
-            if registrar.source != EventSource::Memory {
-                tracing::warn!(
-                    target: "sword.events",
-                    source = ?registrar.source,
-                    "Event handler source is not supported yet, skipping handler type {:?}",
-                    type_id,
-                );
-                continue;
-            }
-
-            (registrar.build)(&self.state);
-
-            let Some(routes) = route_map.get(type_id) else {
-                tracing::warn!(
-                    target: "sword.events",
-                    "No event routes registered for handler type {:?}",
-                    type_id,
-                );
-                continue;
-            };
-
-            for route in routes {
-                let handle_fn = (route.build_and_handle)(&self.state);
-                handlers.entry(route.event_key).or_default().push(handle_fn);
-            }
-        }
-
-        if handlers.is_empty() {
-            return None;
-        }
-
-        let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
-        let subscriber = EventSubscriber::new(rx, handlers, config);
-
-        subscriber.run(shutdown_rx);
-
-        Some(shutdown_tx)
-    }
-
     /// Register a provider directly with the application builder.
     ///
     /// This method can be used to add providers directly to the application, avoiding the need
@@ -254,6 +148,24 @@ impl ApplicationBuilder {
         self
     }
 
+    /// Iterates and looks for layers defined in `sword_layers` and activated with their
+    /// corresponding feature flags. The collection is automatic, so there's no need to use `with_layer`.
+    fn register_sword_built_in_layers(&mut self) {
+        for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
+            let display_fn = registrar.display;
+            let push_layer_fn = (registrar.register)(&self.config);
+
+            tracing::info!(
+                target: "sword.layers",
+                name = registrar.name,
+                "Layer registered"
+            );
+
+            display_fn(&self.config);
+            push_layer_fn(&mut self.layer_stack as &mut dyn Any);
+        }
+    }
+
     /// Build the `Application` instance with the configured options.
     ///
     /// This method ends the builder pattern and constructs the final `Application`
@@ -261,9 +173,6 @@ impl ApplicationBuilder {
     pub fn build(mut self) -> Application {
         // Runtime check — fires only if both features are enabled AND build() is called.
         // This preserves dev experience for users who enable all features in their IDE.
-        #[cfg(feature = "events-in-memory")]
-        let event_rx = self.init_event_publisher();
-
         if cfg!(feature = "grpc") && (cfg!(feature = "web") || cfg!(feature = "socketio")) {
             sword_error! {
                 title: "Multiple application types enabled",
@@ -274,6 +183,13 @@ impl ApplicationBuilder {
                 ],
             }
         }
+
+        // Since any piece of the application may require the EventPublisher
+        // (if the feature is enabled), the events runtime must be built before
+        // building the dependency container. Otherwise there will be a runtime error.
+
+        #[cfg(feature = "events-in-memory")]
+        let events = sword_events::EventApplicationRuntime::new(&self.state, &self.config);
 
         self.container.build_all(&self.state).unwrap_or_else(|err| {
             match (err.dependency_path(), err.missing_dependency_path()) {
@@ -301,26 +217,17 @@ impl ApplicationBuilder {
             }
         });
 
+        // Once the dependency container is built, the interceptors declared with the
+        // #[derive(Interceptor)] macro are registered.
+
         for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
             register(&self.state);
         }
 
         #[cfg(feature = "events-in-memory")]
-        let event_shutdown_tx = self.init_event_subscriber(event_rx);
+        events.start(&self.controller_registry); // Builds event handlers and starts the subscriber.
 
-        for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
-            let display_fn = registrar.display;
-            let push_layer_fn = (registrar.register)(&self.config);
-
-            tracing::info!(
-                target: "sword.layers",
-                name = registrar.name,
-                "Layer registered"
-            );
-
-            display_fn(&self.config);
-            push_layer_fn(&mut self.layer_stack as &mut dyn Any);
-        }
+        self.register_sword_built_in_layers(); // Initialization of built-in layers by the `sword_layers` crate.
 
         #[allow(unused_variables)]
         let ctx = EngineBuildContext {
@@ -338,24 +245,14 @@ impl ApplicationBuilder {
                 let grpc_app = sword_grpc::application::GrpcApplication::from(ctx);
                 let engine = super::ApplicationEngine::Grpc(grpc_app);
 
-                Application::new(
-                    engine,
-                    self.config,
-                    #[cfg(feature = "events-in-memory")]
-                    event_shutdown_tx,
-                )
+                Application::new(engine, self.config)
             }
 
             any(feature = "web", feature = "socketio") => {
                 let web_app = sword_web::application::WebApplication::from(ctx);
                 let engine = super::ApplicationEngine::Web(web_app);
 
-                Application::new(
-                    engine,
-                    self.config,
-                    #[cfg(feature = "events-in-memory")]
-                    event_shutdown_tx,
-                )
+                Application::new(engine, self.config)
             }
 
             _ => {

@@ -61,6 +61,7 @@ impl WebApplication {
             }
         }
 
+        // The router is built as Router<State>; state is attached just before serving.
         let app = self.router.clone().with_state(self.state.clone());
 
         let bind_addr: SocketAddr = bind.parse::<SocketAddr>().unwrap_or_else(|err| {
@@ -87,6 +88,7 @@ impl WebApplication {
             }
         });
 
+        // Graceful shutdown waits for a signal and drains in-flight requests.
         if self.graceful_shutdown {
             axum::serve(listener, app)
                 .with_graceful_shutdown(shutdown_signal())

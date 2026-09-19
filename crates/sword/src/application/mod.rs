@@ -17,27 +17,12 @@ pub use env::Environment;
 pub struct Application {
     engine: ApplicationEngine,
     pub config: Config,
-
-    #[cfg(feature = "events-in-memory")]
-    event_shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
 }
 
 impl Application {
     #[cfg(any(feature = "web", feature = "socketio", feature = "grpc"))]
-    pub(crate) fn new(
-        engine: ApplicationEngine,
-        config: Config,
-        #[cfg(feature = "events-in-memory")] event_shutdown_tx: Option<
-            tokio::sync::watch::Sender<bool>,
-        >,
-    ) -> Self {
-        Self {
-            engine,
-            config,
-
-            #[cfg(feature = "events-in-memory")]
-            event_shutdown_tx,
-        }
+    pub(crate) fn new(engine: ApplicationEngine, config: Config) -> Self {
+        Self { engine, config }
     }
 
     /// Creates a new application builder for configuring the application.
@@ -120,12 +105,6 @@ impl Application {
             _ => unreachable!(
                 "Invalid application engine configuration. Enable the appropriate feature flag to use the desired engine."
             ),
-        }
-
-        #[cfg(feature = "events-in-memory")]
-        if let Some(tx) = &self.event_shutdown_tx {
-            tracing::info!(target: "sword.events", "Signaling event subscriber shutdown");
-            let _ = tx.send(true);
         }
     }
 

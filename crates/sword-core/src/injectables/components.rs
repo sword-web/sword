@@ -29,6 +29,10 @@ impl ComponentRegistry {
         }
     }
 
+    /// Registers a struct that implements `Component`.
+    ///
+    /// `Component` structs can be built automatically from other components and
+    /// providers, without a manual constructor.
     pub fn register<T: Component>(&self) {
         let type_id = TypeId::of::<T>();
         let type_name = type_name::<T>();

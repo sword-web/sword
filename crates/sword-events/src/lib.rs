@@ -1,11 +1,16 @@
 mod registrar;
 
 #[cfg(feature = "in-memory")]
-pub mod in_memory;
+pub mod application;
 
+#[cfg(feature = "in-memory")]
+pub mod in_memory;
 pub mod prelude;
 
 pub use registrar::*;
+
+#[cfg(feature = "in-memory")]
+pub use application::EventApplicationRuntime;
 
 use serde::Deserialize;
 use sword_core::ConfigItem;
