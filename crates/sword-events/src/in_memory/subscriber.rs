@@ -1,113 +1,114 @@
-use std::collections::HashMap;
+use crate::Event;
+use crate::EventHandlerFn;
+use crate::EventQueueConfig;
+use crate::in_memory::EventKeyHandlerMap;
+
 use std::sync::Arc;
 use std::time::Duration;
-
 use tokio::sync::mpsc::Receiver;
-use tokio::sync::watch;
+use tokio::time::sleep;
 
-use crate::Event;
-use crate::{EventHandlerFn, EventQueueConfig};
-
-#[derive(Clone)]
-struct HandlerEntry {
-    handle: EventHandlerFn,
-}
-
+/// Consumer of the in-memory event channel.
+///
+/// Holds the channel receiver, the handlers indexed by event key, and the
+/// queue configuration used for retries.
+///
+/// The event  handling flow is:
+/// consume  ->  dispatch  ->  invoke (with retries)
+/// (recv)       (per key)      (per handler)
 pub struct EventSubscriber {
-    receiver: Option<Receiver<Arc<dyn Event>>>,
-    handlers: HashMap<&'static str, Vec<HandlerEntry>>,
-    config: EventQueueConfig,
+    pub receiver: Receiver<Arc<dyn Event>>,
+    pub handlers: EventKeyHandlerMap,
+    pub config: EventQueueConfig,
 }
 
 impl EventSubscriber {
-    pub fn new(
-        receiver: Receiver<Arc<dyn Event>>,
-        handlers: HashMap<&'static str, Vec<EventHandlerFn>>,
-        config: EventQueueConfig,
-    ) -> Self {
-        let handlers = handlers
-            .into_iter()
-            .map(|(key, fns)| {
-                let entries = fns
-                    .into_iter()
-                    .map(|handle| HandlerEntry { handle })
-                    .collect();
-                (key, entries)
-            })
-            .collect();
-
-        Self {
-            receiver: Some(receiver),
+    /// Spawns the background consumer loop.
+    ///
+    /// Returns immediately: the actual consumption runs as a detached task and
+    /// stops on its own once the channel is closed.
+    pub fn run(self) {
+        let EventSubscriber {
+            receiver,
             handlers,
             config,
+        } = self;
+
+        tokio::spawn(Self::consume(receiver, handlers, config));
+    }
+
+    /// Receives events until the channel is closed and dispatches each one.
+    ///
+    /// This is the only place that awaits the channel, so it must stay cheap:
+    /// handler execution is offloaded by [`Self::dispatch`].
+    async fn consume(
+        mut receiver: Receiver<Arc<dyn Event>>,
+        handlers: EventKeyHandlerMap,
+        config: EventQueueConfig,
+    ) {
+        while let Some(event) = receiver.recv().await {
+            Self::dispatch(&handlers, &config, event);
+        }
+
+        tracing::info!(target: "sword.events", "Event subscriber stopped");
+    }
+
+    /// Looks up the handlers registered for the event key and spawns one task
+    /// per handler.
+    ///
+    /// Events without registered handlers are ignored. Each handler runs concurrently in its own
+    /// task so a slow handler does not block the others or the receive loop.
+    fn dispatch(handlers: &EventKeyHandlerMap, config: &EventQueueConfig, event: Arc<dyn Event>) {
+        let key = event.key();
+
+        let Some(entries) = handlers.get(key) else {
+            tracing::debug!(target: "sword.events", key, "No handlers registered for event");
+            return;
+        };
+
+        for handle in entries {
+            tokio::spawn(Self::invoke(
+                handle.clone(),
+                event.clone(),
+                config.clone(),
+                key,
+            ));
         }
     }
 
-    pub fn run(mut self, mut shutdown: watch::Receiver<bool>) {
-        tokio::spawn(async move {
-            let mut receiver = self.receiver.take().unwrap();
-            let config = self.config;
+    /// Runs a single handler, retrying on failure.
+    ///
+    /// Attempts up to `num_of_event_retry` retries, waiting `delay_between_event_retry_ms` between them.
+    /// Failures are logged; once the retries are exhausted the event is dropped.
+    async fn invoke(
+        handle: EventHandlerFn,
+        event: Arc<dyn Event>,
+        config: EventQueueConfig,
+        key: &'static str,
+    ) {
+        let mut remaining = config.num_of_event_retry;
 
-            loop {
-                let event = tokio::select! {
-                    event = receiver.recv() => {
-                        match event {
-                            Some(event) => event,
-                            None => break,
-                        }
+        loop {
+            match handle(event.clone()).await {
+                Ok(()) => break,
+                Err(e) => {
+                    tracing::error!(
+                        target: "sword.events",
+                        key,
+                        error = %e,
+                        retries_left = remaining,
+                        "Event handler failed"
+                    );
+
+                    if remaining == 0 {
+                        break;
                     }
-                    _ = shutdown.changed() => {
-                        if *shutdown.borrow() {
-                            tracing::info!(target: "sword.events", "Shutdown signal received, stopping subscriber");
-                            break;
-                        }
-                        continue;
-                    }
-                };
 
-                let key = event.key();
-                let Some(entries) = self.handlers.get(key) else {
-                    tracing::debug!(target: "sword.events", key, "No handlers registered for event");
-                    continue;
-                };
+                    remaining -= 1;
 
-                for entry in entries {
-                    let handle = entry.handle.clone();
-                    let event = event.clone();
-                    let config = config.clone();
-
-                    tokio::spawn(async move {
-                        let mut remaining = config.num_of_event_retry;
-
-                        loop {
-                            match handle(event.clone()).await {
-                                Ok(()) => break,
-                                Err(e) => {
-                                    tracing::error!(
-                                        target: "sword.events",
-                                        key,
-                                        error = %e,
-                                        retries_left = remaining,
-                                        "Event handler failed"
-                                    );
-
-                                    if remaining > 0 {
-                                        remaining -= 1;
-                                        tokio::time::sleep(Duration::from_millis(
-                                            config.delay_between_event_retry_ms,
-                                        ))
-                                        .await;
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    });
+                    sleep(Duration::from_millis(config.delay_between_event_retry_ms)).await;
                 }
             }
-
-            tracing::info!(target: "sword.events", "Event subscriber stopped");
-        });
+        }
     }
 }

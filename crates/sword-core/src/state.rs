@@ -24,6 +24,16 @@ impl State {
         }
     }
 
+    /// Create and insert a `T` element at the `State` initialization.
+    ///
+    /// Returns the `State` object.
+    pub fn initialize_with<T: Send + Sync + 'static>(value: T) -> Self {
+        let state = Self::new();
+        state.insert(value);
+
+        state
+    }
+
     /// Extract a clone of the stored value of type `T` from the state.
     ///
     /// # Errors
