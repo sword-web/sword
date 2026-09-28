@@ -14,6 +14,7 @@ pub enum Controller {
     SocketIo,
     Grpc,
     EventHandler,
+    Job,
 }
 
 /// Event source enum used by `#[controller(kind = Controller::EventHandler, ...)]`

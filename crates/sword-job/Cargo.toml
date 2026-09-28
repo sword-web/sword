@@ -1,0 +1,15 @@
+[package]
+name = "sword-job"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio-cron-scheduler = "0.15.1"
+
+sword-core = { workspace = true }
+tracing = { workspace = true }
+inventory = { workspace = true }

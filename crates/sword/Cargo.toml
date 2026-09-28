@@ -27,6 +27,7 @@ sword-macros = { workspace = true, features = ["web-controllers", "socketio-cont
 sword-web = { workspace = true, optional = true }
 sword-grpc = { workspace = true, optional = true }
 sword-socketio = { workspace = true, optional = true }
+sword-job = { workspace = true, optional = true }
 
 tracing = { workspace = true }
 inventory = { workspace = true }
@@ -39,15 +40,17 @@ dioxus-devtools = { workspace = true, optional = true }
 [features]
 default = []
 
-events-in-memory = ["dep:sword-events", "sword-macros/event-handlers"]
 web = ["dep:sword-web"]
+web-multipart = ["sword-web/multipart"]
+web-swagger-ui = ["sword-web/swagger-ui"]
+
 socketio = ["web", "dep:sword-socketio"]
+
 grpc = ["dep:sword-grpc"]
 grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
 grpc-error-details = ["grpc", "sword-grpc/error-details"]
 
-web-multipart = ["sword-web/multipart"]
-web-swagger-ui = ["sword-web/swagger-ui"]
-validation-validator = ["sword-web/validation-validator", "sword-socketio?/validation-validator"]
+events-in-memory = ["dep:sword-events", "sword-macros/event-handlers"]
 
+validation-validator = ["sword-web/validation-validator", "sword-socketio?/validation-validator"]
 hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]
