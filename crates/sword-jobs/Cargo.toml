@@ -1,5 +1,5 @@
 [package]
-name = "sword-job"
+name = "sword-jobs"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,5 +11,7 @@ rust-version.workspace = true
 tokio-cron-scheduler = "0.15.1"
 
 sword-core = { workspace = true }
+sword-macros = { workspace = true, features = ["jobs-controllers"] }
 tracing = { workspace = true }
 inventory = { workspace = true }
+uuid = { workspace = true }

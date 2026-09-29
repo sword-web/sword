@@ -8,6 +8,7 @@ pub struct ControllerStruct {
     pub name: Ident,
     pub kind: ParsedControllerKind,
     pub fields: Vec<(Ident, Type)>,
+    #[allow(dead_code)] // read by the web/socketio controller macros
     pub interceptors: Vec<InterceptorArgs>,
 }
 
