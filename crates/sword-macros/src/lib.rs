@@ -816,3 +816,59 @@ pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn on(attr: TokenStream, item: TokenStream) -> TokenStream {
     controllers::expand_on_handler(attr, item).unwrap_or_else(|err| err.to_compile_error().into())
 }
+
+#[cfg(feature = "jobs-controllers")]
+/// Marks an `async fn` inside a `#[controller(kind = Controller::JobHandler)]`
+/// as a job that runs on a cron schedule.
+///
+/// The argument is a cron expression string including seconds, e.g.
+/// `#[cron("*/5 * * * * *")]` runs every 5 seconds.
+///
+/// ```rust,ignore
+/// #[controller(kind = Controller::JobHandler)]
+/// struct CleanupJob;
+///
+/// impl CleanupJob {
+///     #[cron("0 0 * * * *")]
+///     async fn cleanup(&self) {
+///         // ... runs every hour
+///     }
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn cron(attr: TokenStream, item: TokenStream) -> TokenStream {
+    controllers::jobs::expand_handle(controllers::jobs::ScheduleKind::Cron, attr, item)
+        .unwrap_or_else(|err| err.to_compile_error().into())
+}
+
+#[cfg(feature = "jobs-controllers")]
+/// Marks an `async fn` inside a `#[controller(kind = Controller::JobHandler)]`
+/// as a job that runs repeatedly every `Duration`.
+///
+/// ```rust,ignore
+/// #[repeated(Duration::from_secs(5))]
+/// async fn heartbeat(&self) {
+///     // ... runs every 5 seconds
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn repeated(attr: TokenStream, item: TokenStream) -> TokenStream {
+    controllers::jobs::expand_handle(controllers::jobs::ScheduleKind::Repeated, attr, item)
+        .unwrap_or_else(|err| err.to_compile_error().into())
+}
+
+#[cfg(feature = "jobs-controllers")]
+/// Marks an `async fn` inside a `#[controller(kind = Controller::JobHandler)]`
+/// as a job that runs once after a `Duration`.
+///
+/// ```rust,ignore
+/// #[once(Duration::from_secs(30))]
+/// async fn warmup(&self) {
+///     // ... runs once, 30 seconds after startup
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn once(attr: TokenStream, item: TokenStream) -> TokenStream {
+    controllers::jobs::expand_handle(controllers::jobs::ScheduleKind::Once, attr, item)
+        .unwrap_or_else(|err| err.to_compile_error().into())
+}

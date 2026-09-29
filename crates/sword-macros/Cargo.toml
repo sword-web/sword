@@ -28,9 +28,14 @@ heck = { workspace = true }
 
 [features]
 default = []
-hot-reload = []
 web-controllers = ["dep:axum"]
+
 socketio-controllers = []
+
 grpc-controllers = []
 grpc-reflection = []
+
+jobs-controllers = []
 event-handlers = []
+
+hot-reload = []

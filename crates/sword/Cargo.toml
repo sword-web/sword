@@ -27,7 +27,7 @@ sword-macros = { workspace = true, features = ["web-controllers", "socketio-cont
 sword-web = { workspace = true, optional = true }
 sword-grpc = { workspace = true, optional = true }
 sword-socketio = { workspace = true, optional = true }
-sword-job = { workspace = true, optional = true }
+sword-jobs = { workspace = true, optional = true }
 
 tracing = { workspace = true }
 inventory = { workspace = true }
@@ -51,6 +51,8 @@ grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
 grpc-error-details = ["grpc", "sword-grpc/error-details"]
 
 events-in-memory = ["dep:sword-events", "sword-macros/event-handlers"]
+
+jobs = ["dep:sword-jobs", "sword-macros/jobs-controllers"]
 
 validation-validator = ["sword-web/validation-validator", "sword-socketio?/validation-validator"]
 hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]

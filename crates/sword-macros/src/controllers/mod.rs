@@ -15,14 +15,19 @@ pub use socketio::expand_on_handler;
 #[cfg(feature = "web-controllers")]
 pub mod web;
 
+#[cfg(feature = "jobs-controllers")]
+pub mod jobs;
+
 use proc_macro::TokenStream;
 use quote::quote;
 use shared::ControllerStruct;
+
 #[cfg(any(
     feature = "web-controllers",
     feature = "socketio-controllers",
     feature = "grpc-controllers",
     feature = "event-handlers",
+    feature = "jobs-controllers"
 ))]
 use shared::ParsedControllerKind;
 use syn::ItemStruct;
@@ -50,11 +55,15 @@ pub fn expand_controller(attr: TokenStream, item: TokenStream) -> syn::Result<To
             event_handler::expand_event_handler(&parsed_input)?
         }
 
+        #[cfg(feature = "jobs-controllers")]
+        ParsedControllerKind::JobHandler => jobs::expand_jobs_controller(&parsed_input)?,
+
         #[cfg(not(any(
             feature = "web-controllers",
             feature = "socketio-controllers",
             feature = "grpc-controllers",
             feature = "event-handlers",
+            feature = "jobs-controllers"
         )))]
         _ => {
             return Err(syn::Error::new(

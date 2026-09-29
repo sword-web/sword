@@ -3408,7 +3408,7 @@ dependencies = [
  "sword-core",
  "sword-events",
  "sword-grpc",
- "sword-job",
+ "sword-jobs",
  "sword-layers",
  "sword-macros",
  "sword-socketio",
@@ -3498,13 +3498,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "sword-job"
+name = "sword-jobs"
 version = "0.4.1"
 dependencies = [
  "inventory",
  "sword-core",
+ "sword-macros",
  "tokio-cron-scheduler",
  "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "sword-jobs-tests"
+version = "0.1.0"
+dependencies = [
+ "sword",
+ "tokio",
 ]
 
 [[package]]

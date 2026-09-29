@@ -1,7 +1,8 @@
 #[cfg(any(
     feature = "web-controllers",
     feature = "socketio-controllers",
-    feature = "event-handlers"
+    feature = "event-handlers",
+    feature = "jobs-controllers"
 ))]
 mod cmeta;
 mod parse;
@@ -16,7 +17,8 @@ use syn::{
 #[cfg(any(
     feature = "web-controllers",
     feature = "socketio-controllers",
-    feature = "event-handlers"
+    feature = "event-handlers",
+    feature = "jobs-controllers"
 ))]
 pub(crate) use cmeta::CMetaStack;
 pub(crate) use parse::ControllerStruct;
@@ -26,17 +28,17 @@ pub enum ControllerKind {
     SocketIo,
     Grpc,
     EventHandler,
+    JobHandler,
 }
 
 // Try to parse from a path like `EventSource::Memory`.
 // Mirrors the runtime `sword_core::EventSource` enum.
-#[cfg(feature = "event-handlers")]
 pub enum EventSourceKind {
     Memory,
 }
 
-#[cfg(feature = "event-handlers")]
 impl EventSourceKind {
+    #[cfg(feature = "event-handlers")]
     pub fn as_tokens(&self) -> proc_macro2::TokenStream {
         match self {
             Self::Memory => quote::quote! { ::sword::internal::core::EventSource::Memory },
@@ -50,7 +52,6 @@ pub struct ControllerArgs {
     pub path: Option<LitStr>,
     pub namespace: Option<LitStr>,
     pub service: Option<Path>,
-    #[cfg(feature = "event-handlers")]
     pub source: Option<EventSourceKind>,
 }
 
@@ -66,6 +67,9 @@ pub enum ParsedControllerKind {
 
     #[cfg(feature = "event-handlers")]
     EventHandler { source: EventSourceKind },
+
+    #[cfg(feature = "jobs-controllers")]
+    JobHandler,
 }
 
 // Try to parse from a path like `Controller::Web` or `Controller::SocketIo`.
@@ -87,15 +91,15 @@ impl Parse for ControllerKind {
             "SocketIo" => Ok(Self::SocketIo),
             "Grpc" => Ok(Self::Grpc),
             "EventHandler" => Ok(Self::EventHandler),
+            "JobHandler" => Ok(Self::JobHandler),
             _ => Err(Error::new(
                 path.span(),
-                "Invalid controller kind. Expected `Web`, `SocketIo`, `Grpc`, or `EventHandler`",
+                "Invalid controller kind. Expected `Web`, `SocketIo`, `Grpc`, `EventHandler`, or `JobHandler`",
             )),
         }
     }
 }
 
-#[cfg(feature = "event-handlers")]
 impl Parse for EventSourceKind {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let path: Path = input.parse()?;
@@ -156,7 +160,6 @@ impl Parse for ControllerArgs {
                     }
                     out.service = Some(input.parse()?);
                 }
-                #[cfg(feature = "event-handlers")]
                 "source" => {
                     if out.source.is_some() {
                         return Err(Error::new(key_span, "Duplicate argument `source`"));
@@ -333,6 +336,42 @@ impl TryFrom<ControllerArgs> for ParsedControllerKind {
                     })?;
 
                     Ok(ParsedControllerKind::EventHandler { source })
+                }
+            }
+
+            ControllerKind::JobHandler => {
+                if let Some(path) = args.path {
+                    return Err(Error::new(
+                        path.span(),
+                        "`path` is not valid for JobHandler",
+                    ));
+                }
+
+                if let Some(namespace) = args.namespace {
+                    return Err(Error::new(
+                        namespace.span(),
+                        "`namespace` is not valid for JobHandler",
+                    ));
+                }
+
+                if let Some(service) = args.service {
+                    return Err(Error::new(
+                        service.span(),
+                        "`service` is not valid for JobHandler",
+                    ));
+                }
+
+                #[cfg(not(feature = "jobs-controllers"))]
+                {
+                    Err(Error::new(
+                        Span::call_site(),
+                        "Job controllers require enabling the `jobs-controllers` feature",
+                    ))
+                }
+
+                #[cfg(feature = "jobs-controllers")]
+                {
+                    Ok(ParsedControllerKind::JobHandler)
                 }
             }
         }
