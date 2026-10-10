@@ -1,3 +1,4 @@
+pub mod cmeta;
 pub mod paths;
 pub mod structs;
 pub mod traits;

@@ -1,6 +1,21 @@
 mod core;
 mod shared;
 
+// #[cfg(feature = "events")]
+mod events;
+
+// #[cfg(feature = "grpc")]
+mod grpc;
+
+// #[cfg(feature = "jobs")]
+mod jobs;
+
+// #[cfg(feature = "socketio")]
+mod socketio;
+
+// #[cfg(feature = "web")]
+mod web;
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
@@ -104,6 +119,48 @@ pub fn config(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
     shared::emit(core::expand_injectable(attr, item))
+}
+
+/// Defines a Sword controller.
+///
+/// The controller kind and its specific arguments are declared in the
+/// attribute, e.g. `#[controller(kind = Controller::Web, path = "/api")]`.
+#[proc_macro_attribute]
+pub fn controller(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_controller(attr, item))
+}
+
+/// Derive macro for creating interceptors.
+///
+/// Generates implementations for the `Interceptor` trait.
+///
+/// # Usage
+/// ```rust,ignore
+/// use sword::prelude::*;
+///
+/// #[derive(Interceptor)]
+/// struct MyInterceptor;
+///
+/// // then implement some Interceptor trait variants
+/// // depending on the controller kind (e.g. OnRequest, OnConnect.)
+/// ```
+#[proc_macro_derive(Interceptor)]
+pub fn derive_interceptor(item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_interceptor_derive(item))
+}
+
+/// Marks a route or controller with one or more interceptors.
+/// This macro can be used to apply an `Interceptor` to different controller kinds,
+/// such as web controllers or Socket.IO controllers.
+#[proc_macro_attribute]
+pub fn interceptor(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let _ = attr;
+    item
+}
+
+#[proc_macro_attribute]
+pub fn event(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(events::expand_event_struct(attr, item))
 }
 
 /// ### This is just a re-export of `tokio::main` to simplify the initial setup of
@@ -397,3 +454,29 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
 
     output.into()
 }
+
+// ---- web route attributes --------------------------------------------------
+
+macro_rules! define_routes {
+    ($($fn_name:ident => $method:literal),* $(,)?) => {
+        $(
+            #[proc_macro_attribute]
+            pub fn $fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
+                shared::emit(web::expand_route($method, attr, item))
+            }
+        )*
+    };
+}
+
+define_routes!(
+    get => "GET",
+    post => "POST",
+    put => "PUT",
+    patch => "PATCH",
+    delete => "DELETE",
+    head => "HEAD",
+    options => "OPTIONS",
+    trace => "TRACE",
+    connect => "CONNECT",
+    sse => "SSE",
+);
