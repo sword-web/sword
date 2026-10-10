@@ -1,4 +1,6 @@
 pub mod paths;
+pub mod structs;
+pub mod traits;
 
 pub use darling::Error;
 
