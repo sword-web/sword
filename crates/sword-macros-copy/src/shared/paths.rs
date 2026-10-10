@@ -10,7 +10,14 @@ macro_rules! path {
     };
 }
 
+path!(TypeId => ::std::any::TypeId);
+
 path!(State => ::sword::internal::core::State);
+path!(Component => ::sword::internal::core::Component);
+path!(Provider => ::sword::internal::core::Provider);
+
+path!(Build => ::sword::internal::core::Build);
+path!(HasDeps => ::sword::internal::core::HasDeps);
 
 path!(Config => ::sword::internal::core::Config);
 path!(ConfigItem => ::sword::internal::core::ConfigItem);

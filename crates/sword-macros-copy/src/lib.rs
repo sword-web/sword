@@ -28,6 +28,84 @@ pub fn config(attr: TokenStream, item: TokenStream) -> TokenStream {
     shared::emit(core::expand_config_struct(attr, item))
 }
 
+/// Marks a struct as injectable.
+///
+/// This macro generates the necessary code to register the struct
+/// in the dependency injection container. It can be used with or without
+/// parameters.
+///
+/// ### Parameters
+///
+/// - `kind`: (Optional) Specifies the kind of injectable.
+///   It can be either `provider` or `component`.
+///
+///  `provider`: The struct that has to be instantiated manually and
+///   registered in the container. The struct will be treated as a singleton by default.
+///
+///  `component`: The struct will be instantiated automatically by the container
+///   based on its dependencies. It's also treated as a singleton by default.
+///
+///   By default, if no kind is provided, it will be treated as `component`.
+///
+/// - `no_derive_clone`: (Optional) If provided, the struct will not derive the `Clone` automatically.
+///   By default, the struct will derive `Clone` if all its fields implement `Clone`.
+///
+/// ### Usage of `#[injectable]` without parameters (same as #[injectable(component)])
+///
+/// ```rust,ignore
+/// #[injectable]
+/// pub struct TaskRepository {
+///     db: Database,
+/// }
+///
+/// impl TaskRepository {
+///     pub async fn create(&self, task: Value) {
+///         self.db.insert("tasks", task).await;
+///     }
+///
+///     pub async fn find_all(&self) -> Option<Vec<Value>> {
+///         self.db.get_all("tasks").await
+///     }
+/// }
+/// ```
+///
+/// ### Usage of `#[injectable(provider)]` with parameters
+///
+/// ```rust,ignore
+/// #[injectable(provider)]
+/// pub struct Database {
+///     db: Store,
+/// }
+///
+/// impl Database {
+///     pub async fn new(db_conf: DatabaseConfig) -> Self {
+///         let db = Arc::new(RwLock::new(HashMap::new()));
+///
+///         db.write().await.insert(db_conf.collection_name, Vec::new());
+///
+///         Self { db }
+///     }
+///
+///     pub async fn insert(&self, table: &'static str, record: Value) {
+///         let mut db = self.db.write().await;
+///
+///         if let Some(table_data) = db.get_mut(table) {
+///             table_data.push(record);
+///         }
+///     }
+///
+///     pub async fn get_all(&self, table: &'static str) -> Option<Vec<Value>> {
+///         let db = self.db.read().await;
+///
+///         db.get(table).cloned()
+///     }
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_injectable(attr, item))
+}
+
 /// ### This is just a re-export of `tokio::main` to simplify the initial setup of
 /// ### Sword, you can use your own version of tokio adding it to your
 /// ### `Cargo.toml`, we are providing this initial base by default
