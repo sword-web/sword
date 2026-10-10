@@ -1,6 +1,32 @@
+mod core;
+mod shared;
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
+
+/// Defines a configuration struct for the application.
+/// This macro generates the necessary code to deserialize the struct from
+/// the configuration toml file.
+///
+/// The struct must derive `Deserialize` from `serde`.
+///
+/// ### Parameters
+/// - `key`: The key in the configuration file where the struct is located.
+///
+/// ### Usage
+///
+/// ```rust,ignore
+/// #[config(key = "my-section")]
+/// #[derive(Debug, Deserialize)]
+/// struct MyConfig {
+///     my_key: String,
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn config(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_config_struct(attr, item))
+}
 
 /// ### This is just a re-export of `tokio::main` to simplify the initial setup of
 /// ### Sword, you can use your own version of tokio adding it to your
