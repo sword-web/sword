@@ -1,14 +1,22 @@
+// TODO: narrow to per-item allows once the feature set stabilizes.
+#![allow(dead_code)]
+
 mod core;
 mod shared;
 
+#[cfg(feature = "events")]
 mod events;
 
+#[cfg(feature = "grpc")]
 mod grpc;
 
+#[cfg(feature = "jobs")]
 mod jobs;
 
+#[cfg(feature = "socketio")]
 mod socketio;
 
+#[cfg(feature = "web")]
 mod web;
 
 use proc_macro::TokenStream;
@@ -274,6 +282,7 @@ pub fn derive_http_error(input: TokenStream) -> TokenStream {
 ///     Database(#[from] anyhow::Error),
 /// }
 /// ```
+#[cfg(feature = "grpc")]
 #[proc_macro_derive(GrpcError, attributes(grpc, grpc_error, tracing))]
 pub fn derive_grpc_error(input: TokenStream) -> TokenStream {
     shared::emit(grpc::derive_grpc_error(input))
