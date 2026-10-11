@@ -24,6 +24,7 @@ pub enum ControllerKind {
     JobHandler,
 }
 
+#[allow(dead_code)] // constructed only when the `events` feature is enabled
 pub enum EventSourceKind {
     Memory,
 }
@@ -45,6 +46,7 @@ struct ControllerArgs {
     source: Option<Path>,
 }
 
+#[allow(dead_code)] // `base`/`interceptors` are read by each feature's expander (WIP)
 pub struct ControllerStruct {
     pub base: Struct,
     pub kind: ControllerKind,
