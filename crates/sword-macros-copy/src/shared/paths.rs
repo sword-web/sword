@@ -11,8 +11,13 @@ macro_rules! path {
 }
 
 path!(TypeId => ::std::any::TypeId);
+path!(type_name => ::std::any::type_name);
 path!(Box => ::std::boxed::Box);
 path!(Arc => ::std::sync::Arc);
+path!(Clone => ::std::clone::Clone);
+path!(Debug => ::std::fmt::Debug);
+path!(format => ::std::format);
+path!(stringify => ::std::stringify);
 
 path!(State => ::sword::internal::core::State);
 path!(Component => ::sword::internal::core::Component);
@@ -43,6 +48,13 @@ path!(OnRequestStream => ::sword::web::OnRequestStream);
 path!(OnRequestStreamWithConfig => ::sword::web::OnRequestStreamWithConfig);
 
 path!(Event => ::sword::internal::events::Event);
+path!(EventHandler => ::sword::internal::events::EventHandler);
+path!(EventControllerRegistrar => ::sword::internal::events::EventControllerRegistrar);
+path!(EventRouteRegistrar => ::sword::internal::events::EventRouteRegistrar);
+path!(EventHandlerFn => ::sword::internal::events::EventHandlerFn);
+path!(EventHandlerResult => ::sword::internal::events::EventHandlerResult);
+path!(EventSource => ::sword::internal::core::EventSource);
+path!(EventsBoxedFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::sword::internal::events::EventHandlerResult<()>> + ::std::marker::Send>>);
 
 path!(Interceptor => ::sword::internal::core::Interceptor);
 path!(InterceptorRegistrar => ::sword::internal::core::InterceptorRegistrar);

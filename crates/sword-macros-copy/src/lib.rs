@@ -159,6 +159,12 @@ pub fn event(attr: TokenStream, item: TokenStream) -> TokenStream {
     shared::emit(events::expand_event_struct(attr, item))
 }
 
+#[cfg(feature = "events")]
+#[proc_macro_attribute]
+pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(events::expand_handle(attr, item))
+}
+
 #[cfg(feature = "web")]
 #[proc_macro_derive(HttpError, attributes(http, http_error, tracing))]
 pub fn derive_http_error(input: TokenStream) -> TokenStream {
