@@ -12,19 +12,10 @@ use syn::{DeriveInput, Ident, LitStr, Path, Type};
 // `#[controller(kind = ..., ...)]` model =====================================================
 
 pub enum ControllerKind {
-    Web {
-        path: String,
-    },
-    SocketIo {
-        namespace: String,
-    },
-    Grpc {
-        #[allow(dead_code)] // consumed by the grpc expander (WIP: todo!())
-        service: Path,
-    },
-    EventHandler {
-        source: EventSourceKind,
-    },
+    Web { path: String },
+    SocketIo { namespace: String },
+    Grpc { service: Path },
+    EventHandler { source: EventSourceKind },
     JobHandler,
 }
 

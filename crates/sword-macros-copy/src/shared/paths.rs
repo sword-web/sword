@@ -89,3 +89,14 @@ path!(HandlerRegistrar => ::sword::internal::socketio::HandlerRegistrar);
 path!(SocketIoHandlerRegistrar => ::sword::internal::socketio::SocketIoHandlerRegistrar);
 path!(SocketIoController => ::sword::internal::socketio::SocketIoController);
 path!(ConnectHandler => ::sword::internal::socketio::ConnectHandler);
+
+path!(GrpcController => ::sword::internal::grpc::GrpcController);
+path!(GrpcControllerRegistrar => ::sword::internal::grpc::GrpcControllerRegistrar);
+path!(GrpcServiceRegistry => ::sword::internal::grpc::GrpcServiceRegistry);
+path!(GrpcBodyLimitValue => ::sword::internal::grpc::GrpcBodyLimitValue);
+path!(tonic => ::sword::internal::grpc::tonic);
+path!(tonic_async_interceptor => ::sword::internal::grpc::tonic_async_interceptor);
+path!(GrpcStatus => ::sword::grpc::Status);
+path!(GrpcCode => ::sword::grpc::Code);
+path!(GrpcOnRequest => ::sword::grpc::OnRequest);
+path!(GrpcOnRequestWithConfig => ::sword::grpc::OnRequestWithConfig);

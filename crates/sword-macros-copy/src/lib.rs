@@ -210,6 +210,75 @@ pub fn derive_http_error(input: TokenStream) -> TokenStream {
     shared::emit(web::derive_http_error(input))
 }
 
+/// Derive macro for gRPC error enums.
+///
+/// Generates:
+/// - `From<Self> for tonic::Status`
+///
+/// Enum-level defaults can be declared with `#[grpc_error(...)]` and overridden per
+/// variant with `#[grpc(...)]`.
+///
+/// Supported attributes:
+/// - `code = "invalid_argument"`
+/// - `message = "custom text"`
+/// - `message = field_name`
+/// - `transparent` (variant-only)
+/// - `tracing = <level>` inside `#[grpc_error(...)]` or `#[grpc(...)]`
+/// - `#[tracing(level)]`: backward-compatible shorthand at variant level
+/// - When `tracing` is not specified, the level defaults from the gRPC code
+///   (`ok` → `info`, client errors → `warn`, server errors → `error`), matching the
+///   gRPC access logger's `auto` policy.
+///
+/// gRPC code values accepted by `#[grpc(code = "...")]`:
+///
+/// - `ok`
+/// - `cancelled`
+/// - `unknown`
+/// - `invalid_argument`
+/// - `deadline_exceeded`
+/// - `not_found`
+/// - `already_exists`
+/// - `permission_denied`
+/// - `resource_exhausted`
+/// - `failed_precondition`
+/// - `aborted`
+/// - `out_of_range`
+/// - `unimplemented`
+/// - `internal`
+/// - `unavailable`
+/// - `data_loss`
+/// - `unauthenticated`
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use sword::prelude::*;
+/// use thiserror::Error;
+///
+/// #[derive(Debug, Error, GrpcError)]
+/// #[grpc_error(code = "internal", tracing = error)]
+/// enum UserError {
+///     #[grpc(code = "not_found", tracing = info)]
+///     #[error("User not found: {id}")]
+///     NotFound { id: String },
+///
+///     #[grpc(code = "invalid_argument", message = client_message)]
+///     #[error("Validation error: {internal}")]
+///     Validation {
+///         client_message: String,
+///         internal: String,
+///     },
+///
+///     #[grpc(transparent)]
+///     #[error("Database error: {0}")]
+///     Database(#[from] anyhow::Error),
+/// }
+/// ```
+#[proc_macro_derive(GrpcError, attributes(grpc, grpc_error, tracing))]
+pub fn derive_grpc_error(input: TokenStream) -> TokenStream {
+    shared::emit(grpc::derive_grpc_error(input))
+}
+
 #[cfg(feature = "jobs")]
 #[proc_macro_attribute]
 pub fn cron(attr: TokenStream, item: TokenStream) -> TokenStream {
