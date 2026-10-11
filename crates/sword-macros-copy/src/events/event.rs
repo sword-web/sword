@@ -1,4 +1,4 @@
-use crate::shared::{Result, paths::*};
+use crate::shared::{Error, Result, paths::*};
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::quote;
@@ -14,10 +14,17 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
     let input = syn::parse::<DeriveInput>(item)?;
     let args = Args::from_list(&NestedMeta::parse_meta_list(args.into())?)?;
 
+    if !matches!(input.data, syn::Data::Struct(_)) {
+        return Err(
+            Error::custom("#[event] can only be applied to structs").with_span(&input.ident)
+        );
+    }
+
     let event_key = args.key;
     let struct_name = &input.ident;
 
     let expanded = quote! {
+        #[derive(#Clone, #Debug)]
         #input
 
         impl #Event for #struct_name {
@@ -26,7 +33,7 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
             }
 
             fn clone_event(&self) -> #Box<dyn #Event> {
-                #Box::new(self.clone())
+                #Box::new(#Clone::clone(self))
             }
         }
     };

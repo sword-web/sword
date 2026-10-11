@@ -14,15 +14,13 @@ use quote::quote;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::JobHandler = &controller.kind else {
-        return Err(
-            Error::custom("Expected a web controller").with_span(&controller.base.ident.span())
-        );
+        return Err(Error::custom("Expected a job controller").with_span(&controller.span()));
     };
 
-    let self_ty = &controller.base.ident;
-    let fields = controller.base.fields();
+    let self_ty = &controller.ty();
+    let fields = controller.fields();
 
-    CMetaStack::push("job_controller", "controller_ty", &self_ty.to_string());
+    CMetaStack::push("job_controller", "controller_ty", &controller.name());
 
     let build_impl = generate_build_impl(self_ty, &fields);
     let clone_impl = generate_clone_impl(self_ty, &fields);

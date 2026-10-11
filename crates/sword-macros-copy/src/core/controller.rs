@@ -1,32 +1,44 @@
 use crate::{
     core::{InterceptorArgs, take_interceptors},
-    shared::{Error, Result, structs::Struct},
+    shared::{Error, Result, paths::*, structs::Struct},
 };
 
 use darling::{FromDeriveInput, FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{DeriveInput, LitStr, Path};
+use syn::{DeriveInput, Ident, LitStr, Path, Type};
 
 // `#[controller(kind = ..., ...)]` model =====================================================
 
-#[allow(dead_code)] // fields are consumed by each feature's expander (WIP: todo!())
 pub enum ControllerKind {
-    Web { path: String },
-
-    SocketIo { namespace: String },
-
-    Grpc { service: Path },
-
-    EventHandler { source: EventSourceKind },
-
+    Web {
+        path: String,
+    },
+    SocketIo {
+        #[allow(dead_code)] // consumed by the socketio expander (WIP: todo!())
+        namespace: String,
+    },
+    Grpc {
+        #[allow(dead_code)] // consumed by the grpc expander (WIP: todo!())
+        service: Path,
+    },
+    EventHandler {
+        source: EventSourceKind,
+    },
     JobHandler,
 }
 
-#[allow(dead_code)] // constructed only when the `events` feature is enabled
 pub enum EventSourceKind {
     Memory,
+}
+
+impl EventSourceKind {
+    pub fn as_tokens(&self) -> TokenStream2 {
+        match self {
+            Self::Memory => quote! { #EventSource::Memory },
+        }
+    }
 }
 
 #[derive(FromMeta)]
@@ -46,11 +58,28 @@ struct ControllerArgs {
     source: Option<Path>,
 }
 
-#[allow(dead_code)] // `base`/`interceptors` are read by each feature's expander (WIP)
 pub struct ControllerStruct {
-    pub base: Struct,
+    base: Struct,
     pub kind: ControllerKind,
     pub interceptors: Vec<InterceptorArgs>,
+}
+
+impl ControllerStruct {
+    pub fn fields(&self) -> Vec<(Ident, Type)> {
+        self.base.fields()
+    }
+
+    pub fn ty(&self) -> &Ident {
+        &self.base.ident
+    }
+
+    pub fn name(&self) -> String {
+        self.ty().to_string()
+    }
+
+    pub fn span(&self) -> Span {
+        self.ty().span()
+    }
 }
 
 // args -> kind ==============================================================================
