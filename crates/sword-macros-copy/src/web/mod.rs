@@ -2,6 +2,7 @@ mod errors;
 mod interceptors;
 mod routes;
 
+pub use errors::derive_http_error;
 pub use routes::expand_route;
 
 use crate::{

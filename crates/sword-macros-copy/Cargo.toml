@@ -20,7 +20,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 proc-macro = true
 
 [dependencies]
-axum = { workspace = true, optional = true }
 syn = { version = "3", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
@@ -29,7 +28,7 @@ darling = "0.24.1"
 
 [features]
 default = []
-web = ["dep:axum"]
+web = []
 socketio = []
 
 grpc = []

@@ -1,6 +1,6 @@
 macro_rules! path {
     ($name:ident => $($path:tt)*) => {
-        #[allow(non_camel_case_types)]
+        #[allow(non_camel_case_types, dead_code)]
         pub struct $name;
         impl quote::ToTokens for $name {
             fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
@@ -34,6 +34,7 @@ path!(Next => ::sword::web::Next);
 path!(mw_with_state => ::sword::internal::web::mw_with_state);
 path!(routing => ::sword::internal::web::routing);
 path!(IntoResponse => ::sword::internal::web::IntoResponse);
+path!(AxumResponse => ::sword::internal::web::AxumResponse);
 path!(JsonResponse => ::sword::web::JsonResponse);
 
 path!(StreamRequest => ::sword::web::StreamRequest);
@@ -57,3 +58,8 @@ path!(DependencyInjectionError => ::sword::internal::core::DependencyInjectionEr
 
 path!(inventory => ::sword::internal::inventory);
 path!(sword_error => ::sword::internal::core::sword_error);
+path!(tracing => ::sword::internal::tracing);
+
+path!(Job => ::sword::internal::jobs::Job);
+path!(JobFunctionRegistrar => ::sword::internal::jobs::JobFunctionRegistrar);
+path!(JobControllerRegistrar => ::sword::internal::jobs::JobControllerRegistrar);

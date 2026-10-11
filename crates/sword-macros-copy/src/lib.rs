@@ -1,19 +1,14 @@
 mod core;
 mod shared;
 
-// #[cfg(feature = "events")]
 mod events;
 
-// #[cfg(feature = "grpc")]
 mod grpc;
 
-// #[cfg(feature = "jobs")]
 mod jobs;
 
-// #[cfg(feature = "socketio")]
 mod socketio;
 
-// #[cfg(feature = "web")]
 mod web;
 
 use proc_macro::TokenStream;
@@ -158,9 +153,46 @@ pub fn interceptor(attr: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
 
+#[cfg(feature = "events")]
 #[proc_macro_attribute]
 pub fn event(attr: TokenStream, item: TokenStream) -> TokenStream {
     shared::emit(events::expand_event_struct(attr, item))
+}
+
+#[cfg(feature = "web")]
+#[proc_macro_derive(HttpError, attributes(http, http_error, tracing))]
+pub fn derive_http_error(input: TokenStream) -> TokenStream {
+    shared::emit(web::derive_http_error(input))
+}
+
+#[cfg(feature = "jobs")]
+#[proc_macro_attribute]
+pub fn cron(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(jobs::schedule::expand_job_task(
+        jobs::schedule::ScheduleKind::Cron,
+        attr,
+        item,
+    ))
+}
+
+#[cfg(feature = "jobs")]
+#[proc_macro_attribute]
+pub fn repeated(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(jobs::schedule::expand_job_task(
+        jobs::schedule::ScheduleKind::Repeated,
+        attr,
+        item,
+    ))
+}
+
+#[cfg(feature = "jobs")]
+#[proc_macro_attribute]
+pub fn once(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(jobs::schedule::expand_job_task(
+        jobs::schedule::ScheduleKind::Once,
+        attr,
+        item,
+    ))
 }
 
 /// ### This is just a re-export of `tokio::main` to simplify the initial setup of
@@ -457,6 +489,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
 
 // ---- web route attributes --------------------------------------------------
 
+#[cfg(feature = "web")]
 macro_rules! define_routes {
     ($($fn_name:ident => $method:literal),* $(,)?) => {
         $(
@@ -468,6 +501,7 @@ macro_rules! define_routes {
     };
 }
 
+#[cfg(feature = "web")]
 define_routes!(
     get => "GET",
     post => "POST",
