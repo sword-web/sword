@@ -16,6 +16,8 @@ path!(Box => ::std::boxed::Box);
 path!(Arc => ::std::sync::Arc);
 path!(Clone => ::std::clone::Clone);
 path!(Debug => ::std::fmt::Debug);
+path!(Display => ::std::fmt::Display);
+path!(Any => ::std::any::Any);
 path!(format => ::std::format);
 path!(stringify => ::std::stringify);
 
@@ -75,3 +77,15 @@ path!(tracing => ::sword::internal::tracing);
 path!(Job => ::sword::internal::jobs::Job);
 path!(JobFunctionRegistrar => ::sword::internal::jobs::JobFunctionRegistrar);
 path!(JobControllerRegistrar => ::sword::internal::jobs::JobControllerRegistrar);
+
+path!(SocketBoxedFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ()> + ::std::marker::Send>>);
+
+path!(SocketIo => ::sword::socketio::SocketIo);
+path!(SocketRef => ::sword::socketio::SocketRef);
+path!(SocketContext => ::sword::socketio::SocketContext);
+path!(OnConnect => ::sword::socketio::OnConnect);
+path!(SocketEventKind => ::sword::internal::socketio::SocketEventKind);
+path!(HandlerRegistrar => ::sword::internal::socketio::HandlerRegistrar);
+path!(SocketIoHandlerRegistrar => ::sword::internal::socketio::SocketIoHandlerRegistrar);
+path!(SocketIoController => ::sword::internal::socketio::SocketIoController);
+path!(ConnectHandler => ::sword::internal::socketio::ConnectHandler);

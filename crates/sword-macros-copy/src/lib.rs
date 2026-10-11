@@ -165,6 +165,45 @@ pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
     shared::emit(events::expand_handle(attr, item))
 }
 
+/// Unified handler attribute for Socket.IO events.
+///
+/// ### Event Types
+/// - `#[on("connection")]` - Called when a client connects
+/// - `#[on("disconnection")]` - Called when a client disconnects
+/// - `#[on("fallback")]` - Called for unhandled events
+/// - `#[on("custom_event")]` - Called for custom event names
+///
+/// ### Parameters
+/// All handlers receive `&self` and `ctx: SocketContext` which provides access to:
+/// - Socket operations via `ctx`
+/// - Message data via `ctx.try_data::<T>()`
+/// - Event name via `ctx.event()`
+/// - Acknowledgments via `ctx.ack()`
+///
+/// ### Usage
+/// ```rust,ignore
+/// #[controller(kind = Controller::SocketIo, namespace = "/chat")]
+/// pub struct ChatController { ... }
+///
+/// impl ChatController {
+///     #[on("connection")]
+///     async fn on_connect(&self, ctx: SocketContext) {
+///         println!("Client connected: {}", ctx.id());
+///     }
+///
+///     #[on("message")]
+///     async fn handle_message(&self, ctx: SocketContext) {
+///         let msg: String = ctx.try_data().unwrap();
+///         println!("Received: {}", msg);
+///     }
+/// }
+/// ```
+#[cfg(feature = "socketio")]
+#[proc_macro_attribute]
+pub fn on(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(socketio::expand_on_handler(attr, item))
+}
+
 #[cfg(feature = "web")]
 #[proc_macro_derive(HttpError, attributes(http, http_error, tracing))]
 pub fn derive_http_error(input: TokenStream) -> TokenStream {
