@@ -16,7 +16,6 @@ pub enum ControllerKind {
         path: String,
     },
     SocketIo {
-        #[allow(dead_code)] // consumed by the socketio expander (WIP: todo!())
         namespace: String,
     },
     Grpc {
