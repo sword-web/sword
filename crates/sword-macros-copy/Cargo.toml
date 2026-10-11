@@ -32,7 +32,7 @@ web = []
 socketio = []
 
 grpc = []
-grpc-reflection = []
+grpc-reflection = ["grpc"]
 
 jobs = []
 events = []
