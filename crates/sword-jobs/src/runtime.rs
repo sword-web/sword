@@ -1,7 +1,7 @@
 use crate::{JobControllerRegistrar, JobFunctionRegistrar};
 
 use std::{any::TypeId, collections::HashSet};
-use sword_core::{Controller, EngineBuildContext, State, sword_error};
+use sword_core::{Controller, EngineBuildContext, Shutdown, State, sword_error};
 use tokio_cron_scheduler::JobScheduler;
 
 /// Runtime that builds job controllers, registers their jobs and keeps the
@@ -75,6 +75,21 @@ impl JobSchedulerRuntime {
         });
 
         scheduler
+    }
+
+    /// Runs the scheduler until `shutdown` is cancelled, then stops it.
+    pub async fn run(self, shutdown: Shutdown) {
+        let mut scheduler = self.start().await;
+
+        shutdown.cancelled().await;
+
+        if let Err(err) = scheduler.shutdown().await {
+            tracing::error!(
+                target: "sword.jobs",
+                error = %err,
+                "Failed to shut down job scheduler"
+            );
+        }
     }
 }
 

@@ -3445,7 +3445,7 @@ dependencies = [
 name = "sword-events-tests"
 version = "0.1.0"
 dependencies = [
- "axum-test",
+ "serial_test",
  "sword",
  "tokio",
 ]
@@ -3460,6 +3460,7 @@ dependencies = [
  "sword-core",
  "sword-layers",
  "sword-macros",
+ "tokio",
  "tokio-stream",
  "tonic",
  "tonic-async-interceptor",
@@ -3554,6 +3555,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
+]
+
+[[package]]
+name = "sword-mixed-tests"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "serial_test",
+ "sword",
+ "tokio",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
 ]
 
 [[package]]

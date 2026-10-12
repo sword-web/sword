@@ -7,4 +7,4 @@ publish = false
 [dependencies]
 sword = { workspace = true, features = ["web", "events-in-memory"] }
 tokio = { workspace = true }
-axum-test = { workspace = true }
+serial_test = "4.0.1"

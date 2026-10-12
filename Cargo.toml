@@ -8,6 +8,7 @@ members = [
     "tests/sword-grpc",
     "tests/sword-jobs",
     "tests/sword-events",
+    "tests/sword-mixed",
 ]
 
 [workspace.metadata.cargo-machete]

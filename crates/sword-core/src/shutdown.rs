@@ -1,3 +1,10 @@
+use std::future::Future;
+#[cfg(not(unix))]
+use std::future::pending;
+use std::sync::Arc;
+use tokio::signal;
+use tokio::sync::watch;
+
 /// Waits for a shutdown signal (SIGINT or SIGTERM) and logs which signal was received.
 ///
 /// This is a shared utility used by both web and gRPC application engines.
@@ -5,7 +12,7 @@
 /// On non-Unix systems, it only listens for `Ctrl+C`.
 pub async fn shutdown_signal() {
     let ctrl_c = async {
-        tokio::signal::ctrl_c().await.unwrap_or_else(|err| {
+        signal::ctrl_c().await.unwrap_or_else(|err| {
             tracing::error!(
                 target: "sword.shutdown",
                 error = %err,
@@ -16,7 +23,7 @@ pub async fn shutdown_signal() {
 
     #[cfg(unix)]
     let terminate = async {
-        match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
             Ok(mut sig) => {
                 sig.recv().await;
             }
@@ -32,7 +39,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+    let terminate = pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {
@@ -49,5 +56,53 @@ pub async fn shutdown_signal() {
                 "Shutdown signal received, starting graceful shutdown"
             );
         },
+    }
+}
+
+/// Shared shutdown state that every engine observes.
+///
+/// Built on top of a `watch` channel: `cancel` flips the value to `true` and
+/// every [`Shutdown::cancelled`] waiter resolves. Because `watch` keeps the
+/// latest value, a late waiter resolves immediately (idempotent, no lost
+/// wake-ups).
+#[derive(Clone)]
+pub struct Shutdown {
+    tx: Arc<watch::Sender<bool>>,
+}
+
+impl Shutdown {
+    pub fn new() -> Self {
+        let (tx, _rx) = watch::channel(false);
+        Self { tx: Arc::new(tx) }
+    }
+
+    /// Marks the application as shutting down.
+    pub fn cancel(&self) {
+        let _ = self.tx.send(true);
+    }
+
+    /// Resolves once [`Shutdown::cancel`] has been called (immediately if it
+    /// already happened).
+    ///
+    /// The returned future is `'static` (it owns a clone of the sender), so it
+    /// can be handed to APIs like `axum::serve(...).with_graceful_shutdown(...)`.
+    pub fn cancelled(&self) -> impl Future<Output = ()> + Send + 'static {
+        let tx = self.tx.clone();
+
+        async move {
+            let mut rx = tx.subscribe();
+
+            if *rx.borrow() {
+                return;
+            }
+
+            let _ = rx.changed().await;
+        }
+    }
+}
+
+impl Default for Shutdown {
+    fn default() -> Self {
+        Self::new()
     }
 }

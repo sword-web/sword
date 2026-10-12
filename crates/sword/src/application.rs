@@ -1,44 +1,29 @@
 mod builder;
-mod config;
+mod engine;
 mod env;
 
 use std::path::Path;
-use sword_core::{Config, sword_error};
+use sword_core::{Config, Shutdown, sword_error};
 
 pub use builder::ApplicationBuilder;
-pub use config::{ApplicationConfig, ApplicationEngine};
 pub use env::Environment;
+pub use sword_core::ApplicationConfig;
 
-/// The main application struct that holds the runtime(s) and configuration.
+pub(crate) use engine::Engine;
+
+/// The main application struct that holds the configured engines and the
+/// application configuration.
 ///
-/// `Application` is the core component of the Sword framework that manages
-/// the web server, routing, and application configuration. It provides a
-/// builder pattern for configuration and methods to run the application.
+/// `Application` runs every engine together and stops them all on shutdown.
 pub struct Application {
-    /// The transport engine. `None` for a jobs-only application.
-    engine: Option<ApplicationEngine>,
-    pub config: Config,
+    engines: Vec<Engine>,
 
-    /// Job scheduler runtime, if the `jobs` feature is enabled and a job
-    /// controller was registered.
-    #[cfg(feature = "jobs")]
-    jobs: Option<sword_jobs::JobSchedulerRuntime>,
+    pub config: Config,
 }
 
 impl Application {
-    pub(crate) fn new(engine: Option<ApplicationEngine>, config: Config) -> Self {
-        Self {
-            engine,
-            config,
-            #[cfg(feature = "jobs")]
-            jobs: None,
-        }
-    }
-
-    #[cfg(feature = "jobs")]
-    pub(crate) fn with_jobs(mut self, jobs: sword_jobs::JobSchedulerRuntime) -> Self {
-        self.jobs = Some(jobs);
-        self
+    pub(crate) fn new(engines: Vec<Engine>, config: Config) -> Self {
+        Self { engines, config }
     }
 
     /// Creates a new application builder for configuring the application.
@@ -91,15 +76,12 @@ impl Application {
         )
     }
 
-    /// Runs the application server.
+    /// Runs every configured engine until the application shuts down.
     ///
-    /// This method starts the web server and begins listening for incoming
-    /// requests. It will bind to the host and port specified in the
-    /// server configuration.
-    ///
-    /// When the server shuts down, the event subscriber is signaled to stop
-    /// processing new events.
-    pub async fn run(&self) {
+    /// All engines start together. The application stops when the OS shutdown
+    /// signal arrives or when any engine finishes on its own; then it cancels
+    /// the shared [`Shutdown`] and waits for every engine to drain.
+    pub async fn run(self) {
         let app_config = self.config.get_or_default::<ApplicationConfig>();
 
         tracing::info!(
@@ -110,46 +92,42 @@ impl Application {
             "Starting Sword application"
         );
 
-        #[cfg(feature = "jobs")]
-        let mut job_scheduler = match &self.jobs {
-            Some(runtime) => Some(runtime.start().await),
-            None => None,
-        };
+        let shutdown = Shutdown::new();
 
-        match &self.engine {
-            #[cfg(any(feature = "web", feature = "socketio"))]
-            Some(ApplicationEngine::Web(app)) => app.start().await,
+        let mut tasks = tokio::task::JoinSet::new();
 
-            #[cfg(feature = "grpc")]
-            Some(ApplicationEngine::Grpc(app)) => app.start().await,
-
-            _ => {
-                // Jobs-only application: keep running until shutdown.
-                #[cfg(feature = "jobs")]
-                if self.jobs.is_some() {
-                    sword_core::shutdown_signal().await;
-                }
-            }
-        }
-
-        #[cfg(feature = "jobs")]
-        if let Some(scheduler) = job_scheduler.as_mut()
-            && let Err(err) = scheduler.shutdown().await
-        {
-            tracing::error!(
-                target: "sword.shutdown.job-scheduler",
-                error = %err,
-                "Failed to shut down job scheduler"
+        for engine in self.engines {
+            tracing::info!(
+                target: "sword.startup.engine",
+                engine = engine.name(),
+                "Starting engine"
             );
+
+            tasks.spawn(engine.run(shutdown.clone()));
         }
+
+        if tasks.is_empty() {
+            // No engines: stay alive until shutdown.
+            sword_core::shutdown_signal().await;
+            return;
+        }
+
+        tokio::select! {
+            _ = sword_core::shutdown_signal() => {}
+            _ = tasks.join_next() => {}
+        }
+
+        shutdown.cancel();
+
+        while tasks.join_next().await.is_some() {}
     }
 
-    #[allow(irrefutable_let_patterns)]
     #[cfg(any(feature = "web", feature = "socketio"))]
     pub fn router(&self) -> sword_web::internal::AxumRouter {
-        #[cfg(any(feature = "web", feature = "socketio"))]
-        if let Some(ApplicationEngine::Web(app)) = &self.engine {
-            return app.router();
+        for engine in &self.engines {
+            if let Engine::Web(web) = engine {
+                return web.router();
+            }
         }
 
         sword_error! {

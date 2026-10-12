@@ -23,6 +23,7 @@ tonic-async-interceptor = { workspace = true }
 tonic-health = { workspace = true }
 tonic-reflection = { workspace = true, optional = true }
 tonic-types = { workspace = true, optional = true }
+tokio = { workspace = true }
 tokio-stream = { workspace = true }
 serde = { workspace = true }
 
