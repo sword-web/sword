@@ -6,6 +6,8 @@ members = [
     "tests/sword-web",
     "tests/sword-socketio",
     "tests/sword-grpc",
+    "tests/sword-jobs",
+    "tests/sword-events",
 ]
 
 [workspace.metadata.cargo-machete]
@@ -29,6 +31,7 @@ sword-web = { path = "crates/sword-web", version = "0.4.1" }
 sword-grpc = { path = "crates/sword-grpc", version = "0.4.1" }
 sword-socketio = { path = "crates/sword-socketio", version = "0.4.1" }
 sword-events = { path = "crates/sword-events", version = "0.4.1" }
+sword-jobs = { path = "crates/sword-jobs", version = "0.4.1" }
 
 tokio = { version = "^1.0", features = ["full"] }
 tokio-stream = "0.1.18"

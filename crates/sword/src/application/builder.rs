@@ -229,6 +229,12 @@ impl ApplicationBuilder {
 
         self.register_sword_built_in_layers(); // Initialization of built-in layers by the `sword_layers` crate.
 
+        #[cfg(feature = "jobs")]
+        let jobs = sword_jobs::JobSchedulerRuntime::new(
+            self.state.clone(),
+            self.controller_registry.get_by_kind(Controller::JobHandler),
+        );
+
         #[allow(unused_variables)]
         let ctx = EngineBuildContext {
             state: self.state,
@@ -238,34 +244,33 @@ impl ApplicationBuilder {
         };
 
         // NOTE: With --all-features, only the first matching #[cfg] branch is compiled in.
-        // The unreachable code and needless return warnings are suppressed here because
-        // each branch is reachable under normal single-feature usage.
+        // The `cfg_select!` arms assign `engine`, so a late init avoids duplicating the
+        // branch bodies across the two initializer forms.
+        #[allow(unused_assignments, clippy::needless_late_init)]
+        let engine: Option<super::ApplicationEngine>;
+
         cfg_select! {
             feature = "grpc" => {
                 let grpc_app = sword_grpc::application::GrpcApplication::from(ctx);
-                let engine = super::ApplicationEngine::Grpc(grpc_app);
-
-                Application::new(engine, self.config)
+                engine = Some(super::ApplicationEngine::Grpc(grpc_app));
             }
 
             any(feature = "web", feature = "socketio") => {
                 let web_app = sword_web::application::WebApplication::from(ctx);
-                let engine = super::ApplicationEngine::Web(web_app);
-
-                Application::new(engine, self.config)
+                engine = Some(super::ApplicationEngine::Web(web_app));
             }
 
             _ => {
-                sword_error! {
-                    title: "No application engine available",
-                    reason: "No supported controller feature is enabled",
-                    context: {
-                        "source" => "ApplicationBuilder::build",
-                    },
-                    hints: ["Enable one of: web, socketio, grpc"],
-                }
+                engine = None;
             }
         }
+
+        let app = Application::new(engine, self.config);
+
+        #[cfg(feature = "jobs")]
+        let app = app.with_jobs(jobs);
+
+        app
     }
 }
 

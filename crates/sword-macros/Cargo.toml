@@ -20,17 +20,22 @@ rustdoc-args = ["--cfg", "docsrs"]
 proc-macro = true
 
 [dependencies]
-axum = { workspace = true, optional = true }
 syn = { version = "3", features = ["full"] }
 quote = "1"
 proc-macro2 = "1"
 heck = { workspace = true }
+darling = "0.24.1"
 
 [features]
 default = []
+
+web = []
+socketio = []
+
+grpc = []
+grpc-reflection = ["grpc"]
+
+jobs = []
+events = []
+
 hot-reload = []
-web-controllers = ["dep:axum"]
-socketio-controllers = []
-grpc-controllers = []
-grpc-reflection = []
-event-handlers = []
