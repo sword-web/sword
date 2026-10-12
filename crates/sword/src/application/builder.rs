@@ -1,4 +1,4 @@
-use crate::application::{Application, Environment};
+use crate::application::{Application, Engine, Environment};
 
 #[cfg(any(feature = "web", feature = "socketio"))]
 use sword_web::internal::{
@@ -169,27 +169,16 @@ impl ApplicationBuilder {
     /// Build the `Application` instance with the configured options.
     ///
     /// This method ends the builder pattern and constructs the final `Application`
-    /// instance ready to run.
+    /// instance ready to run. It assembles every enabled engine (web, grpc, events,
+    /// jobs) into the application; the engines themselves start in `Application::run`.
+    #[allow(clippy::vec_init_then_push)]
     pub fn build(mut self) -> Application {
-        // Runtime check — fires only if both features are enabled AND build() is called.
-        // This preserves dev experience for users who enable all features in their IDE.
-        if cfg!(feature = "grpc") && (cfg!(feature = "web") || cfg!(feature = "socketio")) {
-            sword_error! {
-                title: "Multiple application types enabled",
-                reason: "Only one app type feature can be enabled at a time",
-                hints: [
-                    "Enable only one of `web` or `grpc` application type",
-                    "Use controller features that match the selected app type",
-                ],
-            }
-        }
-
-        // Since any piece of the application may require the EventPublisher
-        // (if the feature is enabled), the events runtime must be built before
-        // building the dependency container. Otherwise there will be a runtime error.
-
+        // `EventPublisher` is a provider: registering it before `build_all` makes
+        // it available to components (build_all inserts providers first).
         #[cfg(feature = "events-in-memory")]
-        let events = sword_events::EventApplicationRuntime::new(&self.state, &self.config);
+        let (event_publisher, event_subscriber) = sword_events::EventChannel::create(&self.config);
+        #[cfg(feature = "events-in-memory")]
+        self.container.provider_registry().register(event_publisher);
 
         self.container.build_all(&self.state).unwrap_or_else(|err| {
             match (err.dependency_path(), err.missing_dependency_path()) {
@@ -219,21 +208,16 @@ impl ApplicationBuilder {
 
         // Once the dependency container is built, the interceptors declared with the
         // #[derive(Interceptor)] macro are registered.
-
         for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
             register(&self.state);
         }
 
+        // Initialization of built-in layers by the `sword_layers` crate.
+        self.register_sword_built_in_layers();
+
+        // Event handlers can only be built once the controllers are known.
         #[cfg(feature = "events-in-memory")]
-        events.start(&self.controller_registry); // Builds event handlers and starts the subscriber.
-
-        self.register_sword_built_in_layers(); // Initialization of built-in layers by the `sword_layers` crate.
-
-        #[cfg(feature = "jobs")]
-        let jobs = sword_jobs::JobSchedulerRuntime::new(
-            self.state.clone(),
-            self.controller_registry.get_by_kind(Controller::JobHandler),
-        );
+        let events_engine = event_subscriber.into_engine(&self.state, &self.controller_registry);
 
         #[allow(unused_variables)]
         let ctx = EngineBuildContext {
@@ -243,34 +227,26 @@ impl ApplicationBuilder {
             layer_stack: self.layer_stack,
         };
 
-        // NOTE: With --all-features, only the first matching #[cfg] branch is compiled in.
-        // The `cfg_select!` arms assign `engine`, so a late init avoids duplicating the
-        // branch bodies across the two initializer forms.
-        #[allow(unused_assignments, clippy::needless_late_init)]
-        let engine: Option<super::ApplicationEngine>;
+        #[allow(unused_mut, clippy::vec_init_then_push)]
+        let mut engines: Vec<Engine> = Vec::new();
 
-        cfg_select! {
-            feature = "grpc" => {
-                let grpc_app = sword_grpc::application::GrpcApplication::from(ctx);
-                engine = Some(super::ApplicationEngine::Grpc(grpc_app));
-            }
+        #[cfg(any(feature = "web", feature = "socketio"))]
+        engines.push(Engine::Web(sword_web::application::WebApplication::from(
+            ctx.clone(),
+        )));
 
-            any(feature = "web", feature = "socketio") => {
-                let web_app = sword_web::application::WebApplication::from(ctx);
-                engine = Some(super::ApplicationEngine::Web(web_app));
-            }
-
-            _ => {
-                engine = None;
-            }
-        }
-
-        let app = Application::new(engine, self.config);
+        #[cfg(feature = "grpc")]
+        engines.push(Engine::Grpc(
+            sword_grpc::application::GrpcApplication::from(ctx.clone()),
+        ));
 
         #[cfg(feature = "jobs")]
-        let app = app.with_jobs(jobs);
+        engines.push(Engine::Jobs(sword_jobs::JobSchedulerRuntime::from(ctx)));
 
-        app
+        #[cfg(feature = "events-in-memory")]
+        engines.push(Engine::Events(events_engine));
+
+        Application::new(engines, self.config)
     }
 }
 

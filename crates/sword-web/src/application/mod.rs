@@ -20,7 +20,7 @@ pub struct WebApplication {
 }
 
 impl WebApplication {
-    pub async fn start(&self) {
+    pub async fn run(self, shutdown: Shutdown) {
         let bind = format!("{}:{}", self.config.host, self.config.port);
         let router_prefix = self
             .config
@@ -70,7 +70,7 @@ impl WebApplication {
                 reason: err,
                 context: {
                     "bind" => bind,
-                    "source" => "WebApplication::start",
+                    "source" => "WebApplication::run",
                 },
                 hints: ["Ensure host and port values are valid"],
             }
@@ -91,7 +91,7 @@ impl WebApplication {
         // Graceful shutdown waits for a signal and drains in-flight requests.
         if self.graceful_shutdown {
             axum::serve(listener, app)
-                .with_graceful_shutdown(shutdown_signal())
+                .with_graceful_shutdown(shutdown.cancelled())
                 .await
                 .unwrap_or_else(|err| {
                     sword_error! {
@@ -108,17 +108,22 @@ impl WebApplication {
             return;
         }
 
-        axum::serve(listener, app).await.unwrap_or_else(|err| {
-            sword_error! {
-                title: "HTTP server stopped with an internal error",
-                reason: err,
-                context: {
-                    "mode" => "normal",
-                    "host" => self.config.host.clone(),
-                    "port" => self.config.port.to_string(),
-                },
+        tokio::select! {
+            res = axum::serve(listener, app) => {
+                res.unwrap_or_else(|err| {
+                    sword_error! {
+                        title: "HTTP server stopped with an internal error",
+                        reason: err,
+                        context: {
+                            "mode" => "normal",
+                            "host" => self.config.host.clone(),
+                            "port" => self.config.port.to_string(),
+                        },
+                    }
+                });
             }
-        });
+            _ = shutdown.cancelled() => {}
+        }
     }
 
     pub fn router(&self) -> axum::Router {

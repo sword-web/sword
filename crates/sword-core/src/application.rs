@@ -44,6 +44,7 @@ inventory_submit! {[
 ///
 /// Contains all shared state accumulated during the builder phase,
 /// after DI resolution and interceptor registration.
+#[derive(Clone)]
 pub struct EngineBuildContext {
     pub state: State,
     pub config: Config,

@@ -23,31 +23,22 @@ pub struct EventSubscriber {
 }
 
 impl EventSubscriber {
-    /// Spawns the background consumer loop.
-    ///
-    /// Returns immediately: the actual consumption runs as a detached task and
-    /// stops on its own once the channel is closed.
-    pub fn run(self) {
+    /// Consumes events until the channel is closed or `shutdown` is cancelled.
+    pub async fn run(self, shutdown: sword_core::Shutdown) {
         let EventSubscriber {
-            receiver,
+            mut receiver,
             handlers,
             config,
         } = self;
 
-        tokio::spawn(Self::consume(receiver, handlers, config));
-    }
-
-    /// Receives events until the channel is closed and dispatches each one.
-    ///
-    /// This is the only place that awaits the channel, so it must stay cheap:
-    /// handler execution is offloaded by [`Self::dispatch`].
-    async fn consume(
-        mut receiver: Receiver<Arc<dyn Event>>,
-        handlers: EventKeyHandlerMap,
-        config: EventQueueConfig,
-    ) {
-        while let Some(event) = receiver.recv().await {
-            Self::dispatch(&handlers, &config, event);
+        loop {
+            tokio::select! {
+                maybe = receiver.recv() => match maybe {
+                    Some(event) => Self::dispatch(&handlers, &config, event),
+                    None => break,
+                },
+                _ = shutdown.cancelled() => break,
+            }
         }
 
         tracing::info!(target: "sword.events", "Event subscriber stopped");

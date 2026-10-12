@@ -2,6 +2,7 @@ use parking_lot::{RawRwLock, RwLock, lock_api::RwLockReadGuard};
 use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
+    sync::Arc,
 };
 
 pub type ControllerMap = HashMap<Controller, HashSet<TypeId>>;
@@ -67,15 +68,16 @@ pub trait ControllerSpec {
 ///     }
 /// }
 /// ```
+#[derive(Clone)]
 pub struct ControllerRegistry {
-    controllers: RwLock<HashMap<Controller, HashSet<TypeId>>>,
+    controllers: Arc<RwLock<HashMap<Controller, HashSet<TypeId>>>>,
 }
 
 impl ControllerRegistry {
     #[doc(hidden)]
     pub fn new() -> Self {
         Self {
-            controllers: RwLock::new(HashMap::new()),
+            controllers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 

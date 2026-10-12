@@ -10,7 +10,7 @@ pub mod prelude;
 pub use registrar::*;
 
 #[cfg(feature = "in-memory")]
-pub use application::EventApplicationRuntime;
+pub use application::{EventChannel, EventEngine, EventSubscriberHandle};
 
 use serde::Deserialize;
 use sword_core::ConfigItem;
