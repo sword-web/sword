@@ -3,13 +3,13 @@ name = "sword-grpc"
 version.workspace = true
 edition.workspace = true
 authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description = "gRPC controllers and runtime for the Sword framework"
+description.workspace = true
 repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/sword"
 keywords = ["sword", "grpc", "framework", "tonic", "rpc"]
 categories = ["web-programming", "web-programming::http-server"]
-readme = "README.md"
+readme.workspace = true
 license.workspace = true
 rust-version.workspace = true
 

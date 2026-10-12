@@ -2,25 +2,21 @@
   <img src="https://sword-web.github.io/logo-new.png" width="500" />
 </div>
 
-Structured web framework for Rust built on top of the Tokio ecosystem.
-Designed to build server applications with less boilerplate and more simplicity.
-It takes advantage of the tokio ecosystem to bring you performance with nice DX.
+Server-side application framework for Rust, built on top of the Tokio ecosystem.
+Designed to write code with less boilerplate, more simplicity, and cleaner patterns.
+It leverages the Tokio ecosystem to give you performance with great DX.
 
-> Sword is in active development, expect breaking changes.
+> Sword is under active development; expect breaking changes.
 
 ## Features
 
-- **Web Application Type** - Axum-based application stack with web and Socket.IO controllers
-- **gRPC Application Type** - Tonic based application with built-in error handling based on `thiserror`
-- **Macro-based routing** - Clean and intuitive route definitions
-- **JSON-first design** - Built with JSON formats as priority
-- **Built-in validation** - Support `validator` crate and extensible validation system
-- **HTTP response standardization** - Consistent response formats out of the box
+- **Multiple application types** - Web, Socket.IO, gRPC, events, and jobs, all able to run together
+- **Macro-based approach** - Clean, intuitive, and declarative macros for defining the application structure
+- **Built-in validation** - Support for the `validator` crate and an extensible validation system
 - **Dependency Injection** - Built-in DI support with declarative macros
-- **Tower layers + interceptors** - Compose global layers and typed interceptors
-- **TOML config loader** - Built-in support for loading configuration from TOML files
+- **TOML configuration loader** - Built-in support for loading configuration from TOML files
 
-## Controller Example
+## Web Controller Example
 
 ```rust
 use sword::prelude::*;
@@ -51,7 +47,7 @@ impl UsersController {
                 user.username
             );
 
-            return Err(AppError::UserConflictError("username", &user.username))?;
+            Err(AppError::UserConflictError("username", &user.username))?;
         }
 
         self.users.save(&user).await?;
@@ -64,15 +60,23 @@ impl UsersController {
 ## Full Examples
 
 - [Controllers API](./examples/web)
-- [SocketIO Controllers Chat](./examples/socketio)
+- [Socket.IO Controllers Chat](./examples/socketio)
 - [Interceptors (Web + Socket.IO controllers)](./examples/interceptors)
 - [gRPC Application with error handling](./examples/grpc)
 
-## Application Type Features
+## Cargo Features
 
 - `web`: enables the web application type
+- `socketio`: enables Socket.IO controllers for web applications (implies `web`)
 - `grpc`: enables the gRPC application type
-- `socketio`: enables Socket.IO controllers for web applications
+- `events-in-memory`: enables in-memory event publishing and handling
+- `jobs`: enables cron/repeated/once job scheduling
+- `web-multipart`: enables `multipart/form-data` support in web controllers
+- `web-swagger-ui`: enables Swagger UI for OpenAPI specs
+- `grpc-reflection`: enables gRPC reflection
+- `grpc-error-details`: enables detailed gRPC errors with `GrpcStatus`
+- `validation-validator`: enables input validation with the `validator` crate
+- `hot-reload`: enables hot reload during development
 
 ## Changelog
 

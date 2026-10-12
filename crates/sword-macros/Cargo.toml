@@ -3,12 +3,12 @@ name = "sword-macros"
 version.workspace = true
 edition.workspace = true
 authors = ["Luciano Revillod <lrevillod2022@alu.uct.cl>"]
-description = "Structured web framework built on top of tokio ecosystem, providing powerful features for building robust web applications."
+description.workspace = true
 repository.workspace = true
 homepage.workspace = true
 documentation = "https://docs.rs/sword-macros"
 keywords = ["web", "framework", "axum", "http", "async"]
-readme = "README.md"
+readme.workspace = true
 license.workspace = true
 rust-version.workspace = true
 

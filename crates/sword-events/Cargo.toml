@@ -2,11 +2,12 @@
 name = "sword-events"
 version.workspace = true
 edition.workspace = true
-description = "Event/job queue abstraction and in-memory implementation for Sword"
+description.workspace = true
 repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 rust-version.workspace = true
+readme.workspace = true
 
 [features]
 default = ["in-memory"]

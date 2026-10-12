@@ -21,6 +21,8 @@ license = "MIT"
 repository = "https://github.com/sword-web/sword"
 homepage = "https://sword-web.github.io"
 rust-version = "1.95"
+description = "Server side application framework for Rust, built on top of the Tokio ecosystem, for web, Socket.IO, gRPC, events, jobs and more"
+readme = "README.md"
 
 [workspace.dependencies]
 sword = { path = "crates/sword", default-features = false }
