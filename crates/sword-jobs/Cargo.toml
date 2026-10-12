@@ -11,7 +11,7 @@ rust-version.workspace = true
 tokio-cron-scheduler = "0.15.1"
 
 sword-core = { workspace = true }
-sword-macros = { workspace = true, features = ["jobs-controllers"] }
+sword-macros = { workspace = true, features = ["jobs"] }
 tracing = { workspace = true }
 inventory = { workspace = true }
 uuid = { workspace = true }

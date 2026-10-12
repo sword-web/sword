@@ -1,0 +1,10 @@
+[package]
+name = "sword-events-tests"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+sword = { workspace = true, features = ["web", "events-in-memory"] }
+tokio = { workspace = true }
+axum-test = { workspace = true }

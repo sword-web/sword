@@ -1,6 +1,6 @@
 # Sword gRPC Example
 
-Minimal gRPC users CRUD example for Sword using `grpc-controllers` and an in-memory store.
+Minimal gRPC users CRUD example for Sword using `grpc` and an in-memory store.
 
 ## Run
 

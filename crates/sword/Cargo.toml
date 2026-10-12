@@ -23,7 +23,7 @@ tokio = { workspace = true }
 sword-core = { workspace = true }
 sword-events = { workspace = true, optional = true }
 sword-layers = { workspace = true, features = ["tracing"] }
-sword-macros = { workspace = true, features = ["web-controllers", "socketio-controllers", "grpc-controllers"] }
+sword-macros = { workspace = true, features = ["web", "socketio", "grpc"] }
 sword-web = { workspace = true, optional = true }
 sword-grpc = { workspace = true, optional = true }
 sword-socketio = { workspace = true, optional = true }
@@ -50,9 +50,9 @@ grpc = ["dep:sword-grpc"]
 grpc-reflection = ["dep:sword-grpc", "sword-grpc/reflection"]
 grpc-error-details = ["grpc", "sword-grpc/error-details"]
 
-events-in-memory = ["dep:sword-events", "sword-macros/event-handlers"]
+events-in-memory = ["dep:sword-events"]
 
-jobs = ["dep:sword-jobs", "sword-macros/jobs-controllers"]
+jobs = ["dep:sword-jobs"]
 
 validation-validator = ["sword-web/validation-validator", "sword-socketio?/validation-validator"]
 hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]
