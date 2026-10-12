@@ -1,5 +1,9 @@
-pub mod config;
+mod config;
+mod controller;
+mod injectable;
+mod interceptor;
 
-#[cfg(feature = "event-handlers")]
-pub mod event;
-pub mod injectable;
+pub use config::*;
+pub use controller::*;
+pub use injectable::*;
+pub use interceptor::*;

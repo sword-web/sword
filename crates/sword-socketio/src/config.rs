@@ -10,7 +10,7 @@ use sword_core::{ByteConfig, ConfigItem, ConfigRegistrar, TimeConfig, inventory_
 use sword_layers::DisplayConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(default)]
+#[serde(default, rename_all = "kebab-case")]
 pub struct SocketIoServerConfig {
     /// The amount of time the server will wait for an acknowledgement
     /// from the client before closing the connection.

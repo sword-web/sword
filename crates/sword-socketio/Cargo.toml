@@ -28,7 +28,7 @@ inventory = { workspace = true }
 
 sword-core = { workspace = true }
 sword-web = { workspace = true }
-sword-macros = { workspace = true, features = ["socketio-controllers"] }
+sword-macros = { workspace = true, features = ["socketio"] }
 sword-layers = { workspace = true }
 
 socketioxide = { version = "0.18.0", features = ["extensions", "msgpack"] }

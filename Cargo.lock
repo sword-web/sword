@@ -3479,6 +3479,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sword-events-tests"
+version = "0.1.0"
+dependencies = [
+ "axum-test",
+ "sword",
+ "tokio",
+]
+
+[[package]]
 name = "sword-grpc"
 version = "0.4.1"
 dependencies = [
@@ -3575,17 +3584,6 @@ dependencies = [
 
 [[package]]
 name = "sword-macros"
-version = "0.4.1"
-dependencies = [
- "axum",
- "heck",
- "proc-macro2",
- "quote",
- "syn 3.0.5",
-]
-
-[[package]]
-name = "sword-macros-copy"
 version = "0.4.1"
 dependencies = [
  "darling 0.24.1",
