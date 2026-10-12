@@ -329,4 +329,4 @@ jobs:
         uses: arduino/setup-protoc@v3
 
       - name: Check workspace compiles
-        run: cargo check --workspace --all-targets
+        run: cargo check --workspace --all-targets --locked
