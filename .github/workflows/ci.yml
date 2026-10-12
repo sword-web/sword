@@ -4,23 +4,31 @@ on:
   workflow_dispatch:
     inputs:
       run_formatting:
-        description: 'Run formatting checks'
+        description: "Run formatting checks"
         type: boolean
         default: false
       run_core:
-        description: 'Run core checks'
+        description: "Run core checks"
         type: boolean
         default: false
       run_web:
-        description: 'Run web checks'
+        description: "Run web checks"
         type: boolean
         default: false
       run_socketio:
-        description: 'Run socketio checks'
+        description: "Run socketio checks"
         type: boolean
         default: false
       run_grpc:
-        description: 'Run grpc checks'
+        description: "Run grpc checks"
+        type: boolean
+        default: false
+      run_jobs:
+        description: "Run jobs checks"
+        type: boolean
+        default: false
+      run_events:
+        description: "Run events checks"
         type: boolean
         default: false
   push:
@@ -52,6 +60,8 @@ jobs:
       grpc: ${{ steps.filter.outputs.grpc }}
       web: ${{ steps.filter.outputs.web }}
       socketio: ${{ steps.filter.outputs.socketio }}
+      jobs: ${{ steps.filter.outputs.jobs }}
+      events: ${{ steps.filter.outputs.events }}
       formatting: ${{ steps.filter.outputs.formatting }}
       deps: ${{ steps.filter.outputs.deps }}
     steps:
@@ -86,6 +96,22 @@ jobs:
               - 'crates/sword/**'
               - 'crates/sword-socketio/**'
               - 'crates/sword-macros/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
+            jobs:
+              - 'crates/sword-core/**'
+              - 'crates/sword/**'
+              - 'crates/sword-jobs/**'
+              - 'crates/sword-macros/**'
+              - 'tests/sword-jobs/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/**'
+            events:
+              - 'crates/sword-core/**'
+              - 'crates/sword/**'
+              - 'crates/sword-events/**'
+              - 'crates/sword-macros/**'
+              - 'tests/sword-events/**'
               - 'rust-toolchain.toml'
               - '.github/workflows/**'
             formatting:
@@ -168,7 +194,7 @@ jobs:
         run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
 
       - name: Run clippy (sword-macros)
-        run: cargo clippy -p sword-macros --all-targets --features grpc-controllers -- -D warnings
+        run: cargo clippy -p sword-macros --all-targets --features grpc -- -D warnings
 
       - name: Run tests (sword-grpc-tests)
         run: cargo test -p sword-grpc-tests -- --test-threads=1
@@ -195,7 +221,7 @@ jobs:
         run: cargo clippy -p sword-web --all-targets --all-features -- -D warnings
 
       - name: Run clippy (sword-macros)
-        run: cargo clippy -p sword-macros --all-targets --features web-controllers -- -D warnings
+        run: cargo clippy -p sword-macros --all-targets --features web -- -D warnings
 
       - name: Run tests (sword-web-tests)
         run: cargo test -p sword-web-tests
@@ -222,7 +248,7 @@ jobs:
         run: cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
 
       - name: Run clippy (sword-macros)
-        run: cargo clippy -p sword-macros --all-targets --features socketio-controllers -- -D warnings
+        run: cargo clippy -p sword-macros --all-targets --features socketio -- -D warnings
 
       - name: Run tests (sword-socketio-tests)
         run: cargo test -p sword-socketio-tests
@@ -231,6 +257,60 @@ jobs:
         env:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo doc -p sword-socketio --no-deps --all-features
+
+  jobs-checks:
+    needs: changes
+    if: needs.changes.outputs.jobs == 'true' || inputs.run_jobs == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          cache: true
+
+      - name: Run clippy (sword-jobs)
+        run: cargo clippy -p sword-jobs --all-targets -- -D warnings
+
+      - name: Run clippy (sword-macros)
+        run: cargo clippy -p sword-macros --all-targets --features jobs -- -D warnings
+
+      - name: Run tests (sword-jobs-tests)
+        run: cargo test -p sword-jobs-tests
+
+      - name: Build docs (sword-jobs)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-jobs --no-deps
+
+  events-checks:
+    needs: changes
+    if: needs.changes.outputs.events == 'true' || inputs.run_events == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          cache: true
+
+      - name: Run clippy (sword-events)
+        run: cargo clippy -p sword-events --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (sword-macros)
+        run: cargo clippy -p sword-macros --all-targets --features events -- -D warnings
+
+      - name: Run tests (sword-events-tests)
+        run: cargo test -p sword-events-tests
+
+      - name: Build docs (sword-events)
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc -p sword-events --no-deps --all-features
 
   deps-checks:
     needs: changes

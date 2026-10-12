@@ -1,0 +1,9 @@
+[package]
+name = "sword-jobs-tests"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+sword = { workspace = true, features = ["jobs"] }
+tokio = { workspace = true }

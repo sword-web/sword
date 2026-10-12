@@ -1,171 +1,26 @@
-#![allow(irrefutable_let_patterns)]
-
-mod controllers;
+#![allow(dead_code)]
 
 mod core;
-mod errors;
-mod interceptor_derive;
 mod shared;
-mod interceptor {
-    mod parse;
-    pub use parse::InterceptorArgs;
-}
+
+#[cfg(feature = "events")]
+mod events;
+
+#[cfg(feature = "grpc")]
+mod grpc;
+
+#[cfg(feature = "jobs")]
+mod jobs;
+
+#[cfg(feature = "socketio")]
+mod socketio;
+
+#[cfg(feature = "web")]
+mod web;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, parse_macro_input};
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn get(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("GET", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn post(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("POST", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn put(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("PUT", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn delete(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("DELETE", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn patch(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("PATCH", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn head(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("HEAD", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn options(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("OPTIONS", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn trace(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("TRACE", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-#[proc_macro_attribute]
-pub fn connect(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("CONNECT", attr, item)
-}
-
-#[cfg(feature = "web-controllers")]
-/// Marks a handler as a Server-Sent Events (SSE) route.
-///
-/// The handler must return an `Sse` response wrapping a stream, typically as
-/// `Sse<impl EventStream + use<>>`. The route is served over `GET` with
-/// `text/event-stream` content type.
-///
-/// ```rust,ignore
-/// use sword::web::*;
-/// use tokio_stream::{Stream, StreamExt};
-///
-/// #[controller(kind = Controller::Web, path = "/sse")]
-/// struct SseController;
-///
-/// impl SseController {
-///     #[sse("/clock")]
-///     async fn clock(&self) -> Sse<impl EventStream + use<>> {
-///         let stream = tokio_stream::iter(0..5).map(|i| Ok(Event::default().event("tick").data(i.to_string())));
-///         Sse::new(stream)
-///     }
-/// }
-/// ```
-///
-/// > **Note:** SSE connections are long-lived. If `request-timeout` is enabled in the
-/// > application config, the global timeout layer will terminate the stream, so leave it
-/// > disabled or set a generous timeout for streaming routes.
-#[proc_macro_attribute]
-pub fn sse(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::web::attributes::attribute("SSE", attr, item)
-}
-
-/// Defines a Sword controller.
-/// Route handlers are declared directly inside the `impl` block using method attributes
-/// such as `#[get]`, `#[post]`, `#[put]`, `#[patch]`, `#[delete]`, `#[head]`, `#[options]`, `#[trace]`, `#[connect]`, and `#[sse]`.
-///
-/// ### Parameters
-/// - `kind`: Controller kind. Use `Controller::Web`, `Controller::SocketIo`, `Controller::Grpc`, or `Controller::EventHandler`.
-/// - `path`: Required when `kind = Controller::Web`.
-/// - `namespace`: Required when `kind = Controller::SocketIo`.
-/// - `service`: Required when `kind = Controller::Grpc`.
-/// - `source`: Required when `kind = Controller::EventHandler`. Use `EventSource::Memory`.
-///
-/// ### Usage
-/// ```rust,ignore
-/// #[controller(kind = Controller::Web, path = "/base_path")]
-/// struct MyController {}
-///
-/// impl MyController {
-///     #[get("/sub_path")]
-///     async fn my_handler(&self) -> WebResult {
-///        Ok(JsonResponse::Ok().message("Hello from MyController"))
-///     }
-/// }
-/// ```
-///
-/// ```rust,ignore
-/// #[controller(kind = Controller::SocketIo, namespace = "/chat")]
-/// struct ChatController;
-///
-/// impl ChatController {
-///     #[on("connection")]
-///     async fn on_connect(&self, _ctx: SocketContext) {}
-/// }
-/// ```
-#[proc_macro_attribute]
-pub fn controller(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::expand_controller(attr, item).unwrap_or_else(|err| err.to_compile_error().into())
-}
-
-/// Derive macro for creating interceptors.
-///
-/// Generates implementations for the `Interceptor` trait.
-///
-/// # Usage
-/// ```rust,ignore
-/// use sword::prelude::*;
-///
-/// #[derive(Interceptor)]
-/// struct MyInterceptor;
-///
-/// // then implement some Interceptor trait variants
-/// // depending on the controller kind (e.g. OnRequest, OnConnect.)
-/// ```
-#[proc_macro_derive(Interceptor)]
-pub fn derive_interceptor(input: TokenStream) -> TokenStream {
-    interceptor_derive::derive_interceptor(input)
-        .unwrap_or_else(|err| err.to_compile_error().into())
-}
-
-/// Marks a route or controller with one or more interceptors.
-/// This macro can be used to apply an `Interceptor` to different controller kinds,
-/// such as web controllers or Socket.IO controllers.
-#[proc_macro_attribute]
-pub fn interceptor(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let _ = attr;
-    item
-}
+use syn::parse_macro_input;
 
 /// Defines a configuration struct for the application.
 /// This macro generates the necessary code to deserialize the struct from
@@ -186,13 +41,8 @@ pub fn interceptor(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_attribute]
-pub fn config(args: TokenStream, item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as DeriveInput);
-
-    match core::config::expand_config_struct(args, &input) {
-        Ok(tokens) => tokens,
-        Err(err) => err.to_compile_error().into(),
-    }
+pub fn config(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_config_struct(attr, item))
 }
 
 /// Marks a struct as injectable.
@@ -270,93 +120,101 @@ pub fn config(args: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
-    core::injectable::expand_injectable(attr, item)
-        .unwrap_or_else(|err| err.to_compile_error().into())
+    shared::emit(core::expand_injectable(attr, item))
 }
 
-/// Derive macro for HTTP error enums.
+/// Defines a Sword controller.
 ///
-/// Generates implementations for:
-/// - `From<Self> for JsonResponse` - Converts error to JSON response
-/// - `IntoResponse` - Allows returning error directly from handlers
+/// The controller kind and its specific arguments are declared in the
+/// attribute, e.g. `#[controller(kind = Controller::Web, path = "/api")]`.
+#[proc_macro_attribute]
+pub fn controller(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_controller(attr, item))
+}
+
+/// Derive macro for creating interceptors.
 ///
-/// **Note**: Use with `thiserror::Error` for `Display`, `Error`, and `#[from]`.
+/// Generates implementations for the `Interceptor` trait.
 ///
-/// # Attributes
-///
-/// Enum-level defaults can be declared with `#[http_error(...)]` and overridden per
-/// variant with `#[http(...)]`.
-///
-/// **For direct responses:**
-/// - `code = <u16>`: HTTP status code (required)
-/// - `message = "<string>"`: Static client message (optional)
-/// - `message = <field>`: Uses a named field as the client message (optional)
-/// - `error = <field>`: Single error field to include (optional, named fields only)
-/// - `errors = <field>`: Multiple errors field to include (optional, named fields only)
-///
-/// **For delegation:**
-/// - `transparent`: Delegate to inner type's `From<T> for Json` (for wrapping other `HttpError` types)
-///
-/// **Tracing:**
-/// - `tracing = <level>` inside `#[http_error(...)]` or `#[http(...)]`
-/// - `#[tracing(level)]`: Backward-compatible shorthand at variant level
-///   - `level`: One of `trace`, `debug`, `info`, `warn`, `error`
-///   - Uses the internal `thiserror::Error` display for the `error` log field
-///   - Logs variant fields as structured tracing fields when available
-///   - Compatible with `RUST_LOG` for filtering
-///   - Not allowed with `transparent` variants
-/// - When `tracing` is not specified, the level defaults from the HTTP status code
-///   (`2xx`/`3xx` → `info`, `4xx` → `warn`, `5xx` → `error`), matching the web access
-///   logger's `auto` policy.
-///
-/// ### Tracing Output
-/// The generated logs include:
-/// - `error`: The internal `thiserror` display string
-/// - `error_type`: The variant name as string
-/// - `status_code`: The HTTP status code
-/// - For named variants: Each field as `field_name = ?field_value`
-/// - For unnamed variants (single field): `inner = ?field`
-/// - Unit variants: `error`, `error_type`, and `status_code`
-///
-/// # Example
-///
+/// # Usage
 /// ```rust,ignore
 /// use sword::prelude::*;
-/// use thiserror::Error;
 ///
-/// #[derive(Debug, Error, HttpError)]
-/// #[http_error(code = 500, tracing = error, message = "Internal server error")]
-/// pub enum ApiError {
-///     #[error("Not found")]
-///     #[http(code = 404, message = "Not found", tracing = info)]
-///     NotFound,
+/// #[derive(Interceptor)]
+/// struct MyInterceptor;
 ///
-///     #[error("Conflict on field {field}: {value}")]
-///     #[http(code = 409, message = client_message, error = detail)]
-///     Conflict {
-///         client_message: String,
-///         field: String,
-///         value: String,
-///         detail: serde_json::Value,
-///     },
+/// // then implement some Interceptor trait variants
+/// // depending on the controller kind (e.g. OnRequest, OnConnect.)
+/// ```
+#[proc_macro_derive(Interceptor)]
+pub fn derive_interceptor(item: TokenStream) -> TokenStream {
+    shared::emit(core::expand_interceptor_derive(item))
+}
+
+/// Marks a route or controller with one or more interceptors.
+/// This macro can be used to apply an `Interceptor` to different controller kinds,
+/// such as web controllers or Socket.IO controllers.
+#[proc_macro_attribute]
+pub fn interceptor(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let _ = attr;
+    item
+}
+
+#[cfg(feature = "events")]
+#[proc_macro_attribute]
+pub fn event(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(events::expand_event_struct(attr, item))
+}
+
+#[cfg(feature = "events")]
+#[proc_macro_attribute]
+pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(events::expand_handle(attr, item))
+}
+
+/// Unified handler attribute for Socket.IO events.
 ///
-///     #[error("IO Error: {0}")]
-///     Io(#[from] std::io::Error),
+/// ### Event Types
+/// - `#[on("connection")]` - Called when a client connects
+/// - `#[on("disconnection")]` - Called when a client disconnects
+/// - `#[on("fallback")]` - Called for unhandled events
+/// - `#[on("custom_event")]` - Called for custom event names
 ///
-///     #[error("Auth Error: {0}")]
-///     #[http(transparent)]  // Delegates to other "HttpError" derivation
-///     Auth(#[from] AuthError),
+/// ### Parameters
+/// All handlers receive `&self` and `ctx: SocketContext` which provides access to:
+/// - Socket operations via `ctx`
+/// - Message data via `ctx.try_data::<T>()`
+/// - Event name via `ctx.event()`
+/// - Acknowledgments via `ctx.ack()`
+///
+/// ### Usage
+/// ```rust,ignore
+/// #[controller(kind = Controller::SocketIo, namespace = "/chat")]
+/// pub struct ChatController { ... }
+///
+/// impl ChatController {
+///     #[on("connection")]
+///     async fn on_connect(&self, ctx: SocketContext) {
+///         println!("Client connected: {}", ctx.id());
+///     }
+///
+///     #[on("message")]
+///     async fn handle_message(&self, ctx: SocketContext) {
+///         let msg: String = ctx.try_data().unwrap();
+///         println!("Received: {}", msg);
+///     }
 /// }
 /// ```
-#[proc_macro_derive(HttpError, attributes(http, http_error, tracing))]
-#[cfg(feature = "web-controllers")]
-pub fn derive_http_error(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+#[cfg(feature = "socketio")]
+#[proc_macro_attribute]
+pub fn on(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(socketio::expand_on_handler(attr, item))
+}
 
-    match errors::derive_http_error(input) {
-        Ok(tokens) => tokens.into(),
-        Err(err) => err.to_compile_error().into(),
-    }
+#[cfg(feature = "web")]
+#[proc_macro_derive(HttpError, attributes(http, http_error, tracing))]
+pub fn derive_http_error(input: TokenStream) -> TokenStream {
+    shared::emit(web::derive_http_error(input))
 }
 
 /// Derive macro for gRPC error enums.
@@ -423,14 +281,40 @@ pub fn derive_http_error(input: TokenStream) -> TokenStream {
 ///     Database(#[from] anyhow::Error),
 /// }
 /// ```
+#[cfg(feature = "grpc")]
 #[proc_macro_derive(GrpcError, attributes(grpc, grpc_error, tracing))]
 pub fn derive_grpc_error(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+    shared::emit(grpc::derive_grpc_error(input))
+}
 
-    match errors::derive_grpc_error(input) {
-        Ok(tokens) => tokens.into(),
-        Err(err) => err.to_compile_error().into(),
-    }
+#[cfg(feature = "jobs")]
+#[proc_macro_attribute]
+pub fn cron(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(jobs::schedule::expand_job_task(
+        jobs::schedule::ScheduleKind::Cron,
+        attr,
+        item,
+    ))
+}
+
+#[cfg(feature = "jobs")]
+#[proc_macro_attribute]
+pub fn repeated(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(jobs::schedule::expand_job_task(
+        jobs::schedule::ScheduleKind::Repeated,
+        attr,
+        item,
+    ))
+}
+
+#[cfg(feature = "jobs")]
+#[proc_macro_attribute]
+pub fn once(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(jobs::schedule::expand_job_task(
+        jobs::schedule::ScheduleKind::Once,
+        attr,
+        item,
+    ))
 }
 
 /// ### This is just a re-export of `tokio::main` to simplify the initial setup of
@@ -725,94 +609,30 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     output.into()
 }
 
-#[cfg(feature = "event-handlers")]
-/// Defines an event struct for use with the event queue.
-///
-/// Generates the `Event` trait implementation and derives `Clone`.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// #[event(key = "mail.send.failed")]
-/// struct MailFailedEvent {
-///     to: String,
-///     error: String,
-/// }
-/// ```
-#[proc_macro_attribute]
-pub fn event(args: TokenStream, item: TokenStream) -> TokenStream {
-    core::event::expand_event_struct(args, item).unwrap_or_else(|err| err.to_compile_error().into())
+// ---- web route attributes --------------------------------------------------
+
+#[cfg(feature = "web")]
+macro_rules! define_routes {
+    ($($fn_name:ident => $method:literal),* $(,)?) => {
+        $(
+            #[proc_macro_attribute]
+            pub fn $fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
+                shared::emit(web::expand_route($method, attr, item))
+            }
+        )*
+    };
 }
 
-#[cfg(feature = "event-handlers")]
-/// Registers an event handler method for an `EventHandler` controller.
-///
-/// The attribute takes the full event key as argument, which must match
-/// the `key` of the event being published via `EventPublisher`.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// #[event(key = "mail.send.failed")]
-/// struct MailFailedEvent {
-///     to: String,
-///     error: String,
-/// }
-///
-/// #[controller(kind = Controller::EventHandler, source = EventSource::Memory)]
-/// struct MailHandler {
-///     mailer: Arc<Mailer>,
-/// }
-///
-/// impl MailHandler {
-///     #[handle("mail.send.failed")]
-///     async fn on_failed(&self, event: MailFailedEvent) -> Result<()> {
-///         self.mailer.resend(&event.to).await?;
-///         Ok(())
-///     }
-/// }
-/// ```
-#[proc_macro_attribute]
-pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::event_handler::expand_handle(attr, item)
-        .unwrap_or_else(|err| err.to_compile_error().into())
-}
-
-#[cfg(feature = "socketio-controllers")]
-/// Unified handler attribute for Socket.IO events.
-///
-/// ### Event Types
-/// - `#[on("connection")]` - Called when a client connects
-/// - `#[on("disconnection")]` - Called when a client disconnects
-/// - `#[on("fallback")]` - Called for unhandled events
-/// - `#[on("custom_event")]` - Called for custom event names
-///
-/// ### Parameters
-/// All handlers receive `&self` and `ctx: SocketContext` which provides access to:
-/// - Socket operations via `ctx`
-/// - Message data via `ctx.try_data::<T>()`
-/// - Event name via `ctx.event()`
-/// - Acknowledgments via `ctx.ack()`
-///
-/// ### Usage
-/// ```rust,ignore
-/// #[controller(kind = Controller::SocketIo, namespace = "/chat")]
-/// pub struct ChatController { ... }
-///
-/// impl ChatController {
-///     #[on("connection")]
-///     async fn on_connect(&self, ctx: SocketContext) {
-///         println!("Client connected: {}", ctx.id());
-///     }
-///
-///     #[on("message")]
-///     async fn handle_message(&self, ctx: SocketContext) {
-///         let msg: String = ctx.try_data().unwrap();
-///         println!("Received: {}", msg);
-///     }
-/// }
-/// ```
-#[proc_macro_attribute]
-pub fn on(attr: TokenStream, item: TokenStream) -> TokenStream {
-    controllers::expand_on_handler(attr, item).unwrap_or_else(|err| err.to_compile_error().into())
-}
+#[cfg(feature = "web")]
+define_routes!(
+    get => "GET",
+    post => "POST",
+    put => "PUT",
+    patch => "PATCH",
+    delete => "DELETE",
+    head => "HEAD",
+    options => "OPTIONS",
+    trace => "TRACE",
+    connect => "CONNECT",
+    sse => "SSE",
+);

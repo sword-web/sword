@@ -6,6 +6,9 @@ pub mod prelude;
 #[cfg(feature = "events-in-memory")]
 pub use sword_events::prelude as events;
 
+#[cfg(feature = "jobs")]
+pub use sword_jobs::prelude as jobs;
+
 #[cfg(feature = "web")]
 pub use sword_web::prelude as web;
 
@@ -36,6 +39,9 @@ pub mod internal {
 
     #[cfg(feature = "events-in-memory")]
     pub use sword_events::internal as events;
+
+    #[cfg(feature = "jobs")]
+    pub use sword_jobs::internal as jobs;
 
     pub use inventory;
     pub use tokio::runtime as tokio_runtime;

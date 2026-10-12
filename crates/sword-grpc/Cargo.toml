@@ -31,7 +31,7 @@ tower = { workspace = true }
 
 sword-core = { workspace = true }
 sword-layers = { workspace = true, features = ["tracing", "body-limit", "request-id"] }
-sword-macros = { workspace = true, features = ["grpc-controllers"] }
+sword-macros = { workspace = true, features = ["grpc"] }
 
 tracing = { workspace = true }
 inventory = { workspace = true }

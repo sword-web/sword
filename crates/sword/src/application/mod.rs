@@ -15,14 +15,30 @@ pub use env::Environment;
 /// the web server, routing, and application configuration. It provides a
 /// builder pattern for configuration and methods to run the application.
 pub struct Application {
-    engine: ApplicationEngine,
+    /// The transport engine. `None` for a jobs-only application.
+    engine: Option<ApplicationEngine>,
     pub config: Config,
+
+    /// Job scheduler runtime, if the `jobs` feature is enabled and a job
+    /// controller was registered.
+    #[cfg(feature = "jobs")]
+    jobs: Option<sword_jobs::JobSchedulerRuntime>,
 }
 
 impl Application {
-    #[cfg(any(feature = "web", feature = "socketio", feature = "grpc"))]
-    pub(crate) fn new(engine: ApplicationEngine, config: Config) -> Self {
-        Self { engine, config }
+    pub(crate) fn new(engine: Option<ApplicationEngine>, config: Config) -> Self {
+        Self {
+            engine,
+            config,
+            #[cfg(feature = "jobs")]
+            jobs: None,
+        }
+    }
+
+    #[cfg(feature = "jobs")]
+    pub(crate) fn with_jobs(mut self, jobs: sword_jobs::JobSchedulerRuntime) -> Self {
+        self.jobs = Some(jobs);
+        self
     }
 
     /// Creates a new application builder for configuring the application.
@@ -94,17 +110,37 @@ impl Application {
             "Starting Sword application"
         );
 
+        #[cfg(feature = "jobs")]
+        let mut job_scheduler = match &self.jobs {
+            Some(runtime) => Some(runtime.start().await),
+            None => None,
+        };
+
         match &self.engine {
             #[cfg(any(feature = "web", feature = "socketio"))]
-            ApplicationEngine::Web(app) => app.start().await,
+            Some(ApplicationEngine::Web(app)) => app.start().await,
 
             #[cfg(feature = "grpc")]
-            ApplicationEngine::Grpc(app) => app.start().await,
+            Some(ApplicationEngine::Grpc(app)) => app.start().await,
 
-            #[allow(unreachable_patterns)]
-            _ => unreachable!(
-                "Invalid application engine configuration. Enable the appropriate feature flag to use the desired engine."
-            ),
+            _ => {
+                // Jobs-only application: keep running until shutdown.
+                #[cfg(feature = "jobs")]
+                if self.jobs.is_some() {
+                    sword_core::shutdown_signal().await;
+                }
+            }
+        }
+
+        #[cfg(feature = "jobs")]
+        if let Some(scheduler) = job_scheduler.as_mut()
+            && let Err(err) = scheduler.shutdown().await
+        {
+            tracing::error!(
+                target: "sword.shutdown.job-scheduler",
+                error = %err,
+                "Failed to shut down job scheduler"
+            );
         }
     }
 
@@ -112,7 +148,7 @@ impl Application {
     #[cfg(any(feature = "web", feature = "socketio"))]
     pub fn router(&self) -> sword_web::internal::AxumRouter {
         #[cfg(any(feature = "web", feature = "socketio"))]
-        if let ApplicationEngine::Web(app) = &self.engine {
+        if let Some(ApplicationEngine::Web(app)) = &self.engine {
             return app.router();
         }
 
