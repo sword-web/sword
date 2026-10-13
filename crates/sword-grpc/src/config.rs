@@ -1,8 +1,9 @@
+use crate::{client::GrpcClientConfig, logger::GrpcLoggerConfig};
+
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
 use sword_layers::body_limit::GrpcBodyLimitConfig;
-
-use crate::logger::GrpcLoggerConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -20,6 +21,20 @@ pub struct GrpcApplicationConfig {
     /// gRPC access logger configuration. Disabled when absent.
     #[serde(default)]
     pub logger: Option<GrpcLoggerConfig>,
+
+    /// Dynamic configurable client options
+    pub clients: HashMap<String, GrpcClientConfig>,
+}
+
+impl GrpcApplicationConfig {
+    pub fn client(&self, name: &str) -> Option<&GrpcClientConfig> {
+        self.clients.get(name)
+    }
+
+    pub fn expect_client(&self, name: &str) -> &GrpcClientConfig {
+        self.client(name)
+            .unwrap_or_else(|| panic!("Expected gRPC '{name}' client config"))
+    }
 }
 
 impl Default for GrpcApplicationConfig {
@@ -29,6 +44,7 @@ impl Default for GrpcApplicationConfig {
             port: 50051,
             body_limit: GrpcBodyLimitConfig::default(),
             logger: None,
+            clients: HashMap::new(),
         }
     }
 }

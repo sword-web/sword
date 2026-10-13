@@ -3460,6 +3460,7 @@ dependencies = [
  "sword-core",
  "sword-layers",
  "sword-macros",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
