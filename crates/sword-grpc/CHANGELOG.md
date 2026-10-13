@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/sword-web/sword/compare/sword-grpc-v0.4.1...sword-grpc-v0.5.0) - 2026-10-13
+
+### Added
+
+- *(errors)* derive tracing level from status code
+- *(grpc)* addded request-id layer for sword-grpc requests
+- *(grpc)* add configurable grpc access logger
+
+### Other
+
+- unify crate metadata and README
+- *(runtime)* unify engine orchestration
+- *(macros)* replace sword-macros with the rewritten crate
+- *(grpc)* document gRPC startup flow and resolve reflection service registry
+
 ## [0.4.0](https://github.com/sword-web/sword/compare/sword-grpc-v0.3.0...sword-grpc-v0.4.0) - 2026-08-10
 
 ### Added

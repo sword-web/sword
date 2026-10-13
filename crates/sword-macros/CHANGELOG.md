@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/sword-web/sword/compare/sword-macros-v0.4.1...sword-macros-v0.5.0) - 2026-10-13
+
+### Added
+
+- *(jobs)* handlers auto-registering and runtime initialization
+- *(errors)* derive tracing level from status code
+
+### Other
+
+- unify crate metadata and README
+- *(macros)* replace sword-macros with the rewritten crate
+
 ## [0.4.1](https://github.com/sword-web/sword/compare/sword-macros-v0.4.0...sword-macros-v0.4.1) - 2026-09-06
 
 ### Other

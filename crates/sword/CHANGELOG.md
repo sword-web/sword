@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/sword-web/sword/compare/sword-v0.4.1...sword-v0.5.0) - 2026-10-13
+
+### Added
+
+- *(jobs)* handlers auto-registering and runtime initialization
+- *(jobs)* build base sword-job crate with register functions
+
+### Other
+
+- unify crate metadata and README
+- *(runtime)* unify engine orchestration
+- *(macros)* replace sword-macros with the rewritten crate
+- translate code comments to english
+- *(events)* move event init into EventApplicationRuntime
+
 ## [0.4.1](https://github.com/sword-web/sword/compare/sword-v0.4.0...sword-v0.4.1) - 2026-09-06
 
 ### Added
