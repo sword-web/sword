@@ -5,4 +5,7 @@ mod interceptors;
 mod users;
 
 #[cfg(test)]
+mod client;
+
+#[cfg(test)]
 mod errors;

@@ -123,6 +123,7 @@ impl Application {
     }
 
     #[cfg(any(feature = "web", feature = "socketio"))]
+    #[allow(irrefutable_let_patterns)]
     pub fn router(&self) -> sword_web::internal::AxumRouter {
         for engine in &self.engines {
             if let Engine::Web(web) = engine {

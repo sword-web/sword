@@ -6,6 +6,10 @@ graceful-shutdown = false
 host = "127.0.0.1"
 port = 50051
 
+[grpc.clients.users]
+url = "http://127.0.0.1:50051"
+connect = "lazy"
+
 [grpc.body-limit]
 max-decoding-message-size = "2 MiB"
 max-encoding-message-size = "2 MiB"

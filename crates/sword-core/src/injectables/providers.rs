@@ -32,7 +32,7 @@ impl ProviderRegistry {
     /// be auto-constructed from the State.
     pub fn register<T>(&self, provider: T)
     where
-        T: Provider + 'static,
+        T: Send + Sync + 'static,
     {
         self.providers
             .write()
