@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 sword = { workspace = true, features = ["grpc", "grpc-reflection", "grpc-error-details"] }
+sword-core = { workspace = true }
 sword-grpc = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
