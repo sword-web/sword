@@ -15,55 +15,49 @@ pub type WebResult<T = JsonResponse, E = JsonResponse> = Result<T, E>;
 
 impl From<RequestError> for JsonResponse {
     fn from(error: RequestError) -> JsonResponse {
+        tracing::trace!(
+            target: "sword.web.rejection",
+            rejection = ?error,
+            "rejecting request"
+        );
+
         match error {
             RequestError::ParseError { message, details } => {
-                tracing::error!(details = ?details,  "Request parse error: {message}");
                 JsonResponse::BadRequest().message(message).error(details)
             }
             #[cfg(feature = "validation-validator")]
             RequestError::ValidatorError { message, details } => {
-                tracing::error!(details = ?details,  "Request validation error: {message}");
                 JsonResponse::BadRequest().message(message).errors(details)
             }
-
             RequestError::BodyIsEmpty => {
                 JsonResponse::BadRequest().message("Request body is empty")
             }
             RequestError::BodyTooLarge => JsonResponse::PayloadTooLarge()
                 .message("The request body exceeds the maximum allowed size by the server"),
+
             RequestError::UnsupportedMediaType { message } => {
                 JsonResponse::UnsupportedMediaType().message(message)
             }
-            RequestError::DeserializationError {
-                message,
-                error,
-                source,
-            } => {
-                tracing::error!(source = %source, "Request deserialization error: {message}");
+            RequestError::DeserializationError { message, error, .. } => {
                 JsonResponse::BadRequest().message(message).error(error)
             }
-            RequestError::InvalidHeaderName(name) => {
-                tracing::error!(header = %name, "Invalid header name");
-                JsonResponse::BadRequest()
-                    .message("Invalid header name")
-                    .error(format!("Header '{name}' contains invalid characters"))
-            }
-            RequestError::InvalidHeaderValue(name) => {
-                tracing::error!(header = %name, "Invalid header value");
-                JsonResponse::BadRequest()
-                    .message("Invalid header value")
-                    .error(format!("Header '{name}' contains an invalid value",))
-            }
+            RequestError::InvalidHeaderName(name) => JsonResponse::BadRequest()
+                .message("Invalid header name")
+                .error(format!("Header '{name}' contains invalid characters")),
+
+            RequestError::InvalidHeaderValue(name) => JsonResponse::BadRequest()
+                .message("Invalid header value")
+                .error(format!("Header '{name}' contains an invalid value",)),
+
             #[cfg(feature = "multipart")]
-            RequestError::MultipartError(err) => {
-                tracing::error!(error = %err, "Multipart error");
-                JsonResponse::status(err.status()).message("Multipart error")
-            }
+            RequestError::MultipartError(err) => JsonResponse::status(err.status())
+                .message("Multipart error")
+                .error(err.body_text()),
+
             #[cfg(feature = "multipart")]
-            RequestError::MultipartRejection(err) => {
-                tracing::error!(error = %err, "Multipart rejection");
-                JsonResponse::status(err.status()).message("Multipart rejection")
-            }
+            RequestError::MultipartRejection(err) => JsonResponse::status(err.status())
+                .message("Multipart rejection")
+                .error(err.body_text()),
         }
     }
 }
@@ -118,20 +112,20 @@ pub(crate) fn format_validator_errors(e: validator::ValidationErrors) -> serde_j
 #[cfg(feature = "multipart")]
 mod multipart {
     use super::JsonResponse;
+    use crate::request::RequestError;
+
     use axum::extract::multipart::MultipartError;
     use axum::extract::multipart::MultipartRejection;
 
     impl From<MultipartRejection> for JsonResponse {
         fn from(err: MultipartRejection) -> Self {
-            tracing::error!("MultipartRejection: {err:?}");
-            JsonResponse::status(err.status())
+            RequestError::from(err).into()
         }
     }
 
     impl From<MultipartError> for JsonResponse {
         fn from(err: MultipartError) -> Self {
-            tracing::error!("MultipartError: {err:?}");
-            JsonResponse::status(err.status())
+            RequestError::from(err).into()
         }
     }
 }
