@@ -4,15 +4,14 @@ use super::RequestError;
 use axum::{
     RequestPartsExt,
     body::Body,
-    extract::{Path, Request as AxumReq, rejection::PathRejection},
+    extract::{RawPathParams, Request as AxumReq},
     http::request::Parts,
 };
 
-use std::collections::HashMap;
 use sword_layers::body_limit::BodyLimitValue;
 
 pub(super) struct PreparedRequestParts {
-    pub params: HashMap<String, String>,
+    pub params: RawPathParams,
     pub parts: Parts,
     pub body: Body,
     pub body_limit: usize,
@@ -22,7 +21,7 @@ pub(super) struct PreparedRequestParts {
 pub(super) trait PartsExtractionExt {
     fn body_limit(&self) -> usize;
     fn validate_content_length(&self, body_limit: usize) -> Result<(), RequestError>;
-    async fn extract_path_params(&mut self) -> Result<HashMap<String, String>, JsonResponse>;
+    async fn extract_path_params(&mut self) -> Result<RawPathParams, JsonResponse>;
 }
 
 impl PartsExtractionExt for Parts {
@@ -60,23 +59,10 @@ impl PartsExtractionExt for Parts {
         Ok(())
     }
 
-    async fn extract_path_params(&mut self) -> Result<HashMap<String, String>, JsonResponse> {
-        let path_params = self
-            .extract::<Path<HashMap<String, String>>>()
+    async fn extract_path_params(&mut self) -> Result<RawPathParams, JsonResponse> {
+        self.extract::<RawPathParams>()
             .await
-            .map_err(|e| {
-                let message = match e {
-                    PathRejection::FailedToDeserializePathParams(_) => {
-                        "Failed to deserialize path parameters".to_string()
-                    }
-                    PathRejection::MissingPathParams(m) => m.body_text().to_string(),
-                    _ => "Failed to extract path parameters".to_string(),
-                };
-
-                JsonResponse::BadRequest().message(message)
-            })?;
-
-        Ok(path_params.0)
+            .map_err(|e| JsonResponse::status(e.status()).message(e.body_text()))
     }
 }
 

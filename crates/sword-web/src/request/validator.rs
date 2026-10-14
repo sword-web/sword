@@ -159,15 +159,24 @@ impl ValidatorRequestValidation for Request {
     /// `validator` crate. It first deserializes the path parameters and then
     /// runs validation rules defined on the target type.
     fn params_validator<T: DeserializeOwned + Validate>(&self) -> Result<T, RequestError> {
-        let params = serde_json::to_value(self.params.clone())
-            .map_err(|e| RequestError::parse_error("Failed to serialize params", e.to_string()))?;
+        let params: serde_json::Map<String, serde_json::Value> = self
+            .params()
+            .iter()
+            .map(|(key, value)| {
+                (
+                    key.to_string(),
+                    serde_json::Value::String(value.to_string()),
+                )
+            })
+            .collect();
 
-        let deserialized: T = serde_json::from_value(params).map_err(|e| {
-            RequestError::parse_error(
-                "Failed to deserialize params to the target type",
-                e.to_string(),
-            )
-        })?;
+        let deserialized: T =
+            serde_json::from_value(serde_json::Value::Object(params)).map_err(|e| {
+                RequestError::parse_error(
+                    "Failed to deserialize params to the target type",
+                    e.to_string(),
+                )
+            })?;
 
         deserialized.validate().map_err(|error| {
             RequestError::validator_error("Invalid request params", format_validator_errors(error))

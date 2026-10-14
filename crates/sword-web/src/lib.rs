@@ -40,6 +40,7 @@ pub mod prelude {
     pub use bytes::*;
 
     pub use axum::body::Bytes as BodyBytes;
+    pub use axum::extract::RawPathParams;
     pub use axum::http::{HeaderMap as Headers, Method, Uri};
 }
 

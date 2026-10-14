@@ -8,13 +8,13 @@ mod validator;
 use super::response::JsonResponse;
 use crate::interceptor::WebInterceptorResult;
 use axum::{
-    body::Body as AxumBody,
-    body::Bytes as BodyBytes,
+    body::{Body as AxumBody, Bytes as BodyBytes},
+    extract::RawPathParams,
     http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Uri},
     middleware::Next,
 };
 use serde::de::DeserializeOwned;
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 use sword_layers::cookies::Cookies;
 use sword_layers::request_id::RequestId;
 
@@ -32,7 +32,7 @@ pub use validator::ValidatorRequestValidation;
 /// It provides access to request parameters, body data, HTTP method, headers, URI,
 #[derive(Debug)]
 pub struct Request {
-    params: HashMap<String, String>,
+    params: RawPathParams,
     body_bytes: BodyBytes,
     method: Method,
     headers: HeaderMap,
@@ -45,7 +45,7 @@ pub struct Request {
 /// Streaming variant of request extractor that keeps the HTTP body unbuffered.
 #[derive(Debug)]
 pub struct StreamRequest {
-    params: HashMap<String, String>,
+    params: RawPathParams,
     body: AxumBody,
     method: Method,
     headers: HeaderMap,
@@ -85,13 +85,15 @@ macro_rules! impl_request_accessors {
             T: FromStr,
             T::Err: Display,
         {
-            if let Some(value) = self.params.get(key) {
-                return value.parse::<T>().map_err(|e| {
-                    RequestError::parse_error(
-                        format!("Invalid parameter format for '{key}'"),
-                        format!("Parse  Error: {e}"),
-                    )
-                });
+            for (name, value) in &self.params {
+                if name == key {
+                    return value.parse::<T>().map_err(|e| {
+                        RequestError::parse_error(
+                            format!("Invalid parameter format for '{key}'"),
+                            format!("Parse  Error: {e}"),
+                        )
+                    });
+                }
             }
 
             Err(RequestError::parse_error(
@@ -198,8 +200,10 @@ impl Request {
     /// Returns a reference to the path parameters extracted from the request URL.
     ///
     /// Path parameters are extracted from route patterns (e.g., `/users/{id}`)
-    /// and populated automatically by Axum's path extractor.
-    pub fn params(&self) -> &HashMap<String, String> {
+    /// and populated automatically by Axum's path extractor. They are returned
+    /// raw (percent-decoded but not deserialized), so callers can iterate over
+    /// them without allocating.
+    pub fn params(&self) -> &RawPathParams {
         &self.params
     }
 
