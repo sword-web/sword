@@ -32,7 +32,6 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 form_urlencoded = { workspace = true }
 serde_urlencoded = { workspace = true }
-mime = { workspace = true }
 bytes = { workspace = true }
 http-body-util = { workspace = true }
 

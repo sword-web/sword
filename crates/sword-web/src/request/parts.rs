@@ -1,5 +1,4 @@
 use super::JsonResponse;
-use super::RequestError;
 
 use axum::{
     RequestPartsExt,
@@ -20,7 +19,6 @@ pub(super) struct PreparedRequestParts {
 #[allow(async_fn_in_trait)]
 pub(super) trait PartsExtractionExt {
     fn body_limit(&self) -> usize;
-    fn validate_content_length(&self, body_limit: usize) -> Result<(), RequestError>;
     async fn extract_path_params(&mut self) -> Result<RawPathParams, JsonResponse>;
 }
 
@@ -31,32 +29,6 @@ impl PartsExtractionExt for Parts {
             .cloned()
             .unwrap_or_default()
             .0
-    }
-
-    fn validate_content_length(&self, body_limit: usize) -> Result<(), RequestError> {
-        let Some(content_length) = self.headers.get("content-length") else {
-            return Ok(());
-        };
-
-        let cl_str = content_length.to_str().map_err(|_| {
-            RequestError::parse_error(
-                "Invalid Content-Length header",
-                "Header contains invalid format",
-            )
-        })?;
-
-        let size = cl_str.parse::<usize>().map_err(|_| {
-            RequestError::parse_error(
-                "Invalid Content-Length header",
-                "Header value must be a valid number",
-            )
-        })?;
-
-        if size > body_limit {
-            return Err(RequestError::BodyTooLarge);
-        }
-
-        Ok(())
     }
 
     async fn extract_path_params(&mut self) -> Result<RawPathParams, JsonResponse> {
@@ -77,9 +49,6 @@ impl AxumRequestPreparationExt for AxumReq {
 
         let params = parts.extract_path_params().await?;
         let body_limit = parts.body_limit();
-        parts
-            .validate_content_length(body_limit)
-            .map_err(JsonResponse::from)?;
 
         Ok(PreparedRequestParts {
             params,

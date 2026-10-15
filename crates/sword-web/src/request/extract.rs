@@ -2,12 +2,13 @@ use super::{
     JsonResponse, Request, RequestError, StreamRequest,
     parts::{AxumRequestPreparationExt, PreparedRequestParts},
 };
+use bytes::Bytes;
 use sword_core::State;
 
 use axum::{
     body::to_bytes,
     extract::{FromRef, FromRequest as AxumFromRequest, Request as AxumReq},
-    http::request::Parts,
+    http::{Method, request::Parts},
     response::IntoResponse,
 };
 
@@ -47,11 +48,15 @@ impl FromRequest for Request {
             body_limit,
         } = req.prepare().await?;
 
-        let body_bytes = to_bytes(body, body_limit).await.map_err(|err| {
-            let inner = err.into_inner();
-
-            RequestError::from_body_read_error(inner.as_ref())
-        })?;
+        let body_bytes = match parts.method {
+            Method::POST | Method::PUT | Method::PATCH => {
+                to_bytes(body, body_limit).await.map_err(|err| {
+                    let inner = err.into_inner();
+                    RequestError::from_body_read_error(inner.as_ref())
+                })?
+            }
+            _ => Bytes::default(),
+        };
 
         Ok(Self {
             params,

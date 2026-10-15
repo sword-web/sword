@@ -3636,7 +3636,6 @@ dependencies = [
  "form_urlencoded",
  "http-body-util",
  "inventory",
- "mime",
  "serde",
  "serde_json",
  "serde_urlencoded",

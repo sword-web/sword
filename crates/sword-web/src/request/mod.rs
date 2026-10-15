@@ -433,17 +433,49 @@ impl Request {
         Ok(axum::extract::Multipart::from_request(self.try_into()?, &()).await?)
     }
 
+    /// Returns whether the request's `Content-Type` is JSON.
+    ///
+    /// Media types are case-insensitive (RFC 9110) and may carry parameters, so
+    /// the type/subtype portion is compared ignoring ASCII case and any
+    /// `; charset=...` suffix. A subtype of `json` or a structured `+json`
+    /// suffix both count:
+    ///
+    /// | `Content-Type`                    | JSON? |
+    /// |-----------------------------------|-------|
+    /// | `application/json`                | yes   |
+    /// | `Application/JSON`                | yes   |
+    /// | `application/json; charset=utf-8` | yes   |
+    /// | `application/vnd.api+json`        | yes   |
+    /// | `application/jsonx`               | no    |
+    /// | `application/foo+jsonbar`         | no    |
+    /// | `text/json`                       | no    |
+    /// | *(no header)*                     | no    |
     pub(crate) fn is_content_type_json(&self) -> bool {
+        const PREFIX: &str = "application/";
+        const SUFFIX: &str = "+json";
+
         let Some(content_type) = self.content_type() else {
             return false;
         };
 
-        let Ok(mime) = content_type.parse::<mime::Mime>() else {
+        // Media types are case-insensitive (RFC 9110); drop parameters such as
+        // `; charset=utf-8` and compare the type/subtype portion only.
+        let media_type = content_type.split(';').next().unwrap_or_default().trim();
+
+        let Some(subtype) = media_type
+            .get(..PREFIX.len())
+            .filter(|prefix| prefix.eq_ignore_ascii_case(PREFIX))
+            .and_then(|_| media_type.get(PREFIX.len()..))
+        else {
             return false;
         };
 
-        mime.type_() == "application"
-            && (mime.subtype() == "json" || mime.suffix().is_some_and(|name| name == "json"))
+        subtype.eq_ignore_ascii_case("json")
+            || subtype
+                .len()
+                .checked_sub(SUFFIX.len())
+                .and_then(|start| subtype.get(start..))
+                .is_some_and(|suffix| suffix.eq_ignore_ascii_case(SUFFIX))
     }
 }
 
