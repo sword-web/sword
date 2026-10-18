@@ -36,6 +36,9 @@ grpc = []
 grpc-reflection = ["grpc"]
 
 jobs = []
+
 events = []
+events-in-memory = ["events"]
+events-nats = ["events"]
 
 hot-reload = []

@@ -10,8 +10,9 @@ rust-version.workspace = true
 readme.workspace = true
 
 [features]
-default = ["in-memory"]
+default = []
 in-memory = []
+nats = ["dep:async-nats"]
 
 [dependencies]
 sword-core = { workspace = true }
@@ -21,3 +22,4 @@ tokio = { workspace = true }
 inventory = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
+async-nats = { workspace = true, optional = true }
