@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use serial_test::serial;
-use sword::events::{EventHandlerResult, EventPublisher, event, handle};
+use sword::events::{EventHandlerResult, EventPublisher, event, subscribe};
 use sword::prelude::*;
 use sword::web::*;
 
@@ -55,7 +55,7 @@ pub struct UserCreatedHandler {
 }
 
 impl UserCreatedHandler {
-    #[handle("user.created")]
+    #[subscribe("user.created")]
     async fn on_created(&self, event: UserCreated) -> EventHandlerResult<()> {
         assert_eq!(event.id, 1, "handler received an unexpected event payload");
         self.store.increment();

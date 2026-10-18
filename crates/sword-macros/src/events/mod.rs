@@ -1,8 +1,8 @@
 mod event;
-mod handle;
+mod subscribe;
 
 pub use event::expand_event_struct;
-pub use handle::expand_handle;
+pub use subscribe::expand_subscribe;
 
 use crate::core::{ControllerKind, ControllerStruct};
 use crate::shared::{

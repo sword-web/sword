@@ -168,8 +168,8 @@ pub fn event(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[cfg(feature = "events")]
 #[proc_macro_attribute]
-pub fn handle(attr: TokenStream, item: TokenStream) -> TokenStream {
-    shared::emit(events::expand_handle(attr, item))
+pub fn subscribe(attr: TokenStream, item: TokenStream) -> TokenStream {
+    shared::emit(events::expand_subscribe(attr, item))
 }
 
 /// Unified handler attribute for Socket.IO events.

@@ -6,7 +6,7 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{FnArg, ItemFn, LitStr, Type};
 
-pub fn expand_handle(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
+pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
     // Handshake: leave the method untouched outside an event handler controller.
     let Some(controller_ty_str) = CMetaStack::get("event_controller", "controller_ty") else {
         return Ok(item);
