@@ -51,7 +51,7 @@ grpc-reflection = ["grpc", "sword-grpc/reflection"]
 grpc-error-details = ["grpc", "sword-grpc/error-details"]
 
 events = ["dep:sword-events"]
-events-in-memory = ["events", "sword-events/in-memory"]
+events-memory = ["events", "sword-events/memory"]
 events-nats = ["events", "sword-events/nats"]
 
 jobs = ["dep:sword-jobs"]

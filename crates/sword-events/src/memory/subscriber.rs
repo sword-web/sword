@@ -1,7 +1,4 @@
-use crate::Event;
-use crate::EventHandlerFn;
-use crate::EventQueueConfig;
-use crate::in_memory::EventKeyHandlerMap;
+use crate::{Event, EventHandlerFn, EventKeyHandlerMap, InMemoryEventsConfig};
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,16 +13,16 @@ use tokio::time::sleep;
 /// The event  handling flow is:
 /// consume  ->  dispatch  ->  invoke (with retries)
 /// (recv)       (per key)      (per handler)
-pub struct EventSubscriber {
+pub struct MemoryEventSubscriber {
     pub receiver: Receiver<Arc<dyn Event>>,
     pub handlers: EventKeyHandlerMap,
-    pub config: EventQueueConfig,
+    pub config: InMemoryEventsConfig,
 }
 
-impl EventSubscriber {
+impl MemoryEventSubscriber {
     /// Consumes events until the channel is closed or `shutdown` is cancelled.
     pub async fn run(self, shutdown: sword_core::Shutdown) {
-        let EventSubscriber {
+        let MemoryEventSubscriber {
             mut receiver,
             handlers,
             config,
@@ -49,7 +46,11 @@ impl EventSubscriber {
     ///
     /// Events without registered handlers are ignored. Each handler runs concurrently in its own
     /// task so a slow handler does not block the others or the receive loop.
-    fn dispatch(handlers: &EventKeyHandlerMap, config: &EventQueueConfig, event: Arc<dyn Event>) {
+    fn dispatch(
+        handlers: &EventKeyHandlerMap,
+        config: &InMemoryEventsConfig,
+        event: Arc<dyn Event>,
+    ) {
         let key = event.key();
 
         let Some(entries) = handlers.get(key) else {
@@ -74,7 +75,7 @@ impl EventSubscriber {
     async fn invoke(
         handle: EventHandlerFn,
         event: Arc<dyn Event>,
-        config: EventQueueConfig,
+        config: InMemoryEventsConfig,
         key: &'static str,
     ) {
         let mut remaining = config.num_of_event_retry;

@@ -1,80 +1,55 @@
+#[cfg(feature = "memory")]
+use crate::memory::MemoryTransport;
+
 use crate::{
-    Event, EventControllerRegistrar, EventQueueConfig, EventRouteRegistrar,
-    in_memory::{EventKeyHandlerMap, EventPublisher, EventSubscriber},
+    EventApplicationConfig, EventControllerRegistrar, EventHandlerRegistrar, EventKeyHandlerMap,
 };
 
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::sync::Arc;
-use sword_core::{Config, Controller, ControllerRegistry, EventSource, Shutdown, State};
-use tokio::sync::mpsc::{self, Receiver};
+use sword_core::{
+    Config, Controller, ControllerRegistry, EventSource, ProviderRegistry, Shutdown, State,
+};
 
-/// Creates the in-memory event channel.
-///
-/// The [`EventPublisher`] is a provider (registered before DI, so components can
-/// depend on it); the [`EventSubscriberHandle`] becomes the events engine once
-/// the registered controllers are known.
-pub struct EventChannel;
+pub enum EventTransport {
+    #[cfg(feature = "memory")]
+    Memory(MemoryTransport),
 
-impl EventChannel {
-    pub fn create(config: &Config) -> (EventPublisher, EventSubscriberHandle) {
-        let queue_config = config.get_or_default::<EventQueueConfig>();
-        let (tx, rx) = mpsc::channel::<Arc<dyn Event>>(queue_config.buffer_size);
-
-        (
-            EventPublisher::new(tx),
-            EventSubscriberHandle {
-                rx,
-                config: queue_config,
-            },
-        )
-    }
-}
-
-/// Owns the receiving side of the channel. Turns into an [`EventEngine`] once
-/// the registered controllers are known (post-DI).
-pub struct EventSubscriberHandle {
-    rx: Receiver<Arc<dyn Event>>,
-    config: EventQueueConfig,
-}
-
-impl EventSubscriberHandle {
-    /// Builds the handlers for the registered event controllers and returns the
-    /// runnable engine.
-    pub fn into_engine(self, state: &State, controllers: &ControllerRegistry) -> EventEngine {
-        EventEngine {
-            handlers: build_handlers(state, controllers),
-            config: self.config,
-            rx: self.rx,
-        }
-    }
+    #[cfg(feature = "nats")]
+    Nats(()),
 }
 
 /// Background engine that consumes published events and dispatches them to the
 /// registered handlers.
-pub struct EventEngine {
-    handlers: EventKeyHandlerMap,
-    config: EventQueueConfig,
-    rx: Receiver<Arc<dyn Event>>,
+pub struct EventApplication {
+    config: EventApplicationConfig,
+    transports: Vec<EventTransport>,
 }
 
-impl EventEngine {
-    /// Consumes events until `shutdown` is cancelled.
-    pub async fn run(self, shutdown: Shutdown) {
-        let EventEngine {
-            handlers,
-            config,
-            rx,
-        } = self;
+impl EventApplication {
+    pub fn new(config: &Config, providers: &ProviderRegistry) -> Self {
+        let events_config = config.get_or_default::<EventApplicationConfig>();
 
-        EventSubscriber {
-            handlers,
-            receiver: rx,
-            config,
+        let mut transports = Vec::new();
+
+        #[cfg(feature = "memory")]
+        {
+            let (publisher, transport) = MemoryTransport::new(&events_config);
+
+            providers.register(publisher);
+            transports.push(EventTransport::Memory(transport));
         }
-        .run(shutdown)
-        .await;
+
+        #[cfg(feature = "nats")]
+        {}
+
+        Self {
+            config: events_config,
+            transports,
+        }
     }
+
+    pub async fn run(self, _: Shutdown) {}
 }
 
 fn build_handlers(state: &State, controllers: &ControllerRegistry) -> EventKeyHandlerMap {
@@ -89,9 +64,9 @@ fn build_handlers(state: &State, controllers: &ControllerRegistry) -> EventKeyHa
             .map(|r| (r.handler_type_id, r))
             .collect();
 
-    let mut route_map: HashMap<TypeId, Vec<&EventRouteRegistrar>> = HashMap::new();
+    let mut route_map: HashMap<TypeId, Vec<&EventHandlerRegistrar>> = HashMap::new();
 
-    for route in inventory::iter::<EventRouteRegistrar>() {
+    for route in inventory::iter::<EventHandlerRegistrar>() {
         route_map
             .entry(route.handler_type_id)
             .or_default()

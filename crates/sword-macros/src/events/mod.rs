@@ -37,8 +37,6 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         #build_impl
         #clone_impl
 
-        impl #EventHandler for #self_ty {}
-
         impl #ControllerSpec for #self_ty {
             fn kind() -> #Controller {
                 #Controller::EventHandler

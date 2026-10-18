@@ -1,45 +1,25 @@
+mod config;
 mod registrar;
 
-#[cfg(feature = "in-memory")]
+#[cfg(feature = "memory")]
 pub mod application;
 
-#[cfg(feature = "in-memory")]
-pub mod in_memory;
+#[cfg(feature = "memory")]
+pub mod memory;
+
 pub mod prelude;
 
+pub use config::EventApplicationConfig;
 pub use registrar::*;
 
-#[cfg(feature = "in-memory")]
-pub use application::{EventChannel, EventEngine, EventSubscriberHandle};
+#[cfg(feature = "memory")]
+pub use config::InMemoryEventsConfig;
 
-use serde::Deserialize;
-use sword_core::ConfigItem;
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct EventQueueConfig {
-    pub buffer_size: usize,
-    pub num_of_event_retry: u8,
-    pub delay_between_event_retry_ms: u64,
-}
-
-impl Default for EventQueueConfig {
-    fn default() -> Self {
-        Self {
-            buffer_size: 1024,
-            num_of_event_retry: 3,
-            delay_between_event_retry_ms: 1000,
-        }
-    }
-}
-
-impl ConfigItem for EventQueueConfig {
-    fn key() -> &'static str {
-        "event-queue"
-    }
-}
+#[cfg(feature = "nats")]
+pub use config::NatsEventsConfig;
 
 #[doc(hidden)]
 pub mod internal {
-    pub use crate::EventQueueConfig;
+    pub use crate::EventApplicationConfig;
     pub use crate::registrar::*;
 }

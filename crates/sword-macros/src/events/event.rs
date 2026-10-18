@@ -31,10 +31,6 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
             fn key(&self) -> &'static str {
                 #event_key
             }
-
-            fn clone_event(&self) -> #Box<dyn #Event> {
-                #Box::new(#Clone::clone(self))
-            }
         }
     };
 

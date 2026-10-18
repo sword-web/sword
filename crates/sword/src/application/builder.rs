@@ -175,9 +175,10 @@ impl ApplicationBuilder {
     pub fn build(mut self) -> Application {
         // `EventPublisher` is a provider: registering it before `build_all` makes
         // it available to components (build_all inserts providers first).
-        #[cfg(feature = "events-in-memory")]
+        #[cfg(feature = "events-memory")]
         let (event_publisher, event_subscriber) = sword_events::EventChannel::create(&self.config);
-        #[cfg(feature = "events-in-memory")]
+
+        #[cfg(feature = "events-memory")]
         self.container.provider_registry().register(event_publisher);
 
         self.container.build_all(&self.state).unwrap_or_else(|err| {
@@ -216,7 +217,7 @@ impl ApplicationBuilder {
         self.register_sword_built_in_layers();
 
         // Event handlers can only be built once the controllers are known.
-        #[cfg(feature = "events-in-memory")]
+        #[cfg(feature = "events-memory")]
         let events_engine = event_subscriber.into_engine(&self.state, &self.controller_registry);
 
         #[allow(unused_variables)]
@@ -243,7 +244,7 @@ impl ApplicationBuilder {
         #[cfg(feature = "jobs")]
         engines.push(Engine::Jobs(sword_jobs::JobSchedulerRuntime::from(ctx)));
 
-        #[cfg(feature = "events-in-memory")]
+        #[cfg(feature = "events")]
         engines.push(Engine::Events(events_engine));
 
         Application::new(engines, self.config)

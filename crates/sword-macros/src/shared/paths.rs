@@ -50,9 +50,8 @@ path!(OnRequestStream => ::sword::web::OnRequestStream);
 path!(OnRequestStreamWithConfig => ::sword::web::OnRequestStreamWithConfig);
 
 path!(Event => ::sword::internal::events::Event);
-path!(EventHandler => ::sword::internal::events::EventHandler);
 path!(EventControllerRegistrar => ::sword::internal::events::EventControllerRegistrar);
-path!(EventRouteRegistrar => ::sword::internal::events::EventRouteRegistrar);
+path!(EventHandlerRegistrar => ::sword::internal::events::EventHandlerRegistrar);
 path!(EventHandlerFn => ::sword::internal::events::EventHandlerFn);
 path!(EventHandlerResult => ::sword::internal::events::EventHandlerResult);
 path!(EventSource => ::sword::internal::core::EventSource);

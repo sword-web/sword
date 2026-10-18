@@ -3,7 +3,7 @@
 mod application;
 pub mod prelude;
 
-#[cfg(feature = "events-in-memory")]
+#[cfg(feature = "events")]
 pub use sword_events::prelude as events;
 
 #[cfg(feature = "jobs")]
@@ -37,7 +37,7 @@ pub mod internal {
         pub use sword_core::*;
     }
 
-    #[cfg(feature = "events-in-memory")]
+    #[cfg(feature = "events")]
     pub use sword_events::internal as events;
 
     #[cfg(feature = "jobs")]

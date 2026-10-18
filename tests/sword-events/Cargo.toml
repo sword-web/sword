@@ -5,6 +5,6 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = ["web", "events-in-memory"] }
+sword = { workspace = true, features = ["web", "events", "events-memory"] }
 tokio = { workspace = true }
 serial_test = "4.0.1"

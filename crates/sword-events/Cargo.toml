@@ -11,7 +11,7 @@ readme.workspace = true
 
 [features]
 default = []
-in-memory = []
+memory = []
 nats = ["dep:async-nats"]
 
 [dependencies]

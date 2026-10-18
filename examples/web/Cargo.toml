@@ -7,7 +7,11 @@ edition = "2024"
 ignored = ["sword-layers"]
 
 [dependencies]
-sword = { workspace = true, features = ["web", "validation-validator", "web-swagger-ui", "events-in-memory", "jobs"] }
+sword = {
+    workspace = true,
+    features = ["web", "web-swagger-ui", "validation-validator", "events", "events-memory", "jobs"]
+}
+
 sword-layers = { workspace = true, features = ["compression", "cors",  "servedir"] }
 
 async-stream = { workspace = true }

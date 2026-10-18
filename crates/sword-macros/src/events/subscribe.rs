@@ -67,10 +67,9 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                 #Arc::new(
                     move |event: #Arc<dyn #Event>| -> #EventsBoxedFuture {
                         let controller = #Arc::clone(&controller);
-                        let cloned = event.clone_event();
 
                         #Box::pin(async move {
-                            let typed = cloned.downcast_ref::<#event_type>().ok_or_else(|| {
+                            let typed = event.downcast_ref::<#event_type>().ok_or_else(|| {
                                 #format!(
                                     "Failed to downcast event to {} for handler {} (key: {})",
                                     #type_name::<#event_type>(),
@@ -86,7 +85,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
             }
 
             #inventory::submit! {
-                #EventRouteRegistrar {
+                #EventHandlerRegistrar {
                     event_key: #event_key,
                     handler_type_id: #TypeId::of::<#controller_ty>(),
                     build_and_handle: #build_fn_name,
