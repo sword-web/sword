@@ -1,7 +1,7 @@
 mod publisher;
 mod subscriber;
 
-use crate::{Event, EventKeyHandlerMap, config::EventApplicationConfig};
+use crate::{Event, EventApplicationConfig, EventKeyHandlerMap};
 
 pub use publisher::MemoryEventPublisher;
 pub(crate) use subscriber::MemoryEventSubscriber;

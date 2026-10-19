@@ -1,6 +1,7 @@
 use crate::{
     core::{InterceptorArgs, take_interceptors},
-    shared::{Error, Result, paths::*, structs::Struct},
+    events::EventSourceKind,
+    shared::{Error, Result, structs::Struct},
 };
 
 use darling::{FromDeriveInput, FromMeta, ast::NestedMeta};
@@ -15,22 +16,8 @@ pub enum ControllerKind {
     Web { path: String },
     SocketIo { namespace: String },
     Grpc { service: Path },
-    Events { source: EventSourceKind },
+    Events { source: Option<EventSourceKind> },
     Jobs,
-}
-
-pub enum EventSourceKind {
-    Memory,
-    Nats,
-}
-
-impl EventSourceKind {
-    pub fn as_tokens(&self) -> TokenStream2 {
-        match self {
-            Self::Memory => quote! { #EventSource::Memory },
-            Self::Nats => quote! { #EventSource::Nats },
-        }
-    }
 }
 
 #[derive(FromMeta)]
@@ -228,38 +215,23 @@ impl ControllerArgs {
                     );
                 }
 
-                let source = self.source.as_ref().ok_or_else(|| {
-                    Error::custom("Events Controller requires `source`").with_span(&self.kind)
-                })?;
+                let source = self
+                    .source
+                    .as_ref()
+                    .map(EventSourceKind::from_path)
+                    .transpose()?;
 
-                let source_name = source
-                    .segments
-                    .last()
-                    .map(|segment| segment.ident.to_string())
-                    .unwrap_or_default();
+                #[cfg(feature = "events")]
+                {
+                    Ok(ControllerKind::Events { source })
+                }
 
-                match source_name.as_str() {
-                    "Memory" => {
-                        #[cfg(feature = "events")]
-                        {
-                            Ok(ControllerKind::Events {
-                                source: EventSourceKind::Memory,
-                            })
-                        }
-
-                        #[cfg(not(feature = "events"))]
-                        {
-                            Err(Error::custom(
-                                "Events controllers require enabling the `events` feature",
-                            )
-                            .with_span(&self.kind))
-                        }
-                    }
-
-                    other => {
-                        Err(Error::custom(format!("unknown event source `{other}`"))
-                            .with_span(source))
-                    }
+                #[cfg(not(feature = "events"))]
+                {
+                    Err(
+                        Error::custom("Events controllers require enabling the `events` feature")
+                            .with_span(&self.kind),
+                    )
                 }
             }
 

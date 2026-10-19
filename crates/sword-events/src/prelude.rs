@@ -1,4 +1,6 @@
-pub use crate::{Event, EventApplicationConfig, EventHandlerResult, EventSource};
+pub use crate::{
+    Event, EventApplicationConfig, EventHandlerResult, EventPublish, EventPublishError, EventSource,
+};
 
 #[cfg(feature = "memory")]
 pub use crate::{InMemoryEventsConfig, memory::MemoryEventPublisher};

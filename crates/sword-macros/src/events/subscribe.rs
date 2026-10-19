@@ -1,10 +1,21 @@
-use crate::shared::{Result, cmeta::CMetaStack, paths::*};
+use crate::{
+    events::EventSourceKind,
+    shared::{Result, cmeta::CMetaStack, paths::*},
+};
 
-use darling::Error;
+use darling::{Error, FromMeta, ast::NestedMeta};
 use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{FnArg, ItemFn, LitStr, Type};
+use syn::{FnArg, ItemFn, Path, Type};
+
+#[derive(FromMeta)]
+struct Args {
+    key: String,
+
+    #[darling(default)]
+    source: Option<Path>,
+}
 
 pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
     // Handshake: leave the method untouched outside an event handler controller.
@@ -12,14 +23,16 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
         return Ok(item);
     };
 
-    let event_lit = syn::parse::<LitStr>(attr)?;
-    let event_key = event_lit.value();
+    let args = Args::from_list(&NestedMeta::parse_meta_list(attr.into())?)?;
+    let source = resolve_event_source(&args)?;
+
+    let source_tokens = source.as_tokens();
+    let event_key = args.key;
 
     if event_key.is_empty() {
         return Err(Error::custom(
-            "event key must not be empty; specify the full key, e.g. #[handle(\"user.created\")]",
-        )
-        .with_span(&event_lit));
+            "event key must not be empty; specify it like #[subscribe(key = \"user.created\")]",
+        ));
     }
 
     let item_fn = syn::parse::<ItemFn>(item)?;
@@ -86,7 +99,8 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
 
             #inventory::submit! {
                 #EventHandlerRegistrar {
-                    event_key: #event_key,
+                    key: #event_key,
+                    source: #source_tokens,
                     controller_ty: #TypeId::of::<#controller_ty>(),
                     handler_fn: #build_fn_name,
                 }
@@ -95,6 +109,36 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
     };
 
     Ok(expanded.into())
+}
+
+fn resolve_event_source(args: &Args) -> Result<EventSourceKind> {
+    let controller_source = match CMetaStack::get("event_controller", "source").as_deref() {
+        None | Some("") => None,
+        Some(name) => Some(EventSourceKind::from_name(name)?),
+    };
+
+    let handler_source = args
+        .source
+        .as_ref()
+        .map(EventSourceKind::from_path)
+        .transpose()?;
+
+    let source = match (handler_source, controller_source) {
+        (Some(handler), None) => handler,
+        (None, Some(controller)) => controller,
+        (Some(_), Some(_)) => {
+            return Err(Error::custom(
+                "the controller already declares a `source`; don't declare it on the handler",
+            ));
+        }
+        (None, None) => {
+            return Err(Error::custom(
+                "this handler must declare `source` because the controller does not",
+            ));
+        }
+    };
+
+    Ok(source)
 }
 
 fn extract_event_type(input_fn: &ItemFn) -> syn::Result<Type> {

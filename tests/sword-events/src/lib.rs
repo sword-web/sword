@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use serial_test::serial;
-use sword::events::{EventHandlerResult, MemoryEventPublisher, event, subscribe};
+use sword::events::{EventHandlerResult, EventPublish, MemoryEventPublisher, event, subscribe};
 use sword::prelude::*;
 use sword::web::*;
 
@@ -55,7 +55,7 @@ pub struct UserCreatedHandler {
 }
 
 impl UserCreatedHandler {
-    #[subscribe("user.created")]
+    #[subscribe(key = "user.created")]
     async fn on_created(&self, event: UserCreated) -> EventHandlerResult<()> {
         assert_eq!(event.id, 1, "handler received an unexpected event payload");
         self.store.increment();
@@ -75,7 +75,7 @@ pub struct UsersController {
 impl UsersController {
     #[post("/create")]
     async fn create(&self) -> WebResult {
-        self.publisher.publish(UserCreated { id: 1 }).await;
+        self.publisher.publish(UserCreated { id: 1 }).await.unwrap();
 
         Ok(JsonResponse::Ok().message("published"))
     }

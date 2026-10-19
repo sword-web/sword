@@ -20,8 +20,10 @@ pub struct InMemoryEventsConfig {
 }
 
 #[cfg(feature = "nats")]
-#[derive(Clone, Debug, Deserialize)]
-pub struct NatsEventsConfig {}
+#[derive(Clone, Debug, Deserialize, Default)]
+pub struct NatsEventsConfig {
+    pub url: String,
+}
 
 impl ConfigItem for EventApplicationConfig {
     fn key() -> &'static str {

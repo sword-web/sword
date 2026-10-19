@@ -7,7 +7,7 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-use sword::events::MemoryEventPublisher;
+use sword::events::*;
 use sword::prelude::*;
 use sword::web::*;
 
@@ -41,13 +41,13 @@ impl UsersController {
 
         self.users.save(&user).await?;
 
-        self.publisher
-            .publish(UserCreatedEvent {
-                user_id: user.id.to_string(),
-                username: user.username.clone(),
-                email: format!("{}@example.com", user.username),
-            })
-            .await;
+        let event_data = UserCreatedEvent {
+            user_id: user.id.to_string(),
+            username: user.username.clone(),
+            email: format!("{}@example.com", user.username),
+        };
+
+        self.publisher.publish(event_data).await.ok();
 
         Ok(user)
     }

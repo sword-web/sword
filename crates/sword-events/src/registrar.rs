@@ -18,7 +18,6 @@ pub(crate) type EventKeyHandlerMap = HashMap<&'static str, Vec<EventHandlerFn>>;
 /// a reusable closure that invokes a specific handler method.
 pub struct EventControllerRegistrar {
     pub ty: TypeId,
-    pub source: EventSource,
     pub build: fn(&State),
 }
 
@@ -26,7 +25,8 @@ pub struct EventControllerRegistrar {
 /// `build_and_handle` constructs the controller from state once and
 /// returns a closure that can be called for each incoming event.
 pub struct EventHandlerRegistrar {
-    pub event_key: &'static str,
+    pub key: &'static str,
+    pub source: EventSource,
     pub controller_ty: TypeId,
     pub handler_fn: fn(&State) -> EventHandlerFn,
 }

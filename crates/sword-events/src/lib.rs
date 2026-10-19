@@ -1,4 +1,3 @@
-#[cfg(any(feature = "memory", feature = "nats"))]
 mod application;
 mod config;
 mod registrar;
@@ -6,9 +5,13 @@ mod registrar;
 #[cfg(feature = "memory")]
 pub mod memory;
 
+#[cfg(feature = "nats")]
+pub mod nats;
+
 pub mod prelude;
 
 use std::{any::Any, fmt::Debug};
+use thiserror::Error;
 
 #[cfg(any(feature = "memory", feature = "nats"))]
 pub use application::{EventApplication, EventTransport};
@@ -29,6 +32,22 @@ pub enum EventSource {
     Nats,
 }
 
+#[derive(Debug, Error)]
+pub enum EventPublishError {
+    #[error("the event channel is closed")]
+    Closed,
+    #[error("event transport error: {0}")]
+    Transport(Box<dyn std::error::Error + Send + Sync>),
+}
+
+/// Event publishing trait implemented by any event transport.
+pub trait EventPublish: Send + Sync {
+    fn publish(
+        &self,
+        event: impl Event + 'static,
+    ) -> impl Future<Output = Result<(), EventPublishError>> + Send;
+}
+
 pub trait Event: Send + Sync + Any + Debug {
     fn key(&self) -> &'static str;
 }
@@ -41,6 +60,6 @@ impl dyn Event {
 
 #[doc(hidden)]
 pub mod internal {
-    pub use crate::{Event, EventApplicationConfig};
     pub use crate::registrar::*;
+    pub use crate::{Event, EventApplicationConfig};
 }

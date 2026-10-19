@@ -3772,6 +3772,7 @@ dependencies = [
  "serde",
  "sword-core",
  "sword-macros",
+ "thiserror",
  "tokio",
  "tracing",
 ]

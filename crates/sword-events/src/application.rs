@@ -126,9 +126,9 @@ impl EventSubscriptions {
             for handler in handler_registrars(&type_id) {
                 // Add the handler to the map grouping source: { key: [handler] }
                 by_source
-                    .entry(controller.source)
+                    .entry(handler.source)
                     .or_default()
-                    .entry(handler.event_key)
+                    .entry(handler.key)
                     .or_default()
                     .push((handler.handler_fn)(state));
             }
