@@ -3,9 +3,10 @@ mod subscriber;
 
 use crate::{Event, EventKeyHandlerMap, config::EventApplicationConfig};
 
-use publisher::MemoryEventPublisher;
+pub use publisher::MemoryEventPublisher;
+pub(crate) use subscriber::MemoryEventSubscriber;
+
 use std::sync::Arc;
-use subscriber::MemoryEventSubscriber;
 use sword_core::Shutdown;
 use tokio::sync::mpsc;
 
@@ -13,7 +14,7 @@ use tokio::sync::mpsc;
 /// Since the publisher and subscriber are separate components this struct contains
 /// only the subscriber, the publisher is returned separately from the constructor.
 pub struct MemoryTransport {
-    pub subscriber: MemoryEventSubscriber,
+    subscriber: MemoryEventSubscriber,
 }
 
 impl MemoryTransport {

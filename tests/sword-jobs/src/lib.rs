@@ -6,7 +6,7 @@ use sword::prelude::*;
 
 static RUNS: AtomicUsize = AtomicUsize::new(0);
 
-#[controller(kind = Controller::JobHandler)]
+#[controller(kind = Controller::Jobs)]
 pub struct TestJob {}
 
 impl TestJob {
@@ -24,7 +24,7 @@ async fn repeated_job_runs() {
 
     let runtime = sword::internal::jobs::JobSchedulerRuntime::new(
         state,
-        registry.get_by_kind(Controller::JobHandler),
+        registry.get_by_kind(Controller::Jobs),
     );
 
     let mut scheduler = runtime.start().await;

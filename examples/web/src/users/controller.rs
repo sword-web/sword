@@ -7,7 +7,7 @@ use crate::{
 use std::sync::Arc;
 use uuid::Uuid;
 
-use sword::events::EventPublisher;
+use sword::events::MemoryEventPublisher;
 use sword::prelude::*;
 use sword::web::*;
 
@@ -15,7 +15,7 @@ use sword::web::*;
 pub struct UsersController {
     hasher: Arc<Hasher>,
     users: Arc<UserRepository>,
-    publisher: Arc<EventPublisher>,
+    publisher: Arc<MemoryEventPublisher>,
 }
 
 impl UsersController {

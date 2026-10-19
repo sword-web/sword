@@ -54,7 +54,7 @@ path!(EventControllerRegistrar => ::sword::internal::events::EventControllerRegi
 path!(EventHandlerRegistrar => ::sword::internal::events::EventHandlerRegistrar);
 path!(EventHandlerFn => ::sword::internal::events::EventHandlerFn);
 path!(EventHandlerResult => ::sword::internal::events::EventHandlerResult);
-path!(EventSource => ::sword::internal::core::EventSource);
+path!(EventSource => ::sword::events::EventSource);
 path!(EventsBoxedFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::sword::internal::events::EventHandlerResult<()>> + ::std::marker::Send>>);
 
 path!(Interceptor => ::sword::internal::core::Interceptor);

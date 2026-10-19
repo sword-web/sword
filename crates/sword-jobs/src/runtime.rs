@@ -97,7 +97,7 @@ impl From<EngineBuildContext> for JobSchedulerRuntime {
     fn from(value: EngineBuildContext) -> Self {
         Self {
             state: value.state,
-            controller_ids: value.controllers.get_by_kind(Controller::JobHandler),
+            controller_ids: value.controllers.get_by_kind(Controller::Jobs),
         }
     }
 }

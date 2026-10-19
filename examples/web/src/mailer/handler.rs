@@ -4,7 +4,7 @@ use std::sync::Arc;
 use sword::events::*;
 use sword::prelude::*;
 
-#[controller(kind = Controller::EventHandler, source = EventSource::Memory)]
+#[controller(kind = Controller::Events, source = EventSource::Memory)]
 pub struct MailHandler {
     mailer: Arc<Mailer>,
 }

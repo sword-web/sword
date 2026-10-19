@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use serial_test::serial;
-use sword::events::{EventHandlerResult, EventPublisher, event, subscribe};
+use sword::events::{EventHandlerResult, MemoryEventPublisher, event, subscribe};
 use sword::prelude::*;
 use sword::web::*;
 
@@ -49,7 +49,7 @@ pub struct UserCreated {
     pub id: u32,
 }
 
-#[controller(kind = Controller::EventHandler, source = EventSource::Memory)]
+#[controller(kind = Controller::Events, source = EventSource::Memory)]
 pub struct UserCreatedHandler {
     store: Arc<EventStore>,
 }
@@ -68,7 +68,7 @@ impl UserCreatedHandler {
 
 #[controller(kind = Controller::Web, path = "/users")]
 pub struct UsersController {
-    publisher: Arc<EventPublisher>,
+    publisher: Arc<MemoryEventPublisher>,
     store: Arc<EventStore>,
 }
 

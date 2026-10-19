@@ -1,8 +1,20 @@
 use crate::application::{Application, Engine, Environment};
 
+#[cfg(any(feature = "events-memory", feature = "events-nats"))]
+use sword_events::EventApplication;
+
+#[cfg(feature = "grpc")]
+use sword_grpc::application::GrpcApplication;
+
+#[cfg(feature = "jobs")]
+use sword_jobs::JobSchedulerRuntime;
+
 #[cfg(any(feature = "web", feature = "socketio"))]
-use sword_web::internal::{
-    AxumRequest, IntoResponse, TowerLayer as Layer, TowerService as Service, routing::Route,
+use sword_web::{
+    application::WebApplication,
+    internal::{
+        AxumRequest, IntoResponse, TowerLayer as Layer, TowerService as Service, routing::Route,
+    },
 };
 
 use std::any::Any;
@@ -169,25 +181,66 @@ impl ApplicationBuilder {
     /// Build the `Application` instance with the configured options.
     ///
     /// This method ends the builder pattern and constructs the final `Application`
-    /// instance ready to run. It assembles every enabled engine (web, grpc, events,
-    /// jobs) into the application; the engines themselves start in `Application::run`.
+    /// instance ready to run. It assembles every enabled engine (web, grpc, events, jobs)
+    /// into the application, the engines themselves start in `Application::run`.
     #[allow(clippy::vec_init_then_push)]
     pub fn build(mut self) -> Application {
-        // `EventPublisher` is a provider: registering it before `build_all` makes
-        // it available to components (build_all inserts providers first).
-        #[cfg(feature = "events-memory")]
-        let (event_publisher, event_subscriber) = sword_events::EventChannel::create(&self.config);
+        // `EventApplication` has publishers internally wich are providers so it's important to
+        // register them before building the dependency container to make it available to components.
 
-        #[cfg(feature = "events-memory")]
-        self.container.provider_registry().register(event_publisher);
+        #[cfg(any(feature = "events-memory", feature = "events-nats"))]
+        let mut events_application =
+            EventApplication::new(&self.config, self.container.provider_registry());
 
+        // The dependency container is built once all providers and components are registered.
+        self.build_dependency_container();
+
+        // Once the dependency container is built, the interceptors declared with the
+        // #[derive(Interceptor)] macro are registered.
+        for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
+            register(&self.state);
+        }
+
+        // Initialization of built-in layers by the `sword_layers` crate.
+        self.register_sword_built_in_layers();
+
+        #[allow(unused_variables)]
+        let ctx = EngineBuildContext {
+            state: self.state,
+            config: self.config.clone(),
+            controllers: self.controller_registry,
+            layer_stack: self.layer_stack,
+        };
+
+        #[cfg(any(feature = "events-memory", feature = "events-nats"))]
+        events_application.with_controllers(&ctx.controllers, &ctx.state);
+
+        #[allow(unused_mut, clippy::vec_init_then_push)]
+        let mut engines: Vec<Engine> = Vec::new();
+
+        #[cfg(any(feature = "web", feature = "socketio"))]
+        engines.push(Engine::Web(WebApplication::from(ctx.clone())));
+
+        #[cfg(feature = "grpc")]
+        engines.push(Engine::Grpc(GrpcApplication::from(ctx.clone())));
+
+        #[cfg(feature = "jobs")]
+        engines.push(Engine::Jobs(JobSchedulerRuntime::from(ctx)));
+
+        #[cfg(any(feature = "events-memory", feature = "events-nats"))]
+        engines.push(Engine::Events(events_application));
+
+        Application::new(engines, self.config)
+    }
+
+    fn build_dependency_container(&mut self) {
         self.container.build_all(&self.state).unwrap_or_else(|err| {
             match (err.dependency_path(), err.missing_dependency_path()) {
                 (Some(dependency_path), Some(missing_dependency_path)) => {
                     sword_error! {
                         title: "Failed to Build DI Container",
                         reason: err,
-                        source: "ApplicationBuilder::build",
+                        source: "ApplicationBuilder::build_dependency_container",
                         fields: {
                             dependency_path = dependency_path,
                             missing_dependency_path = missing_dependency_path,
@@ -199,55 +252,13 @@ impl ApplicationBuilder {
                     sword_error! {
                         title: "Failed to Build DI Container",
                         reason: err,
-                        source: "ApplicationBuilder::build",
+                        source: "ApplicationBuilder::build_dependency_container",
                         extra_context: err.diagnostic_context(),
                         hints: ["Check that all required components and providers are registered"],
                     }
                 }
             }
         });
-
-        // Once the dependency container is built, the interceptors declared with the
-        // #[derive(Interceptor)] macro are registered.
-        for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
-            register(&self.state);
-        }
-
-        // Initialization of built-in layers by the `sword_layers` crate.
-        self.register_sword_built_in_layers();
-
-        // Event handlers can only be built once the controllers are known.
-        #[cfg(feature = "events-memory")]
-        let events_engine = event_subscriber.into_engine(&self.state, &self.controller_registry);
-
-        #[allow(unused_variables)]
-        let ctx = EngineBuildContext {
-            state: self.state,
-            config: self.config.clone(),
-            controllers: self.controller_registry,
-            layer_stack: self.layer_stack,
-        };
-
-        #[allow(unused_mut, clippy::vec_init_then_push)]
-        let mut engines: Vec<Engine> = Vec::new();
-
-        #[cfg(any(feature = "web", feature = "socketio"))]
-        engines.push(Engine::Web(sword_web::application::WebApplication::from(
-            ctx.clone(),
-        )));
-
-        #[cfg(feature = "grpc")]
-        engines.push(Engine::Grpc(
-            sword_grpc::application::GrpcApplication::from(ctx.clone()),
-        ));
-
-        #[cfg(feature = "jobs")]
-        engines.push(Engine::Jobs(sword_jobs::JobSchedulerRuntime::from(ctx)));
-
-        #[cfg(feature = "events")]
-        engines.push(Engine::Events(events_engine));
-
-        Application::new(engines, self.config)
     }
 }
 

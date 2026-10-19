@@ -29,6 +29,7 @@ impl ConfigItem for EventApplicationConfig {
     }
 }
 
+#[cfg(feature = "memory")]
 impl Default for InMemoryEventsConfig {
     fn default() -> Self {
         Self {

@@ -3,26 +3,16 @@ use crate::memory::MemoryTransport;
 
 use crate::{
     EventApplicationConfig, EventControllerRegistrar, EventHandlerRegistrar, EventKeyHandlerMap,
+    EventSource,
 };
 
-use std::any::TypeId;
-use std::collections::HashMap;
-use sword_core::{
-    Config, Controller, ControllerRegistry, EventSource, ProviderRegistry, Shutdown, State,
-};
-
-pub enum EventTransport {
-    #[cfg(feature = "memory")]
-    Memory(MemoryTransport),
-
-    #[cfg(feature = "nats")]
-    Nats(()),
-}
+use std::{any::TypeId, collections::HashMap};
+use sword_core::{Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State};
+use tokio::task::JoinSet;
 
 /// Background engine that consumes published events and dispatches them to the
 /// registered handlers.
 pub struct EventApplication {
-    config: EventApplicationConfig,
     transports: Vec<EventTransport>,
 }
 
@@ -43,77 +33,121 @@ impl EventApplication {
         #[cfg(feature = "nats")]
         {}
 
-        Self {
-            config: events_config,
-            transports,
+        Self { transports }
+    }
+
+    pub fn with_controllers(&mut self, controllers: &ControllerRegistry, state: &State) {
+        let mut subscriptions = EventSubscriptions::collect(state, controllers);
+
+        for transport in &mut self.transports {
+            transport.set_handlers(subscriptions.take(transport.source()));
         }
     }
 
-    pub async fn run(self, _: Shutdown) {}
+    pub async fn run(self, shutdown: Shutdown) {
+        let mut tasks = JoinSet::new();
+
+        for transport in self.transports {
+            let shutdown = shutdown.clone();
+            tasks.spawn(async move { transport.run(shutdown).await });
+        }
+
+        shutdown.cancelled().await;
+
+        while tasks.join_next().await.is_some() {}
+    }
 }
 
-fn build_handlers(state: &State, controllers: &ControllerRegistry) -> EventKeyHandlerMap {
-    let event_controllers = controllers.get_by_kind(Controller::EventHandler);
+/// Possible event transports (backends) that can be used to publish and consume events.
+pub enum EventTransport {
+    #[cfg(feature = "memory")]
+    Memory(MemoryTransport),
 
-    if event_controllers.is_empty() {
-        return HashMap::new();
-    }
+    #[cfg(feature = "nats")]
+    Nats(()),
+}
 
-    let controller_registrars: HashMap<TypeId, &EventControllerRegistrar> =
-        inventory::iter::<EventControllerRegistrar>()
-            .map(|r| (r.handler_type_id, r))
-            .collect();
+impl EventTransport {
+    pub fn source(&self) -> EventSource {
+        match self {
+            #[cfg(feature = "memory")]
+            EventTransport::Memory(_) => EventSource::Memory,
 
-    let mut route_map: HashMap<TypeId, Vec<&EventHandlerRegistrar>> = HashMap::new();
-
-    for route in inventory::iter::<EventHandlerRegistrar>() {
-        route_map
-            .entry(route.handler_type_id)
-            .or_default()
-            .push(route);
-    }
-
-    let mut handlers: EventKeyHandlerMap = HashMap::new();
-
-    for type_id in &event_controllers {
-        let Some(registrar) = controller_registrars.get(type_id) else {
-            tracing::warn!(
-                target: "sword.events",
-                "No EventControllerRegistrar found for handler type {:?}",
-                type_id,
-            );
-
-            continue;
-        };
-
-        if registrar.source != EventSource::Memory {
-            tracing::warn!(
-                target: "sword.events",
-                source = ?registrar.source,
-                "Event handler source is not supported yet, skipping handler type {:?}",
-                type_id,
-            );
-
-            continue;
-        }
-
-        (registrar.build)(state);
-
-        let Some(routes) = route_map.get(type_id) else {
-            tracing::warn!(
-                target: "sword.events",
-                "No event routes registered for handler type {:?}",
-                type_id,
-            );
-
-            continue;
-        };
-
-        for route in routes {
-            let handle_fn = (route.build_and_handle)(state);
-            handlers.entry(route.event_key).or_default().push(handle_fn);
+            #[cfg(feature = "nats")]
+            EventTransport::Nats(_) => EventSource::Nats,
         }
     }
 
-    handlers
+    fn set_handlers(&mut self, handlers: EventKeyHandlerMap) {
+        match self {
+            #[cfg(feature = "memory")]
+            EventTransport::Memory(transport) => transport.set_handlers(handlers),
+
+            #[cfg(feature = "nats")]
+            EventTransport::Nats(_) => {}
+        }
+    }
+
+    async fn run(self, shutdown: Shutdown) {
+        match self {
+            #[cfg(feature = "memory")]
+            EventTransport::Memory(transport) => {
+                transport.run(shutdown).await;
+            }
+
+            #[cfg(feature = "nats")]
+            EventTransport::Nats(_) => {}
+        }
+    }
+}
+
+/// All the event handlers registered in the application,
+/// grouped by event source and event key.
+struct EventSubscriptions {
+    by_source: HashMap<EventSource, EventKeyHandlerMap>,
+}
+
+impl EventSubscriptions {
+    /// Builds all the registered event controllers and its handlers,
+    /// grouping them by their source kind
+    fn collect(state: &State, controllers: &ControllerRegistry) -> Self {
+        let mut by_source: HashMap<EventSource, EventKeyHandlerMap> = HashMap::new();
+
+        for type_id in controllers.get_by_kind(Controller::Events) {
+            let Some(controller) = controller_registrar(&type_id) else {
+                tracing::warn!(target: "sword.events", "No EventControllerRegistrar for {type_id:?}");
+                continue;
+            };
+
+            (controller.build)(state); // Build the controller and register it in the state
+
+            // iterate over all the handlers registered for this controller type
+
+            for handler in handler_registrars(&type_id) {
+                // Add the handler to the map grouping source: { key: [handler] }
+                by_source
+                    .entry(controller.source)
+                    .or_default()
+                    .entry(handler.event_key)
+                    .or_default()
+                    .push((handler.handler_fn)(state));
+            }
+        }
+
+        Self { by_source }
+    }
+
+    /// Returns the map of event handlers for a specific source, removing it from the subscriptions.
+    fn take(&mut self, source: EventSource) -> EventKeyHandlerMap {
+        self.by_source.remove(&source).unwrap_or_default()
+    }
+}
+
+fn controller_registrar(type_id: &TypeId) -> Option<&'static EventControllerRegistrar> {
+    inventory::iter::<EventControllerRegistrar>().find(|controller| controller.ty == *type_id)
+}
+
+fn handler_registrars(type_id: &TypeId) -> impl Iterator<Item = &'static EventHandlerRegistrar> {
+    inventory::iter::<EventHandlerRegistrar>()
+        .filter(move |handler| handler.controller_ty == *type_id)
 }

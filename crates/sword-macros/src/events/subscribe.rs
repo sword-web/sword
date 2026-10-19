@@ -87,8 +87,8 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
             #inventory::submit! {
                 #EventHandlerRegistrar {
                     event_key: #event_key,
-                    handler_type_id: #TypeId::of::<#controller_ty>(),
-                    build_and_handle: #build_fn_name,
+                    controller_ty: #TypeId::of::<#controller_ty>(),
+                    handler_fn: #build_fn_name,
                 }
             }
         };

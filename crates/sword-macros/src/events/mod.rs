@@ -17,7 +17,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
-    let ControllerKind::EventHandler { source } = &controller.kind else {
+    let ControllerKind::Events { source } = &controller.kind else {
         return Err(
             Error::custom("Expected an event handler controller").with_span(controller.ty())
         );
@@ -39,13 +39,13 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
 
         impl #ControllerSpec for #self_ty {
             fn kind() -> #Controller {
-                #Controller::EventHandler
+                #Controller::Events
             }
         }
 
         #inventory::submit! {
             #EventControllerRegistrar {
-                handler_type_id: #TypeId::of::<#self_ty>(),
+                ty: #TypeId::of::<#self_ty>(),
                 source: #source_tokens,
                 build: |state: &#State| {
                     let controller = #self_ty::build(state).unwrap_or_else(|e| {

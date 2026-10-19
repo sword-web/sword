@@ -1,9 +1,6 @@
 use sword_core::Shutdown;
 
 /// One runnable piece of the application.
-///
-/// The set is closed (framework-owned), so a plain enum with dispatch is enough:
-/// no `dyn`, no boxing and no `async` trait.
 pub(crate) enum Engine {
     #[cfg(any(feature = "web", feature = "socketio"))]
     Web(sword_web::application::WebApplication),
@@ -11,8 +8,8 @@ pub(crate) enum Engine {
     #[cfg(feature = "grpc")]
     Grpc(sword_grpc::application::GrpcApplication),
 
-    #[cfg(feature = "events")]
-    Events(sword_events::EventEngine),
+    #[cfg(any(feature = "events-memory", feature = "events-nats"))]
+    Events(sword_events::EventApplication),
 
     #[cfg(feature = "jobs")]
     Jobs(sword_jobs::JobSchedulerRuntime),
@@ -28,7 +25,7 @@ impl Engine {
             #[cfg(feature = "grpc")]
             Engine::Grpc(_) => "grpc",
 
-            #[cfg(feature = "events")]
+            #[cfg(any(feature = "events-memory", feature = "events-nats"))]
             Engine::Events(_) => "events",
 
             #[cfg(feature = "jobs")]
@@ -49,7 +46,7 @@ impl Engine {
             #[cfg(feature = "grpc")]
             Engine::Grpc(grpc) => grpc.run(shutdown).await,
 
-            #[cfg(feature = "events")]
+            #[cfg(any(feature = "events-memory", feature = "events-nats"))]
             Engine::Events(events) => events.run(shutdown).await,
 
             #[cfg(feature = "jobs")]
