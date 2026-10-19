@@ -50,12 +50,15 @@ path!(OnRequestStream => ::sword::web::OnRequestStream);
 path!(OnRequestStreamWithConfig => ::sword::web::OnRequestStreamWithConfig);
 
 path!(Event => ::sword::internal::events::Event);
+path!(EventRegistrar => ::sword::internal::events::EventRegistrar);
 path!(EventControllerRegistrar => ::sword::internal::events::EventControllerRegistrar);
 path!(EventHandlerRegistrar => ::sword::internal::events::EventHandlerRegistrar);
 path!(EventHandlerFn => ::sword::internal::events::EventHandlerFn);
 path!(EventHandlerResult => ::sword::internal::events::EventHandlerResult);
 path!(EventSource => ::sword::events::EventSource);
 path!(EventsBoxedFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::sword::internal::events::EventHandlerResult<()>> + ::std::marker::Send>>);
+path!(events_serde_json => ::sword::internal::events::serde_json);
+path!(EventCodecError => ::sword::internal::events::EventCodecError);
 
 path!(Interceptor => ::sword::internal::core::Interceptor);
 path!(InterceptorRegistrar => ::sword::internal::core::InterceptorRegistrar);

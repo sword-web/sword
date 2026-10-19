@@ -1,8 +1,11 @@
 #[cfg(feature = "memory")]
 use crate::memory::MemoryTransport;
 
+#[cfg(feature = "nats")]
+use crate::nats::NatsTransport;
+
 use crate::{
-    EventApplicationConfig, EventControllerRegistrar, EventHandlerRegistrar, EventKeyHandlerMap,
+    EventApplicationConfig, EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar,
     EventSource,
 };
 
@@ -31,7 +34,12 @@ impl EventApplication {
         }
 
         #[cfg(feature = "nats")]
-        {}
+        {
+            let (publisher, transport) = NatsTransport::new(&events_config);
+
+            providers.register(publisher);
+            transports.push(EventTransport::Nats(transport));
+        }
 
         Self { transports }
     }
@@ -59,16 +67,16 @@ impl EventApplication {
 }
 
 /// Possible event transports (backends) that can be used to publish and consume events.
-pub enum EventTransport {
+enum EventTransport {
     #[cfg(feature = "memory")]
     Memory(MemoryTransport),
 
     #[cfg(feature = "nats")]
-    Nats(()),
+    Nats(NatsTransport),
 }
 
 impl EventTransport {
-    pub fn source(&self) -> EventSource {
+    fn source(&self) -> EventSource {
         match self {
             #[cfg(feature = "memory")]
             EventTransport::Memory(_) => EventSource::Memory,
@@ -78,13 +86,13 @@ impl EventTransport {
         }
     }
 
-    fn set_handlers(&mut self, handlers: EventKeyHandlerMap) {
+    fn set_handlers(&mut self, handlers: Vec<HandlerEntry>) {
         match self {
             #[cfg(feature = "memory")]
             EventTransport::Memory(transport) => transport.set_handlers(handlers),
 
             #[cfg(feature = "nats")]
-            EventTransport::Nats(_) => {}
+            EventTransport::Nats(transport) => transport.set_handlers(handlers),
         }
     }
 
@@ -96,22 +104,31 @@ impl EventTransport {
             }
 
             #[cfg(feature = "nats")]
-            EventTransport::Nats(_) => {}
+            EventTransport::Nats(transport) => {
+                transport.run(shutdown).await;
+            }
         }
     }
+}
+
+pub struct HandlerEntry {
+    pub key: &'static str,
+    #[cfg_attr(not(feature = "nats"), allow(dead_code))]
+    pub group: Option<&'static str>,
+    pub handler: EventHandlerFn,
 }
 
 /// All the event handlers registered in the application,
 /// grouped by event source and event key.
 struct EventSubscriptions {
-    by_source: HashMap<EventSource, EventKeyHandlerMap>,
+    by_source: HashMap<EventSource, Vec<HandlerEntry>>,
 }
 
 impl EventSubscriptions {
     /// Builds all the registered event controllers and its handlers,
     /// grouping them by their source kind
     fn collect(state: &State, controllers: &ControllerRegistry) -> Self {
-        let mut by_source: HashMap<EventSource, EventKeyHandlerMap> = HashMap::new();
+        let mut by_source: HashMap<EventSource, Vec<HandlerEntry>> = HashMap::new();
 
         for type_id in controllers.get_by_kind(Controller::Events) {
             let Some(controller) = controller_registrar(&type_id) else {
@@ -124,13 +141,14 @@ impl EventSubscriptions {
             // iterate over all the handlers registered for this controller type
 
             for handler in handler_registrars(&type_id) {
-                // Add the handler to the map grouping source: { key: [handler] }
                 by_source
                     .entry(handler.source)
                     .or_default()
-                    .entry(handler.key)
-                    .or_default()
-                    .push((handler.handler_fn)(state));
+                    .push(HandlerEntry {
+                        key: handler.key,
+                        group: handler.group,
+                        handler: (handler.handler_fn)(state),
+                    });
             }
         }
 
@@ -138,7 +156,7 @@ impl EventSubscriptions {
     }
 
     /// Returns the map of event handlers for a specific source, removing it from the subscriptions.
-    fn take(&mut self, source: EventSource) -> EventKeyHandlerMap {
+    fn take(&mut self, source: EventSource) -> Vec<HandlerEntry> {
         self.by_source.remove(&source).unwrap_or_default()
     }
 }

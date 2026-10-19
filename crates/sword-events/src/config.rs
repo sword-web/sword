@@ -20,7 +20,7 @@ pub struct InMemoryEventsConfig {
 }
 
 #[cfg(feature = "nats")]
-#[derive(Clone, Debug, Deserialize, Default)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct NatsEventsConfig {
     pub url: String,
 }
@@ -38,6 +38,15 @@ impl Default for InMemoryEventsConfig {
             buffer_size: 1024,
             num_of_event_retry: 3,
             delay_between_event_retry_ms: 1000,
+        }
+    }
+}
+
+#[cfg(feature = "nats")]
+impl Default for NatsEventsConfig {
+    fn default() -> Self {
+        Self {
+            url: "nats://127.0.0.1:4222".to_string(),
         }
     }
 }

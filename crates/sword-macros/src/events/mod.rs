@@ -4,7 +4,7 @@ mod subscribe;
 pub use event::expand_event_struct;
 pub use subscribe::expand_subscribe;
 
-use crate::core::{ControllerKind, ControllerStruct};
+use crate::core::{ControllerKind, ControllerStruct, EventSourceKind};
 use crate::shared::{
     Result,
     cmeta::CMetaStack,
@@ -70,51 +70,4 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     };
 
     Ok(expanded)
-}
-
-pub enum EventSourceKind {
-    Memory,
-    Nats,
-}
-
-impl EventSourceKind {
-    pub fn name(&self) -> &'static str {
-        match self {
-            Self::Memory => "Memory",
-            Self::Nats => "Nats",
-        }
-    }
-
-    pub fn from_name(name: &str) -> Result<Self> {
-        match name {
-            "Memory" => Ok(Self::Memory),
-            "Nats" => Ok(Self::Nats),
-            _ => Err(Error::custom(format!(
-                "Invalid event source `{name}`. Expected 'Memory' or 'Nats'."
-            ))),
-        }
-    }
-
-    pub fn as_tokens(&self) -> TokenStream {
-        match self {
-            Self::Memory => quote! { #EventSource::Memory },
-            Self::Nats => quote! { #EventSource::Nats },
-        }
-    }
-
-    pub fn from_path(path: &syn::Path) -> Result<Self> {
-        let name = path
-            .segments
-            .last()
-            .map(|segment| segment.ident.to_string())
-            .unwrap_or_default();
-
-        match name.as_str() {
-            "Memory" => Ok(Self::Memory),
-            "Nats" => Ok(Self::Nats),
-            _ => Err(Error::custom(format!(
-                "Invalid event source type: {name}. Expected 'Memory' or 'Nats'."
-            ))),
-        }
-    }
 }

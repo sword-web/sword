@@ -1,6 +1,5 @@
 use crate::{
-    core::{InterceptorArgs, take_interceptors},
-    events::EventSourceKind,
+    core::{EventSourceKind, InterceptorArgs, take_interceptors},
     shared::{Error, Result, structs::Struct},
 };
 
@@ -215,6 +214,7 @@ impl ControllerArgs {
                     );
                 }
 
+                #[cfg(feature = "events")]
                 let source = self
                     .source
                     .as_ref()

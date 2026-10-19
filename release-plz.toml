@@ -18,6 +18,10 @@ name = "sword-socketio-example"
 release = false
 
 [[package]]
+name = "sword-nats-example"
+release = false
+
+[[package]]
 name = "sword-web-tests"
 release = false
 publish = false

@@ -9,7 +9,7 @@ pub struct MemoryEventPublisher {
 }
 
 impl MemoryEventPublisher {
-    pub fn new(sender: Sender<Arc<dyn Event>>) -> Self {
+    pub(super) fn new(sender: Sender<Arc<dyn Event>>) -> Self {
         Self { sender }
     }
 }

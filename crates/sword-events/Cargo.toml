@@ -24,3 +24,5 @@ serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 async-nats = { workspace = true, optional = true }
 thiserror = { workspace = true }
+serde_json = { workspace = true }
+futures-lite = { workspace = true }

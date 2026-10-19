@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use serial_test::serial;
 use sword::events::{EventHandlerResult, EventPublish, MemoryEventPublisher, event, subscribe};
 use sword::prelude::*;
@@ -45,6 +46,7 @@ impl Provider for EventStore {}
 // ---- event + handler --------------------------------------------------------
 
 #[event(key = "user.created")]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UserCreated {
     pub id: u32,
 }

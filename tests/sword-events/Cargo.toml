@@ -8,3 +8,4 @@ publish = false
 sword = { workspace = true, features = ["web", "events", "events-memory"] }
 tokio = { workspace = true }
 serial_test = "4.0.1"
+serde = { workspace = true, features = ["derive"] }

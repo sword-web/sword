@@ -1,5 +1,5 @@
 use crate::{
-    events::EventSourceKind,
+    core::EventSourceKind,
     shared::{Result, cmeta::CMetaStack, paths::*},
 };
 
@@ -15,6 +15,9 @@ struct Args {
 
     #[darling(default)]
     source: Option<Path>,
+
+    #[darling(default)]
+    group: Option<String>,
 }
 
 pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
@@ -25,6 +28,11 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
 
     let args = Args::from_list(&NestedMeta::parse_meta_list(attr.into())?)?;
     let source = resolve_event_source(&args)?;
+
+    let group_tokens = match &args.group {
+        Some(group) => quote! { Some(#group) },
+        None => quote! { None },
+    };
 
     let source_tokens = source.as_tokens();
     let event_key = args.key;
@@ -59,23 +67,22 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
         #[doc(hidden)]
         const #registration_name: () = {
             fn #build_fn_name(state: &#State) -> #EventHandlerFn {
-                let controller: #Arc<#controller_ty> =
-                    state.borrow::<#controller_ty>().unwrap_or_else(|_| {
-                        #sword_error! {
-                            title: "Failed to retrieve event handler controller from state",
-                            reason: #format!(
-                                "Controller {} was not built for event handler",
-                                #stringify!(#controller_ty)
-                            ),
-                            context: {
-                                "controller" => #stringify!(#controller_ty),
-                                "event_key" => #event_key,
-                            },
-                            hints: [
-                                "Ensure the controller is registered via Module::register_controllers",
-                            ],
-                        }
-                    });
+                let controller = state.borrow::<#controller_ty>().unwrap_or_else(|_| {
+                    #sword_error! {
+                        title: "Failed to retrieve event handler controller from state",
+                        reason: #format!(
+                            "Controller {} was not built for event handler",
+                            #stringify!(#controller_ty)
+                        ),
+                        context: {
+                            "controller" => #stringify!(#controller_ty),
+                            "event_key" => #event_key,
+                        },
+                        hints: [
+                            "Ensure the controller is registered via Module::register_controllers",
+                        ],
+                    }
+                });
 
                 #Arc::new(
                     move |event: #Arc<dyn #Event>| -> #EventsBoxedFuture {
@@ -101,6 +108,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                 #EventHandlerRegistrar {
                     key: #event_key,
                     source: #source_tokens,
+                    group: #group_tokens,
                     controller_ty: #TypeId::of::<#controller_ty>(),
                     handler_fn: #build_fn_name,
                 }

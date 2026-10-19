@@ -1,22 +1,20 @@
-use crate::{Event, EventHandlerFn, EventKeyHandlerMap, InMemoryEventsConfig};
+use crate::{Event, EventKeyHandlerMap, InMemoryEventsConfig};
 
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
-use tokio::time::sleep;
 
 /// Consumer of the in-memory event channel.
 ///
 /// Holds the channel receiver, the handlers indexed by event key, and the
 /// queue configuration used for retries.
 ///
-/// The event  handling flow is:
-/// consume  ->  dispatch  ->  invoke (with retries)
-/// (recv)       (per key)      (per handler)
-pub struct MemoryEventSubscriber {
-    pub receiver: Receiver<Arc<dyn Event>>,
-    pub handlers: EventKeyHandlerMap,
-    pub config: InMemoryEventsConfig,
+/// The event handling flow is:
+/// consume -> dispatch -> invoke (with retries)
+/// (recv)     (per key)    (per handler)
+pub(super) struct MemoryEventSubscriber {
+    pub(super) receiver: Receiver<Arc<dyn Event>>,
+    pub(super) handlers: EventKeyHandlerMap,
+    pub(super) config: InMemoryEventsConfig,
 }
 
 impl MemoryEventSubscriber {
@@ -41,11 +39,12 @@ impl MemoryEventSubscriber {
         tracing::info!(target: "sword.events", "Event subscriber stopped");
     }
 
-    /// Looks up the handlers registered for the event key and spawns one task
-    /// per handler.
+    /// Looks up the handlers registered for the event key and dispatches the
+    /// event to them.
     ///
-    /// Events without registered handlers are ignored. Each handler runs concurrently in its own
-    /// task so a slow handler does not block the others or the receive loop.
+    /// Events without registered handlers are ignored. Each handler runs
+    /// concurrently in its own task so a slow handler does not block the others
+    /// or the receive loop.
     fn dispatch(
         handlers: &EventKeyHandlerMap,
         config: &InMemoryEventsConfig,
@@ -58,49 +57,11 @@ impl MemoryEventSubscriber {
             return;
         };
 
-        for handle in entries {
-            tokio::spawn(Self::invoke(
-                handle.clone(),
-                event.clone(),
-                config.clone(),
-                key,
-            ));
-        }
-    }
-
-    /// Runs a single handler, retrying on failure.
-    ///
-    /// Attempts up to `num_of_event_retry` retries, waiting `delay_between_event_retry_ms` between them.
-    /// Failures are logged; once the retries are exhausted the event is dropped.
-    async fn invoke(
-        handle: EventHandlerFn,
-        event: Arc<dyn Event>,
-        config: InMemoryEventsConfig,
-        key: &'static str,
-    ) {
-        let mut remaining = config.num_of_event_retry;
-
-        loop {
-            match handle(event.clone()).await {
-                Ok(()) => break,
-                Err(e) => {
-                    tracing::error!(
-                        target: "sword.events",
-                        key,
-                        error = %e,
-                        retries_left = remaining,
-                        "Event handler failed"
-                    );
-
-                    if remaining == 0 {
-                        break;
-                    }
-
-                    remaining -= 1;
-
-                    sleep(Duration::from_millis(config.delay_between_event_retry_ms)).await;
-                }
-            }
-        }
+        crate::dispatch::dispatch(
+            entries,
+            event,
+            config.num_of_event_retry,
+            config.delay_between_event_retry_ms,
+        );
     }
 }

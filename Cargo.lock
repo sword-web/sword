@@ -3768,8 +3768,10 @@ name = "sword-events"
 version = "0.5.0"
 dependencies = [
  "async-nats",
+ "futures-lite",
  "inventory",
  "serde",
+ "serde_json",
  "sword-core",
  "sword-macros",
  "thiserror",
@@ -3781,6 +3783,7 @@ dependencies = [
 name = "sword-events-tests"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serial_test",
  "sword",
  "tokio",
@@ -3906,6 +3909,16 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
+]
+
+[[package]]
+name = "sword-nats-example"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sword",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
