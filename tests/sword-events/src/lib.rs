@@ -4,8 +4,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use serial_test::serial;
-use sword::events::{EventHandlerResult, EventPublisher, event, handle};
+use sword::events::{EventHandlerResult, EventPublish, MemoryEventPublisher, event, subscribe};
 use sword::prelude::*;
 use sword::web::*;
 
@@ -45,17 +46,18 @@ impl Provider for EventStore {}
 // ---- event + handler --------------------------------------------------------
 
 #[event(key = "user.created")]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UserCreated {
     pub id: u32,
 }
 
-#[controller(kind = Controller::EventHandler, source = EventSource::Memory)]
+#[controller(kind = Controller::Events, source = EventSource::Memory)]
 pub struct UserCreatedHandler {
     store: Arc<EventStore>,
 }
 
 impl UserCreatedHandler {
-    #[handle("user.created")]
+    #[subscribe(key = "user.created")]
     async fn on_created(&self, event: UserCreated) -> EventHandlerResult<()> {
         assert_eq!(event.id, 1, "handler received an unexpected event payload");
         self.store.increment();
@@ -68,14 +70,14 @@ impl UserCreatedHandler {
 
 #[controller(kind = Controller::Web, path = "/users")]
 pub struct UsersController {
-    publisher: Arc<EventPublisher>,
+    publisher: Arc<MemoryEventPublisher>,
     store: Arc<EventStore>,
 }
 
 impl UsersController {
     #[post("/create")]
     async fn create(&self) -> WebResult {
-        self.publisher.publish(UserCreated { id: 1 }).await;
+        self.publisher.publish(UserCreated { id: 1 }).await.unwrap();
 
         Ok(JsonResponse::Ok().message("published"))
     }

@@ -1,0 +1,9 @@
+services:
+  nats:
+    image: nats:latest
+    container_name: sword_nats_example
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"

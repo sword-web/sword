@@ -1,10 +1,9 @@
 use std::time::Duration;
-
 use sword::jobs::{JobScheduler, Uuid, cron, once, repeated};
 use sword::prelude::*;
 
 /// Example job controller exercising the three scheduling attributes.
-#[controller(kind = Controller::JobHandler)]
+#[controller(kind = Controller::Jobs)]
 pub struct CleanupJob {}
 
 impl CleanupJob {

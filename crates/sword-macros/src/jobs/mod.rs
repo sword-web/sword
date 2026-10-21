@@ -13,7 +13,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
-    let ControllerKind::JobHandler = &controller.kind else {
+    let ControllerKind::Jobs = &controller.kind else {
         return Err(Error::custom("Expected a job controller").with_span(&controller.span()));
     };
 
@@ -31,7 +31,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
 
         impl #ControllerSpec for #self_ty {
             fn kind() -> #Controller {
-                #Controller::JobHandler
+                #Controller::Jobs
             }
         }
 

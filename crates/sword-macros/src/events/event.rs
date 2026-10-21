@@ -21,21 +21,32 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
     }
 
     let event_key = args.key;
-    let struct_name = &input.ident;
+    let struct_ty = &input.ident;
 
     let expanded = quote! {
-        #[derive(#Clone, #Debug)]
         #input
 
-        impl #Event for #struct_name {
+        impl #Event for #struct_ty {
             fn key(&self) -> &'static str {
                 #event_key
             }
 
-            fn clone_event(&self) -> #Box<dyn #Event> {
-                #Box::new(#Clone::clone(self))
+            fn to_json(&self) -> Result<Vec<u8>, #EventCodecError> {
+                #events_serde_json::to_vec(self).map_err(Into::into)
             }
         }
+
+        #inventory::submit! {
+            #EventRegistrar {
+                key: #event_key,
+                from_json: |bytes: &[u8]| -> Result<Box<dyn #Event>, #EventCodecError> {
+                    #events_serde_json::from_slice::<#struct_ty>(bytes)
+                        .map(|event| Box::new(event) as Box<dyn #Event>)
+                        .map_err(Into::into)
+                },
+            }
+        }
+
     };
 
     Ok(TokenStream::from(expanded))

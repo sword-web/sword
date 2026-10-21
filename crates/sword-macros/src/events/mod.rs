@@ -1,10 +1,10 @@
 mod event;
-mod handle;
+mod subscribe;
 
 pub use event::expand_event_struct;
-pub use handle::expand_handle;
+pub use subscribe::expand_subscribe;
 
-use crate::core::{ControllerKind, ControllerStruct};
+use crate::core::{ControllerKind, ControllerStruct, EventSourceKind};
 use crate::shared::{
     Result,
     cmeta::CMetaStack,
@@ -17,7 +17,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
-    let ControllerKind::EventHandler { source } = &controller.kind else {
+    let ControllerKind::Events { source } = &controller.kind else {
         return Err(
             Error::custom("Expected an event handler controller").with_span(controller.ty())
         );
@@ -27,28 +27,28 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let fields = controller.fields();
 
     CMetaStack::push("event_controller", "controller_ty", &self_ty.to_string());
+    CMetaStack::push(
+        "event_controller",
+        "source",
+        source.as_ref().map(EventSourceKind::name).unwrap_or(""),
+    );
 
     let build_impl = generate_build_impl(self_ty, &fields);
     let clone_impl = generate_clone_impl(self_ty, &fields);
-
-    let source_tokens = source.as_tokens();
 
     let expanded = quote! {
         #build_impl
         #clone_impl
 
-        impl #EventHandler for #self_ty {}
-
         impl #ControllerSpec for #self_ty {
             fn kind() -> #Controller {
-                #Controller::EventHandler
+                #Controller::Events
             }
         }
 
         #inventory::submit! {
             #EventControllerRegistrar {
-                handler_type_id: #TypeId::of::<#self_ty>(),
-                source: #source_tokens,
+                ty: #TypeId::of::<#self_ty>(),
                 build: |state: &#State| {
                     let controller = #self_ty::build(state).unwrap_or_else(|e| {
                         #sword_error! {

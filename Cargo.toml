@@ -46,6 +46,7 @@ tonic-async-interceptor = "0.14.1"
 tonic-health = "0.14.6"
 tonic-reflection = "0.14.6"
 serde = { version = "1.0.219", features = ["derive"] }
+async-nats = "0.50.0"
 
 axum = "0.8.7"
 axum_responses = "0.5.5"

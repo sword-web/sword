@@ -1,52 +1,60 @@
-use std::any::{Any, TypeId};
+use crate::{Event, EventCodecError, EventSource};
+
+use std::any::TypeId;
+#[cfg(feature = "memory")]
+use std::collections::HashMap;
 use std::error::Error;
-use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-
-use sword_core::{EventSource, State};
+use sword_core::State;
 
 pub type EventHandlerResult<T> = Result<T, Box<dyn Error + Send + Sync + 'static>>;
 type BoxedFuture<T> = Pin<Box<dyn Future<Output = EventHandlerResult<T>> + Send>>;
 
 pub type EventHandlerFn = Arc<dyn Fn(Arc<dyn Event>) -> BoxedFuture<()> + Send + Sync>;
 
-/// Builds an EventHandler controller from DI state once and returns
-/// a reusable closure that invokes a specific handler method.
+#[cfg(feature = "memory")]
+pub(crate) type EventKeyHandlerMap = HashMap<&'static str, Vec<EventHandlerFn>>;
+
+/// Builds an Events controller from DI state once
 pub struct EventControllerRegistrar {
-    pub handler_type_id: TypeId,
-    pub source: EventSource,
+    pub ty: TypeId,
     pub build: fn(&State),
 }
 
-/// Registers a single event route for an EventHandler controller.
-/// `build_and_handle` constructs the controller from state once and
-/// returns a closure that can be called for each incoming event.
-pub struct EventRouteRegistrar {
-    pub event_key: &'static str,
-    pub handler_type_id: TypeId,
-    pub build_and_handle: fn(&State) -> EventHandlerFn,
+/// Registers a single event handler for an Events controller.
+pub struct EventHandlerRegistrar {
+    /// The event key that this handler is subscribed to. AKA the subject in NATS.
+    pub key: &'static str,
+
+    /// This is used to determine which event transport (event source) to use.
+    pub source: EventSource,
+
+    /// The group that this handler belongs to. This is used to determine which NATS queue group to subscribe to.
+    pub group: Option<&'static str>,
+
+    /// The type of the controller that this handler belongs to. This is used to find the controller in the DI state.
+    pub controller_ty: TypeId,
+
+    /// The function that will be called to get the event handler function.
+    /// This is used to get the handler function from the controller instance.
+    pub handler_fn: fn(&State) -> EventHandlerFn,
 }
 
-pub trait Event: Send + Sync + Any + Debug {
-    fn key(&self) -> &'static str;
-    fn clone_event(&self) -> Box<dyn Event>;
-}
+pub type EventDecoder = fn(&[u8]) -> Result<Box<dyn Event>, EventCodecError>;
 
-impl Clone for Box<dyn Event> {
-    fn clone(&self) -> Self {
-        self.clone_event()
-    }
+pub struct EventRegistrar {
+    pub key: &'static str,
+    pub from_json: EventDecoder,
 }
-
-impl dyn Event {
-    pub fn downcast_ref<T: Event>(&self) -> Option<&T> {
-        (self as &dyn Any).downcast_ref::<T>()
-    }
-}
-
-pub trait EventHandler: sword_core::Build {}
 
 inventory::collect!(EventControllerRegistrar);
-inventory::collect!(EventRouteRegistrar);
+inventory::collect!(EventHandlerRegistrar);
+inventory::collect!(EventRegistrar);
+
+/// Finds the event registration (decoder) for a given key/subject.
+#[cfg(feature = "nats")]
+pub(crate) fn event_registrar(key: &str) -> Option<&'static EventRegistrar> {
+    inventory::iter::<EventRegistrar>().find(|registrar| registrar.key == key)
+}

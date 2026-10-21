@@ -1,6 +1,12 @@
-pub use crate::{Event, EventHandler, EventHandlerResult, EventQueueConfig};
+pub use crate::{
+    Event, EventApplicationConfig, EventCodecError, EventHandlerResult, EventPublish,
+    EventPublishError, EventSource,
+};
 
-#[cfg(feature = "in-memory")]
-pub use crate::in_memory::EventPublisher;
-pub use sword_core::EventSource;
-pub use sword_macros::{event, handle};
+#[cfg(feature = "memory")]
+pub use crate::{InMemoryEventsConfig, MemoryEventPublisher};
+
+#[cfg(feature = "nats")]
+pub use crate::{NatsEventPublisher, NatsEventsConfig};
+
+pub use sword_macros::{event, subscribe};

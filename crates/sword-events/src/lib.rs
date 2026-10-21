@@ -1,45 +1,43 @@
+#[cfg(not(any(feature = "memory", feature = "nats")))]
+compile_error!("sword-events requires at least one transport feature: `memory` or `nats`");
+
+mod application;
+mod config;
+mod dispatch;
+mod event;
 mod registrar;
 
-#[cfg(feature = "in-memory")]
-pub mod application;
+#[cfg(feature = "memory")]
+mod memory;
 
-#[cfg(feature = "in-memory")]
-pub mod in_memory;
+#[cfg(feature = "nats")]
+mod nats;
+
 pub mod prelude;
 
+pub use application::EventApplication;
+pub use config::EventApplicationConfig;
+pub use event::*;
+
+#[doc(hidden)]
 pub use registrar::*;
 
-#[cfg(feature = "in-memory")]
-pub use application::{EventChannel, EventEngine, EventSubscriberHandle};
+#[cfg(feature = "memory")]
+pub use config::InMemoryEventsConfig;
 
-use serde::Deserialize;
-use sword_core::ConfigItem;
+#[cfg(feature = "nats")]
+pub use config::NatsEventsConfig;
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct EventQueueConfig {
-    pub buffer_size: usize,
-    pub num_of_event_retry: u8,
-    pub delay_between_event_retry_ms: u64,
-}
+#[cfg(feature = "memory")]
+pub use memory::MemoryEventPublisher;
 
-impl Default for EventQueueConfig {
-    fn default() -> Self {
-        Self {
-            buffer_size: 1024,
-            num_of_event_retry: 3,
-            delay_between_event_retry_ms: 1000,
-        }
-    }
-}
-
-impl ConfigItem for EventQueueConfig {
-    fn key() -> &'static str {
-        "event-queue"
-    }
-}
+#[cfg(feature = "nats")]
+pub use nats::NatsEventPublisher;
 
 #[doc(hidden)]
 pub mod internal {
-    pub use crate::EventQueueConfig;
     pub use crate::registrar::*;
+    pub use crate::{Event, EventApplicationConfig, EventCodecError};
+
+    pub use serde_json;
 }

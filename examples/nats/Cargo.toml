@@ -1,0 +1,11 @@
+[package]
+name = "sword-nats-example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sword = { workspace = true, features = ["web", "events", "events-nats"] }
+
+tokio = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }

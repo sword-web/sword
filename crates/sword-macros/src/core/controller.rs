@@ -1,6 +1,6 @@
 use crate::{
-    core::{InterceptorArgs, take_interceptors},
-    shared::{Error, Result, paths::*, structs::Struct},
+    core::{EventSourceKind, InterceptorArgs, take_interceptors},
+    shared::{Error, Result, structs::Struct},
 };
 
 use darling::{FromDeriveInput, FromMeta, ast::NestedMeta};
@@ -15,20 +15,8 @@ pub enum ControllerKind {
     Web { path: String },
     SocketIo { namespace: String },
     Grpc { service: Path },
-    EventHandler { source: EventSourceKind },
-    JobHandler,
-}
-
-pub enum EventSourceKind {
-    Memory,
-}
-
-impl EventSourceKind {
-    pub fn as_tokens(&self) -> TokenStream2 {
-        match self {
-            Self::Memory => quote! { #EventSource::Memory },
-        }
-    }
+    Events { source: Option<EventSourceKind> },
+    Jobs,
 }
 
 #[derive(FromMeta)]
@@ -205,90 +193,81 @@ impl ControllerArgs {
                 }
             }
 
-            "EventHandler" => {
+            "Events" => {
                 if let Some(path) = &self.path {
                     return Err(
-                        Error::custom("`path` is not valid for EventHandler").with_span(path)
+                        Error::custom("`path` is not valid for Events Controllers").with_span(path)
                     );
                 }
 
                 if let Some(namespace) = &self.namespace {
-                    return Err(Error::custom("`namespace` is not valid for EventHandler")
-                        .with_span(namespace));
+                    return Err(
+                        Error::custom("`namespace` is not valid for Events Controllers")
+                            .with_span(namespace),
+                    );
                 }
 
                 if let Some(service) = &self.service {
                     return Err(
-                        Error::custom("`service` is not valid for EventHandler").with_span(service)
+                        Error::custom("`service` is not valid for Events Controllers")
+                            .with_span(service),
                     );
                 }
 
-                let source = self.source.as_ref().ok_or_else(|| {
-                    Error::custom("EventHandler requires `source`").with_span(&self.kind)
-                })?;
+                #[cfg(feature = "events")]
+                let source = self
+                    .source
+                    .as_ref()
+                    .map(EventSourceKind::from_path)
+                    .transpose()?;
 
-                let source_name = source
-                    .segments
-                    .last()
-                    .map(|segment| segment.ident.to_string())
-                    .unwrap_or_default();
+                #[cfg(feature = "events")]
+                {
+                    Ok(ControllerKind::Events { source })
+                }
 
-                match source_name.as_str() {
-                    "Memory" => {
-                        #[cfg(feature = "events")]
-                        {
-                            Ok(ControllerKind::EventHandler {
-                                source: EventSourceKind::Memory,
-                            })
-                        }
-
-                        #[cfg(not(feature = "events"))]
-                        {
-                            Err(Error::custom(
-                                "EventHandler controllers require enabling the `events` feature",
-                            )
-                            .with_span(&self.kind))
-                        }
-                    }
-
-                    other => {
-                        Err(Error::custom(format!("unknown event source `{other}`"))
-                            .with_span(source))
-                    }
+                #[cfg(not(feature = "events"))]
+                {
+                    Err(
+                        Error::custom("Events controllers require enabling the `events` feature")
+                            .with_span(&self.kind),
+                    )
                 }
             }
 
-            "JobHandler" => {
+            "Jobs" => {
                 if let Some(path) = &self.path {
-                    return Err(Error::custom("`path` is not valid for JobHandler").with_span(path));
+                    return Err(
+                        Error::custom("`path` is not valid for Jobs Controller").with_span(path)
+                    );
                 }
 
                 if let Some(namespace) = &self.namespace {
-                    return Err(Error::custom("`namespace` is not valid for JobHandler")
-                        .with_span(namespace));
+                    return Err(
+                        Error::custom("`namespace` is not valid for Jobs Controller")
+                            .with_span(namespace),
+                    );
                 }
 
                 if let Some(service) = &self.service {
-                    return Err(
-                        Error::custom("`service` is not valid for JobHandler").with_span(service)
-                    );
+                    return Err(Error::custom("`service` is not valid for Jobs Controller")
+                        .with_span(service));
                 }
 
                 if let Some(source) = &self.source {
-                    return Err(
-                        Error::custom("`source` is not valid for JobHandler").with_span(source)
-                    );
+                    return Err(Error::custom("`source` is not valid for Jobs Controllers")
+                        .with_span(source));
                 }
 
                 #[cfg(feature = "jobs")]
                 {
-                    Ok(ControllerKind::JobHandler)
+                    Ok(ControllerKind::Jobs)
                 }
 
                 #[cfg(not(feature = "jobs"))]
                 {
                     Err(
-                        Error::custom("JobHandler controllers require enabling the `jobs` feature")
+                        Error::custom("Jobs controllers require enabling the `jobs` feature")
                             .with_span(&self.kind),
                     )
                 }
@@ -330,10 +309,10 @@ pub fn expand_controller(attr: TokenStream, item: TokenStream) -> Result<TokenSt
         ControllerKind::Grpc { .. } => crate::grpc::expand_controller(&parsed),
 
         #[cfg(feature = "events")]
-        ControllerKind::EventHandler { .. } => crate::events::expand_controller(&parsed),
+        ControllerKind::Events { .. } => crate::events::expand_controller(&parsed),
 
         #[cfg(feature = "jobs")]
-        ControllerKind::JobHandler => crate::jobs::expand_controller(&parsed),
+        ControllerKind::Jobs => crate::jobs::expand_controller(&parsed),
 
         #[allow(unreachable_patterns)]
         _ => Err(Error::custom("no controller kind feature is enabled")),

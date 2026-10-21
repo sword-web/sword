@@ -1,25 +1,46 @@
-use crate::shared::{Result, cmeta::CMetaStack, paths::*};
+use crate::{
+    core::EventSourceKind,
+    shared::{Result, cmeta::CMetaStack, paths::*},
+};
 
-use darling::Error;
+use darling::{Error, FromMeta, ast::NestedMeta};
 use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{FnArg, ItemFn, LitStr, Type};
+use syn::{FnArg, ItemFn, Path, Type};
 
-pub fn expand_handle(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
+#[derive(FromMeta)]
+struct Args {
+    key: String,
+
+    #[darling(default)]
+    source: Option<Path>,
+
+    #[darling(default)]
+    group: Option<String>,
+}
+
+pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
     // Handshake: leave the method untouched outside an event handler controller.
     let Some(controller_ty_str) = CMetaStack::get("event_controller", "controller_ty") else {
         return Ok(item);
     };
 
-    let event_lit = syn::parse::<LitStr>(attr)?;
-    let event_key = event_lit.value();
+    let args = Args::from_list(&NestedMeta::parse_meta_list(attr.into())?)?;
+    let source = resolve_event_source(&args)?;
+
+    let group_tokens = match &args.group {
+        Some(group) => quote! { Some(#group) },
+        None => quote! { None },
+    };
+
+    let source_tokens = source.as_tokens();
+    let event_key = args.key;
 
     if event_key.is_empty() {
         return Err(Error::custom(
-            "event key must not be empty; specify the full key, e.g. #[handle(\"user.created\")]",
-        )
-        .with_span(&event_lit));
+            "event key must not be empty; specify it like #[subscribe(key = \"user.created\")]",
+        ));
     }
 
     let item_fn = syn::parse::<ItemFn>(item)?;
@@ -46,31 +67,29 @@ pub fn expand_handle(attr: TokenStream, item: TokenStream) -> Result<TokenStream
         #[doc(hidden)]
         const #registration_name: () = {
             fn #build_fn_name(state: &#State) -> #EventHandlerFn {
-                let controller: #Arc<#controller_ty> =
-                    state.borrow::<#controller_ty>().unwrap_or_else(|_| {
-                        #sword_error! {
-                            title: "Failed to retrieve event handler controller from state",
-                            reason: #format!(
-                                "Controller {} was not built for event handler",
-                                #stringify!(#controller_ty)
-                            ),
-                            context: {
-                                "controller" => #stringify!(#controller_ty),
-                                "event_key" => #event_key,
-                            },
-                            hints: [
-                                "Ensure the controller is registered via Module::register_controllers",
-                            ],
-                        }
-                    });
+                let controller = state.borrow::<#controller_ty>().unwrap_or_else(|_| {
+                    #sword_error! {
+                        title: "Failed to retrieve event handler controller from state",
+                        reason: #format!(
+                            "Controller {} was not built for event handler",
+                            #stringify!(#controller_ty)
+                        ),
+                        context: {
+                            "controller" => #stringify!(#controller_ty),
+                            "event_key" => #event_key,
+                        },
+                        hints: [
+                            "Ensure the controller is registered via Module::register_controllers",
+                        ],
+                    }
+                });
 
                 #Arc::new(
                     move |event: #Arc<dyn #Event>| -> #EventsBoxedFuture {
                         let controller = #Arc::clone(&controller);
-                        let cloned = event.clone_event();
 
                         #Box::pin(async move {
-                            let typed = cloned.downcast_ref::<#event_type>().ok_or_else(|| {
+                            let typed = event.downcast_ref::<#event_type>().ok_or_else(|| {
                                 #format!(
                                     "Failed to downcast event to {} for handler {} (key: {})",
                                     #type_name::<#event_type>(),
@@ -86,16 +105,48 @@ pub fn expand_handle(attr: TokenStream, item: TokenStream) -> Result<TokenStream
             }
 
             #inventory::submit! {
-                #EventRouteRegistrar {
-                    event_key: #event_key,
-                    handler_type_id: #TypeId::of::<#controller_ty>(),
-                    build_and_handle: #build_fn_name,
+                #EventHandlerRegistrar {
+                    key: #event_key,
+                    source: #source_tokens,
+                    group: #group_tokens,
+                    controller_ty: #TypeId::of::<#controller_ty>(),
+                    handler_fn: #build_fn_name,
                 }
             }
         };
     };
 
     Ok(expanded.into())
+}
+
+fn resolve_event_source(args: &Args) -> Result<EventSourceKind> {
+    let controller_source = match CMetaStack::get("event_controller", "source").as_deref() {
+        None | Some("") => None,
+        Some(name) => Some(EventSourceKind::from_name(name)?),
+    };
+
+    let handler_source = args
+        .source
+        .as_ref()
+        .map(EventSourceKind::from_path)
+        .transpose()?;
+
+    let source = match (handler_source, controller_source) {
+        (Some(handler), None) => handler,
+        (None, Some(controller)) => controller,
+        (Some(_), Some(_)) => {
+            return Err(Error::custom(
+                "the controller already declares a `source`; don't declare it on the handler",
+            ));
+        }
+        (None, None) => {
+            return Err(Error::custom(
+                "this handler must declare `source` because the controller does not",
+            ));
+        }
+    };
+
+    Ok(source)
 }
 
 fn extract_event_type(input_fn: &ItemFn) -> syn::Result<Type> {

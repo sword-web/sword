@@ -1,0 +1,18 @@
+[application]
+name = "NATS Events Example"
+graceful-shutdown = true
+
+[web]
+host = "127.0.0.1"
+port = 8085
+router-prefix = "/api"
+
+[tracing]
+enabled = true
+filter = "info,async_nats=warn"
+format = "dev"
+time-style = "none"
+with-fields = []
+
+[events.nats]
+url = "nats://127.0.0.1:4222"
