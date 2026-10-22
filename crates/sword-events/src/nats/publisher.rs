@@ -15,7 +15,7 @@ impl EventPublish for NatsEventPublisher {
     async fn publish(&self, event: impl Event) -> Result<(), EventPublishError> {
         let client = self.client.get().ok_or(EventPublishError::NotConnected)?;
 
-        let bytes = event.to_json()?;
+        let bytes = event.to_vec()?;
 
         client
             .publish(event.key(), bytes.into())

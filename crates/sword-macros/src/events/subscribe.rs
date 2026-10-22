@@ -44,10 +44,31 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
     }
 
     let item_fn = syn::parse::<ItemFn>(item)?;
-    let event_type = extract_event_type(&item_fn)?;
+    let event_param = extract_event_param(&item_fn)?;
 
     let controller_ty: syn::Ident = syn::parse_str(&controller_ty_str)?;
     let fn_name = &item_fn.sig.ident;
+
+    let body = match event_param {
+        EventParam::Typed(boxed) => {
+            let ty = boxed.as_ref().clone();
+            quote! {
+                let typed = event.cast::<#ty>().ok_or_else(|| {
+                    #format!(
+                        "Failed to downcast event to {} for handler {} (key: {})",
+                        #type_name::<#ty>(),
+                        #stringify!(#fn_name),
+                        #event_key,
+                    )
+                })?;
+
+                controller.#fn_name(typed).await
+            }
+        }
+        EventParam::Dynamic => quote! {
+            controller.#fn_name(&*event).await
+        },
+    };
 
     let registration_name = format_ident!(
         "__SWORD_EVENT_HANDLER_{}_{}",
@@ -89,16 +110,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                         let controller = #Arc::clone(&controller);
 
                         #Box::pin(async move {
-                            let typed = event.downcast_ref::<#event_type>().ok_or_else(|| {
-                                #format!(
-                                    "Failed to downcast event to {} for handler {} (key: {})",
-                                    #type_name::<#event_type>(),
-                                    #stringify!(#fn_name),
-                                    #event_key,
-                                )
-                            })?;
-
-                            controller.#fn_name(#Clone::clone(typed)).await
+                            #body
                         })
                     },
                 )
@@ -149,7 +161,12 @@ fn resolve_event_source(args: &Args) -> Result<EventSourceKind> {
     Ok(source)
 }
 
-fn extract_event_type(input_fn: &ItemFn) -> syn::Result<Type> {
+enum EventParam {
+    Typed(std::boxed::Box<Type>),
+    Dynamic,
+}
+
+fn extract_event_param(input_fn: &ItemFn) -> syn::Result<EventParam> {
     let has_receiver = input_fn
         .sig
         .inputs
@@ -160,7 +177,7 @@ fn extract_event_type(input_fn: &ItemFn) -> syn::Result<Type> {
         return Err(syn::Error::new_spanned(
             &input_fn.sig,
             "Event handler must have `&self` as the first parameter, \
-             e.g. `async fn handle(&self, event: MyEvent) -> Result<()>`",
+             e.g. `async fn handle(&self, event: &MyEvent) -> Result<()>`",
         ));
     }
 
@@ -174,13 +191,31 @@ fn extract_event_type(input_fn: &ItemFn) -> syn::Result<Type> {
     let event_arg = typed_params.first().ok_or_else(|| {
         syn::Error::new_spanned(
             &input_fn.sig,
-            "Event handler must have a typed parameter for the event, \
-             e.g. `async fn handle(&self, event: MyEvent) -> Result<()>`",
+            "Event handler must have a parameter for the event, \
+             e.g. `async fn handle(&self, event: &MyEvent) -> Result<()>`",
         )
     })?;
 
     match event_arg {
-        FnArg::Typed(pat_type) => Ok(*pat_type.ty.clone()),
+        FnArg::Typed(pat_type) => match &*pat_type.ty {
+            // &mut T / &mut dyn Event
+            Type::Reference(r) if r.mutability.is_some() => Err(syn::Error::new_spanned(
+                &pat_type.ty,
+                "event handler parameter must be `&T` or `&dyn Event`, not `&mut T`",
+            )),
+            // &dyn Event
+            Type::Reference(r) if matches!(&*r.elem, Type::TraitObject(_)) => {
+                Ok(EventParam::Dynamic)
+            }
+            // &T
+            Type::Reference(r) => Ok(EventParam::Typed(std::boxed::Box::new((*r.elem).clone()))),
+            // T por valor u otra forma
+            _ => Err(syn::Error::new_spanned(
+                &pat_type.ty,
+                "event handler must take `&T` or `&dyn Event`, \
+                 e.g. `async fn handle(&self, event: &MyEvent)`",
+            )),
+        },
         _ => unreachable!(),
     }
 }

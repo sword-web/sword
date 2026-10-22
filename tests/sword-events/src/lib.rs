@@ -58,7 +58,7 @@ pub struct UserCreatedHandler {
 
 impl UserCreatedHandler {
     #[subscribe(key = "user.created")]
-    async fn on_created(&self, event: UserCreated) -> EventHandlerResult<()> {
+    async fn on_created(&self, event: &UserCreated) -> EventHandlerResult<()> {
         assert_eq!(event.id, 1, "handler received an unexpected event payload");
         self.store.increment();
 

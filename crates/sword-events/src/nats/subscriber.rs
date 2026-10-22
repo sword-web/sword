@@ -1,16 +1,16 @@
 use super::NatsEventKey;
-use crate::{EventHandlerFn, dispatch::dispatch, registrar::event_registrar};
+use crate::{EventHandlerFn, EventRegistrar, dispatch::dispatch};
 
 use async_nats::Client;
 use futures_lite::StreamExt;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-/// Consumes a single `(subject, group)` subscription until the connection is
-/// drained or closed.
+/// Consumes a single `(subject, group)` subscription until the connection is drained or closed.
 pub async fn consume(
     client: Client,
     (subject, group): NatsEventKey,
     handlers: Vec<EventHandlerFn>,
+    events: Arc<HashMap<&'static str, &'static EventRegistrar>>,
 ) {
     let subscription = match group {
         Some(group) => client.queue_subscribe(subject, group.into()).await,
@@ -29,7 +29,7 @@ pub async fn consume(
     };
 
     while let Some(message) = subscription.next().await {
-        let Some(registrar) = event_registrar(&message.subject) else {
+        let Some(registrar) = events.get(message.subject.as_str()) else {
             tracing::warn!(
                 target: "sword.events.nats",
                 subject = %message.subject,

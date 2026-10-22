@@ -31,7 +31,7 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
                 #event_key
             }
 
-            fn to_json(&self) -> Result<Vec<u8>, #EventCodecError> {
+            fn to_vec(&self) -> Result<Vec<u8>, #EventCodecError> {
                 #events_serde_json::to_vec(self).map_err(Into::into)
             }
         }
