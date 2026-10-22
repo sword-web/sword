@@ -10,8 +10,8 @@ mod controllers {
 }
 
 use controllers::{OrderEventsHandler, OrdersController};
-pub use dtos::CreateOrderDto;
-pub use event::OrderCreated;
+pub use dtos::{CreateOrderDto, ShipOrderDto};
+pub use event::{OrderCreated, OrderShipped};
 
 use sword::prelude::*;
 

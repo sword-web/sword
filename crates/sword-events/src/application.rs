@@ -6,11 +6,18 @@ use crate::nats::NatsTransport;
 
 use crate::{
     EventApplicationConfig, EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar,
-    EventSource,
+    EventRegistrar, EventSource,
 };
 
-use std::{any::TypeId, collections::HashMap};
-use sword_core::{Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State};
+use std::{
+    any::TypeId,
+    collections::{HashMap, HashSet},
+};
+
+use sword_core::{
+    Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State, sword_error,
+};
+
 use tokio::task::JoinSet;
 
 /// Background engine that consumes published events and dispatches them to the
@@ -21,8 +28,9 @@ pub struct EventApplication {
 
 impl EventApplication {
     pub fn new(config: &Config, providers: &ProviderRegistry) -> Self {
-        let events_config = config.get_or_default::<EventApplicationConfig>();
+        check_event_key_uniqueness();
 
+        let events_config = config.get_or_default::<EventApplicationConfig>();
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]
@@ -44,8 +52,15 @@ impl EventApplication {
         Self { transports }
     }
 
+    /// Registers the event handlers for all the controllers in the application,
+    /// grouping them by their source kind and event key.
     pub fn with_controllers(&mut self, controllers: &ControllerRegistry, state: &State) {
         let mut subscriptions = EventSubscriptions::collect(state, controllers);
+
+        // Set the handlers for each transport based on its source kind
+        //
+        // MemoryTransport will only receive handlers for EventSource::Memory
+        // NatsTransport will only receive handlers for EventSource::Nats
 
         for transport in &mut self.transports {
             transport.set_handlers(subscriptions.take(transport.source()));
@@ -128,7 +143,7 @@ impl EventSubscriptions {
     /// Builds all the registered event controllers and its handlers,
     /// grouping them by their source kind
     fn collect(state: &State, controllers: &ControllerRegistry) -> Self {
-        let mut by_source: HashMap<EventSource, Vec<HandlerEntry>> = HashMap::new();
+        let mut events_by_source: HashMap<EventSource, Vec<HandlerEntry>> = HashMap::new();
 
         for type_id in controllers.get_by_kind(Controller::Events) {
             let Some(controller) = controller_registrar(&type_id) else {
@@ -136,23 +151,29 @@ impl EventSubscriptions {
                 continue;
             };
 
-            (controller.build)(state); // Build the controller and register it in the state
+            (controller.build)(state); // Build the controller and register into the state
 
             // iterate over all the handlers registered for this controller type
 
-            for handler in handler_registrars(&type_id) {
-                by_source
+            for handler in inventory::iter::<EventHandlerRegistrar>()
+                .filter(|handler| handler.controller_ty == type_id)
+            {
+                let handler_entry = HandlerEntry {
+                    key: handler.key,
+                    group: handler.group,
+                    handler: (handler.handler_fn)(state),
+                };
+
+                events_by_source
                     .entry(handler.source)
                     .or_default()
-                    .push(HandlerEntry {
-                        key: handler.key,
-                        group: handler.group,
-                        handler: (handler.handler_fn)(state),
-                    });
+                    .push(handler_entry);
             }
         }
 
-        Self { by_source }
+        Self {
+            by_source: events_by_source,
+        }
     }
 
     /// Returns the map of event handlers for a specific source, removing it from the subscriptions.
@@ -165,7 +186,25 @@ fn controller_registrar(type_id: &TypeId) -> Option<&'static EventControllerRegi
     inventory::iter::<EventControllerRegistrar>().find(|controller| controller.ty == *type_id)
 }
 
-fn handler_registrars(type_id: &TypeId) -> impl Iterator<Item = &'static EventHandlerRegistrar> {
-    inventory::iter::<EventHandlerRegistrar>()
-        .filter(move |handler| handler.controller_ty == *type_id)
+fn check_event_key_uniqueness() {
+    let mut keys = HashSet::new();
+
+    for event in inventory::iter::<EventRegistrar>() {
+        if !keys.insert(event.key) {
+            sword_error! {
+                title: "Duplicate event key",
+                reason: format!(
+                    "event key `{}` is registered more than once",
+                    event.key,
+                ),
+                source: "check_event_key_uniqueness",
+                context: {
+                    "key" => event.key,
+                },
+                hints: [
+                    "Each `#[event(key = ...)]` must use a unique key",
+                ],
+            }
+        }
+    }
 }

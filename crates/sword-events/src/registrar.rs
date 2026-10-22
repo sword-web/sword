@@ -52,9 +52,3 @@ pub struct EventRegistrar {
 inventory::collect!(EventControllerRegistrar);
 inventory::collect!(EventHandlerRegistrar);
 inventory::collect!(EventRegistrar);
-
-/// Finds the event registration (decoder) for a given key/subject.
-#[cfg(feature = "nats")]
-pub(crate) fn event_registrar(key: &str) -> Option<&'static EventRegistrar> {
-    inventory::iter::<EventRegistrar>().find(|registrar| registrar.key == key)
-}

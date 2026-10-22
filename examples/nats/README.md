@@ -6,12 +6,20 @@ handler that consumes them from NATS.
 ## Flow
 
 ```text
-POST /api/orders  ->  publish "order.created"  ->  NATS  ->  OrderEventsHandler
+POST /api/orders       ->  publish "order.created"  ->  NATS  ->  OrderEventsHandler (queue group)
+POST /api/orders/ship  ->  publish "order.shipped"  ->  NATS  ->  OrderEventsHandler (wildcard)
 ```
 
-The handler subscribes with the queue group `orders-workers`, so if more than one
-instance of the application is running, each message is processed by only one of
-them (load balancing).
+Two handlers are registered:
+
+- `on_created` subscribes to `order.created` with the queue group
+  `orders-workers`. If more than one instance of the application is running,
+  each message is processed by only one of them (load balancing).
+- `on_order_event` subscribes to the wildcard `order.*` with no queue group.
+  It receives every event whose subject starts with `order.` (fan-out to every
+  instance) and logs the subject and the raw payload. A wildcard handler takes
+  `&dyn Event`, so it can also branch on `event.key()` and recover the
+  concrete type with `event.cast::<T>()` when needed.
 
 ## Running the example
 
@@ -27,7 +35,7 @@ them (load balancing).
    cargo run
    ```
 
-3. Publish an event:
+3. Publish an order:
 
    ```bash
    curl -X POST http://127.0.0.1:8085/api/orders \
@@ -35,7 +43,16 @@ them (load balancing).
      -d '{"total": 42}'
    ```
 
-4. Watch the application logs for `order.created received from NATS`.
+4. Ship the order:
+
+    ```bash
+    curl -X POST http://127.0.0.1:8085/api/orders/ship \
+      -H "Content-Type: application/json" \
+      -d '{"order_id": "order-1", "tracking": "TRK-123"}'
+    ```
+
+5. Watch the application logs for `order.created received from NATS` and
+   `order event payload`.
 
 ## Queue groups
 

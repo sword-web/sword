@@ -11,7 +11,7 @@ pub struct MailHandler {
 
 impl MailHandler {
     #[subscribe(key = "user.created")]
-    async fn on_user_created(&self, event: UserCreatedEvent) -> EventHandlerResult<()> {
+    async fn on_user_created(&self, event: &UserCreatedEvent) -> EventHandlerResult<()> {
         tracing::info!(
             target: "sword.example.mailer",
             user_id = %event.user_id,

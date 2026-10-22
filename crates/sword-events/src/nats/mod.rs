@@ -2,14 +2,14 @@ mod client;
 mod publisher;
 mod subscriber;
 
-use std::collections::HashMap;
-
-use crate::{EventApplicationConfig, EventHandlerFn, application::HandlerEntry};
+use crate::{EventApplicationConfig, EventHandlerFn, EventRegistrar, application::HandlerEntry};
 
 use client::NatsClient;
-pub use publisher::NatsEventPublisher;
+use std::{collections::HashMap, sync::Arc};
 use sword_core::{Shutdown, sword_error};
 use tokio::task::JoinSet;
+
+pub use publisher::NatsEventPublisher;
 
 /// A NATS subscription: `(subject, group)`. `None` means an individual
 /// subscription (fan-out); `Some` means a queue group (load balanced).
@@ -19,18 +19,24 @@ type NatsEventHandlerMap = HashMap<NatsEventKey, Vec<EventHandlerFn>>;
 pub struct NatsTransport {
     client: NatsClient,
     subscriptions: NatsEventHandlerMap,
+    events: Arc<HashMap<&'static str, &'static EventRegistrar>>,
 }
 
 impl NatsTransport {
-    pub(crate) fn new(config: &EventApplicationConfig) -> (NatsEventPublisher, Self) {
+    pub fn new(config: &EventApplicationConfig) -> (NatsEventPublisher, Self) {
         let nats_config = config.nats.clone().unwrap_or_default();
 
         let client = NatsClient::new(nats_config.url);
         let publisher = NatsEventPublisher::new(client.clone());
 
+        let events = inventory::iter::<EventRegistrar>()
+            .map(|registrar| (registrar.key, registrar))
+            .collect();
+
         let transport = Self {
             client,
             subscriptions: HashMap::new(),
+            events: Arc::new(events),
         };
 
         (publisher, transport)
@@ -81,9 +87,11 @@ impl NatsTransport {
 
         let mut tasks = JoinSet::new();
 
-        for (key, handlers) in self.subscriptions {
+        for (key_group, handlers) in self.subscriptions {
             let client = client.clone();
-            tasks.spawn(subscriber::consume(client, key, handlers));
+            let events = self.events.clone();
+
+            tasks.spawn(subscriber::consume(client, key_group, handlers, events));
         }
 
         shutdown.cancelled().await;
