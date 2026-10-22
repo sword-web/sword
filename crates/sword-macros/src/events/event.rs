@@ -4,6 +4,11 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::DeriveInput;
 
+const EVENT_DISABLED_CHARS: &[char] = &[
+    '#', '>', '<', '*', '!', '?', '=', '~', '&', '|', '^', '$', '@', '%', '`', '\\', '/', '{', '}',
+    '[', ']', '(', ')', ',',
+];
+
 // `#[event(key = "literal_str")]` macro Args
 #[derive(FromMeta)]
 struct Args {
@@ -16,11 +21,30 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
 
     if !matches!(input.data, syn::Data::Struct(_)) {
         return Err(
-            Error::custom("#[event] can only be applied to structs").with_span(&input.ident)
+            Error::custom("#[event] macro can only be applied to structs").with_span(&input.ident),
+        );
+    }
+
+    if !input.generics.params.is_empty() {
+        return Err(
+            Error::custom("#[event] macro cannot be applied to generic structs")
+                .with_span(&input.ident),
         );
     }
 
     let event_key = args.key;
+
+    if event_key.is_empty() {
+        return Err(Error::custom("#[event] macro key cannot be empty").with_span(&input.ident));
+    }
+
+    if event_key.contains(EVENT_DISABLED_CHARS) {
+        return Err(Error::custom(format!(
+            "#[event] key cannot contain any of the following characters: {}",
+            EVENT_DISABLED_CHARS.iter().collect::<String>()
+        )));
+    }
+
     let struct_ty = &input.ident;
 
     let expanded = quote! {
