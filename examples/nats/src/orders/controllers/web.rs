@@ -7,7 +7,7 @@ use sword::events::*;
 use sword::prelude::*;
 use sword::web::*;
 
-use crate::orders::{CreateOrderDto, OrderCreated};
+use crate::orders::{CreateOrderDto, OrderCreated, OrderShipped, ShipOrderDto};
 
 static NEXT_ORDER_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -36,5 +36,22 @@ impl OrdersController {
         })?;
 
         Ok(JsonResponse::Created().message("order created"))
+    }
+
+    #[post("/ship")]
+    async fn ship(&self, req: Request) -> WebResult {
+        let body = req.body::<ShipOrderDto>()?;
+
+        let event = OrderShipped {
+            order_id: body.order_id,
+            tracking: body.tracking,
+        };
+
+        self.publisher.publish(event).await.map_err(|error| {
+            tracing::error!(%error, "failed to publish order.shipped to NATS");
+            JsonResponse::InternalServerError().message("failed to publish event")
+        })?;
+
+        Ok(JsonResponse::Created().message("order shipped"))
     }
 }
