@@ -25,7 +25,7 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
         );
     }
 
-    if input.generics.params.len() > 0 {
+    if !input.generics.params.is_empty() {
         return Err(
             Error::custom("#[event] macro cannot be applied to generic structs")
                 .with_span(&input.ident),
@@ -38,7 +38,7 @@ pub fn expand_event_struct(args: TokenStream, item: TokenStream) -> Result<Token
         return Err(Error::custom("#[event] macro key cannot be empty").with_span(&input.ident));
     }
 
-    if event_key.contains(&EVENT_DISABLED_CHARS[..]) {
+    if event_key.contains(EVENT_DISABLED_CHARS) {
         return Err(Error::custom(format!(
             "#[event] key cannot contain any of the following characters: {}",
             EVENT_DISABLED_CHARS.iter().collect::<String>()

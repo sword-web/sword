@@ -5,7 +5,10 @@ use thiserror::Error;
 /// attributes and runtime internals to select which event backend a handler consumes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventSource {
+    #[cfg(feature = "memory")]
     Memory,
+
+    #[cfg(feature = "nats")]
     Nats,
 }
 
