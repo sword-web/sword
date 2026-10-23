@@ -3926,6 +3926,7 @@ dependencies = [
  "serde",
  "thisconfig",
  "tokio",
+ "toml_edit",
  "tower",
  "tracing",
 ]
@@ -4306,9 +4307,9 @@ dependencies = [
 
 [[package]]
 name = "thisconfig"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1cf85165bad7445c8b9faec437641b4b91ee0e657e799e3796bafbe08c6752a"
+checksum = "87115d2ccd23c6018d9b1ade00ffc73db30fff557c4149ddaa119a20178b3619"
 dependencies = [
  "byte-unit",
  "duration-str",
@@ -4322,9 +4323,9 @@ dependencies = [
 
 [[package]]
 name = "thisconfig-macros"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63c8e40f338227c5ed1fdbd3dffea16170b5f364196d67efa5681a0adc294b0f"
+checksum = "0da6e86410b6872ff1a24d78d76403ead551e0021ab8dd7fd859067920e8c2f9"
 dependencies = [
  "quote",
  "syn 2.0.119",
@@ -4585,6 +4586,7 @@ dependencies = [
  "indexmap",
  "toml_datetime 1.1.1+spec-1.1.0",
  "toml_parser",
+ "toml_writer",
  "winnow 1.0.3",
 ]
 
