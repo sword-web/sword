@@ -8,6 +8,8 @@ mod module;
 mod shutdown;
 mod state;
 
+pub mod diagnostic;
+
 pub mod error {
     #[macro_use]
     mod macros;

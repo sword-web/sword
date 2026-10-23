@@ -28,5 +28,7 @@ serde = { workspace = true }
 axum = { workspace = true }
 tower = { workspace = true }
 
+miette = { workspace = true }
+
 [features]
 default = []
