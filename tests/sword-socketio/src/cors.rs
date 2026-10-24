@@ -49,7 +49,8 @@ fn test_server() -> TestServer {
         .expect("application builder")
         .with_module::<TestModule>()
         .with_layer(cors_layer())
-        .build();
+        .build()
+        .expect("application");
 
     TestServer::new(app.router().expect("socketio application expected"))
 }
@@ -153,7 +154,8 @@ async fn cors_doesnt_break_rest() {
         .expect("application builder")
         .with_module::<TestModuleWithRest>()
         .with_layer(cors_layer())
-        .build();
+        .build()
+        .expect("application");
 
     let test = TestServer::new(app.router().expect("socketio application expected"));
 

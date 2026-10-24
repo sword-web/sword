@@ -89,7 +89,8 @@ pub(crate) async fn start_server_for_test() -> tokio::task::JoinHandle<()> {
     let app = Application::from_config_path(&config_path)
         .expect("application builder")
         .with_module::<GrpcModule>()
-        .build();
+        .build()
+        .expect("application");
 
     let handle = tokio::spawn(async move {
         let _ = app.run().await;

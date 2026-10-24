@@ -32,7 +32,7 @@ async fn main() -> Result<(), Error> {
     let app = Application::from_config(config)?
         .with_module::<ExampleModule>()
         .with_layer(cors_layers)
-        .build();
+        .build()?;
 
     app.run().await?;
 

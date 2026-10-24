@@ -24,7 +24,7 @@ async fn main() -> Result<(), Error> {
         .with_module::<MailerModule>()
         .with_module::<SseModule>()
         .with_module::<JobsModule>()
-        .build();
+        .build()?;
 
     app.run().await?;
 

@@ -92,7 +92,10 @@ impl Module for TestModule {
 
 #[tokio::test]
 async fn extensions_mw_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/extensions-test").await;
@@ -109,7 +112,10 @@ async fn extensions_mw_test() {
 
 #[tokio::test]
 async fn middleware_state() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/middleware-state").await;
@@ -128,7 +134,10 @@ async fn middleware_state() {
 
 #[tokio::test]
 async fn controller_interceptor_executes_before_handler_interceptor() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/controller-before-handler-order").await;

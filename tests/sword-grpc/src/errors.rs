@@ -94,7 +94,8 @@ async fn start_error_server() -> tokio::task::JoinHandle<Result<(), sword::diagn
     let app = Application::from_config_path(&config_path)
         .expect("application builder")
         .with_module::<ErrorModule>()
-        .build();
+        .build()
+        .expect("application");
 
     let handle = tokio::spawn(async move { app.run().await });
 

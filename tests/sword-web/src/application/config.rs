@@ -38,7 +38,10 @@ impl Module for ConfigModule {
 
 #[tokio::test]
 async fn test_application() {
-    let app = application_builder().with_module::<ConfigModule>().build();
+    let app = application_builder()
+        .with_module::<ConfigModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/hello").await;

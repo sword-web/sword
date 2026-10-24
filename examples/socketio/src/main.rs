@@ -11,7 +11,7 @@ async fn main() -> Result<(), Error> {
     let app = Application::from_config_path("Config.toml")?
         .with_module::<ChatModule>()
         .with_provider(database)
-        .build();
+        .build()?;
 
     app.run().await?;
 

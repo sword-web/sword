@@ -8,7 +8,8 @@ use socketioxide::SocketIo;
 use socketioxide::layer::SocketIoLayer;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
-use sword_core::{Config, Controller, ControllerMap, State, sword_error};
+use sword_core::diagnostic::{DiagnosticPhase, Error};
+use sword_core::{Config, Controller, ControllerMap, State, sword_diagnostic, sword_error};
 use sword_layers::DisplayConfig;
 use sword_web::application::{
     WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
@@ -61,11 +62,11 @@ impl WebExtension for SocketIoWebExtension {
         "socketio"
     }
 
-    fn init_state(&self, ctx: &WebExtensionContext) {
+    fn init_state(&self, ctx: &WebExtensionContext) -> Result<(), Error> {
         let state = &ctx.state;
 
         if state.get::<SocketIo>().is_ok() && state.get::<SocketIoLayer>().is_ok() {
-            return;
+            return Ok(());
         }
 
         let mut socketio_config = Self::get_config(&ctx.config);
@@ -83,22 +84,29 @@ impl WebExtension for SocketIoWebExtension {
         state.insert(layer);
 
         socketio_config.display();
+
+        Ok(())
     }
 
-    fn extend_router(&self, ctx: &WebExtensionContext, mut router: Router<State>) -> Router<State> {
+    fn extend_router(
+        &self,
+        ctx: &WebExtensionContext,
+        mut router: Router<State>,
+    ) -> Result<Router<State>, Error> {
         let state = &ctx.state;
         let socketio_config = Self::get_config(&ctx.config);
 
-        let socketio_layer = state.get::<SocketIoLayer>().unwrap_or_else(|err| {
-            sword_error! {
+        let socketio_layer = state.get::<SocketIoLayer>().map_err(|err| {
+            sword_diagnostic! {
+                code: "sword.build.socketio",
+                phase: DiagnosticPhase::Build,
+                target: "socketio layer",
                 title: "Socket.IO layer not found in application state",
                 reason: err,
-                context: {
-                    "source" => "SocketIoWebExtension::extend_router",
-                },
+                source: "SocketIoWebExtension::extend_router",
                 hints: ["Ensure Socket.IO runtime bootstrap ran before router extension"],
             }
-        });
+        })?;
 
         router = router.layer(socketio_layer);
 
@@ -113,7 +121,7 @@ impl WebExtension for SocketIoWebExtension {
 
         Self::register_handlers(state, &ctx.controller_map);
 
-        router
+        Ok(router)
     }
 }
 

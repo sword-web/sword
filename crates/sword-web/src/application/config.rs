@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
+use sword_core::{
+    ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
+};
 use sword_layers::{body_limit::BodyLimitConfig, timeout::RequestTimeoutConfig};
 
 use super::logger::WebLoggerConfig;
@@ -72,3 +74,21 @@ inventory_submit! {[
         state.insert(config.get_or_default::<WebApplicationConfig>());
     })
 ]}
+
+impl ValidateConfig for WebApplicationConfig {
+    const SECTION: &'static str = "web";
+    const CODE: &'static str = "sword.build.web";
+
+    fn validate(&self) -> ConfigErrors {
+        let mut errors = ConfigErrors::new();
+
+        if self.host.trim().is_empty() {
+            errors.push(
+                ConfigIssue::new("host", "host must not be empty", "must not be empty")
+                    .with_hint("Use a valid host such as 0.0.0.0 or 127.0.0.1"),
+            );
+        }
+
+        errors
+    }
+}

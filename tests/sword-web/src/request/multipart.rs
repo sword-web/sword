@@ -50,7 +50,10 @@ impl Module for TestModule {
 
 #[tokio::test]
 async fn exceed_limit() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let temp_file = TempFile::with_size(1024 * 1024 * 2); // 2 MB
@@ -81,7 +84,10 @@ async fn exceed_limit() -> std::result::Result<(), Box<dyn std::error::Error>> {
 /// The effective limit is ~975KB due to multipart headers/boundaries overhead.
 #[tokio::test]
 async fn body_limit_exactly_at_limit() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let temp_file = TempFile::with_size(975 * 1024);
@@ -106,7 +112,10 @@ async fn body_limit_exactly_at_limit() -> std::result::Result<(), Box<dyn std::e
 
 #[tokio::test]
 async fn body_limit_just_under_limit() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let temp_file = TempFile::with_size(970 * 1024);
@@ -131,7 +140,10 @@ async fn body_limit_just_under_limit() -> std::result::Result<(), Box<dyn std::e
 
 #[tokio::test]
 async fn body_limit_just_over_limit() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let temp_file = TempFile::with_size(976 * 1024);
@@ -160,7 +172,10 @@ async fn body_limit_just_over_limit() -> std::result::Result<(), Box<dyn std::er
 
 #[tokio::test]
 async fn body_limit_multiple_fields_exceed_limit() -> Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     // Create multiple smaller files that together exceed the limit
@@ -199,7 +214,10 @@ async fn body_limit_multiple_fields_exceed_limit() -> Result<(), Box<dyn std::er
 
 #[tokio::test]
 async fn body_limit_small_fields_within_limit() -> Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     // Create multiple smaller files that together stay within the limit

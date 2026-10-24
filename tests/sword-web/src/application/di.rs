@@ -118,7 +118,11 @@ async fn test_get_tasks_empty() {
     let app = application_builder();
     let db = Database::new();
 
-    let app = app.with_provider(db).with_module::<TasksModule>().build();
+    let app = app
+        .with_provider(db)
+        .with_module::<TasksModule>()
+        .build()
+        .expect("application");
     let server = test_server(app);
 
     let response = server.get("/tasks").await;
@@ -137,7 +141,11 @@ async fn test_create_task() {
     let app = application_builder();
     let db = Database::new();
 
-    let app = app.with_provider(db).with_module::<TasksModule>().build();
+    let app = app
+        .with_provider(db)
+        .with_module::<TasksModule>()
+        .build()
+        .expect("application");
     let server = test_server(app);
 
     let response = server.post("/tasks").await;

@@ -59,7 +59,8 @@ impl Module for ReturnTypeModule {
 async fn serialize_return_type_wraps_in_json_response() {
     let app = application_builder()
         .with_module::<ReturnTypeModule>()
-        .build();
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/return-type/serialize").await;
@@ -75,7 +76,8 @@ async fn serialize_return_type_wraps_in_json_response() {
 async fn passthrough_return_type_uses_direct_response() {
     let app = application_builder()
         .with_module::<ReturnTypeModule>()
-        .build();
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/return-type/passthrough").await;
@@ -89,7 +91,8 @@ async fn passthrough_return_type_uses_direct_response() {
 async fn empty_return_type_returns_status_without_data() {
     let app = application_builder()
         .with_module::<ReturnTypeModule>()
-        .build();
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.delete("/return-type/empty").await;
@@ -104,7 +107,8 @@ async fn empty_return_type_returns_status_without_data() {
 async fn web_result_serialize_works() {
     let app = application_builder()
         .with_module::<ReturnTypeModule>()
-        .build();
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/return-type/web-result").await;
@@ -118,7 +122,8 @@ async fn web_result_serialize_works() {
 async fn plain_non_result_handler_still_works() {
     let app = application_builder()
         .with_module::<ReturnTypeModule>()
-        .build();
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/return-type/plain").await;

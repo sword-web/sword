@@ -106,7 +106,8 @@ async fn start_app() -> tokio::task::JoinHandle<()> {
         .expect("application builder")
         .with_provider(EventStore::new())
         .with_module::<TestModule>()
-        .build();
+        .build()
+        .expect("application");
 
     let handle = tokio::spawn(async move {
         let _ = app.run().await;

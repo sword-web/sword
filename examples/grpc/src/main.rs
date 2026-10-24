@@ -16,7 +16,7 @@ async fn main() -> Result<(), Error> {
     let app = Application::from_config(config)?
         .with_module::<SharedModule>()
         .with_module::<UsersModule>()
-        .build();
+        .build()?;
 
     app.run().await?;
 

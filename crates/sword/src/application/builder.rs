@@ -198,7 +198,7 @@ impl ApplicationBuilder {
     /// instance ready to run. It assembles every enabled engine (web, grpc, events, jobs)
     /// into the application, the engines themselves start in `Application::run`.
     #[allow(clippy::vec_init_then_push)]
-    pub fn build(mut self) -> Application {
+    pub fn build(mut self) -> Result<Application, Error> {
         // `EventApplication` has publishers internally wich are providers so it's important to
         // register them before building the dependency container to make it available to components.
 
@@ -234,7 +234,7 @@ impl ApplicationBuilder {
         let mut engines: Vec<Engine> = Vec::new();
 
         #[cfg(any(feature = "web", feature = "socketio"))]
-        engines.push(Engine::Web(WebApplication::from(ctx.clone())));
+        engines.push(Engine::Web(WebApplication::try_from(ctx.clone())?));
 
         #[cfg(feature = "grpc")]
         engines.push(Engine::Grpc(GrpcApplication::from(ctx.clone())));
@@ -245,7 +245,7 @@ impl ApplicationBuilder {
         #[cfg(any(feature = "events-memory", feature = "events-nats"))]
         engines.push(Engine::Events(events_application));
 
-        Application::new(engines, self.config)
+        Ok(Application::new(engines, self.config))
     }
 
     fn build_dependency_container(&mut self) {
