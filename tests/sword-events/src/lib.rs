@@ -107,7 +107,9 @@ async fn start_app() -> tokio::task::JoinHandle<()> {
         .with_module::<TestModule>()
         .build();
 
-    let handle = tokio::spawn(async move { app.run().await });
+    let handle = tokio::spawn(async move {
+        let _ = app.run().await;
+    });
 
     for _ in 0..100 {
         if tokio::net::TcpStream::connect(WEB_ADDR).await.is_ok() {

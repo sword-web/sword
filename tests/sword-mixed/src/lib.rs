@@ -64,7 +64,7 @@ mod tests {
             .build();
 
         let handle = tokio::spawn(async move {
-            app.run().await;
+            let _ = app.run().await;
         });
 
         // Wait until the gRPC listener accepts connections.

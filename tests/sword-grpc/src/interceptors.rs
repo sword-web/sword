@@ -83,7 +83,7 @@ async fn start_server_for_test() -> tokio::task::JoinHandle<()> {
         .build();
 
     let handle = tokio::spawn(async move {
-        app.run().await;
+        let _ = app.run().await;
     });
 
     sleep(Duration::from_millis(150)).await;

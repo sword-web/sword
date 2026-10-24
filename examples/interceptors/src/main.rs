@@ -34,7 +34,7 @@ async fn main() -> Result<(), Error> {
         .with_layer(cors_layers)
         .build();
 
-    app.run().await;
+    app.run().await?;
 
     Ok(())
 }

@@ -3,12 +3,8 @@ mod engine;
 mod env;
 
 use std::path::Path;
-use sword_core::{Config, Shutdown, sword_error};
-#[cfg(any(feature = "web", feature = "socketio"))]
-use sword_core::{
-    diagnostic::{DiagnosticPhase, Error},
-    sword_diagnostic,
-};
+use sword_core::diagnostic::{DiagnosticPhase, Error};
+use sword_core::{Config, Shutdown, sword_diagnostic, sword_error};
 
 pub use builder::ApplicationBuilder;
 pub use env::Environment;
@@ -86,7 +82,7 @@ impl Application {
     /// All engines start together. The application stops when the OS shutdown
     /// signal arrives or when any engine finishes on its own; then it cancels
     /// the shared [`Shutdown`] and waits for every engine to drain.
-    pub async fn run(self) {
+    pub async fn run(self) -> Result<(), Error> {
         let app_config = self.config.get_or_default::<ApplicationConfig>();
 
         tracing::info!(
@@ -112,19 +108,57 @@ impl Application {
         }
 
         if tasks.is_empty() {
-            // No engines: stay alive until shutdown.
+            // Without engines there is nothing to run, but the process should
+            // still wait for the shutdown signal instead of exiting.
             sword_core::shutdown_signal().await;
-            return;
+            return Ok(());
         }
+
+        let mut first_error = None;
 
         tokio::select! {
             _ = sword_core::shutdown_signal() => {}
-            _ = tasks.join_next() => {}
+            result = tasks.join_next() => {
+                if let Some(result) = result {
+                    first_error = Self::task_error(result);
+                }
+            }
         }
 
         shutdown.cancel();
 
-        while tasks.join_next().await.is_some() {}
+        while let Some(result) = tasks.join_next().await {
+            if first_error.is_none() {
+                first_error = Self::task_error(result);
+            }
+        }
+
+        match first_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+
+    /// Turns the end of an engine task into a diagnostic when it failed.
+    ///
+    /// A `JoinError` means the task panicked. Tokio only surfaces it when the
+    /// task is joined, so without this the process could exit successfully
+    /// after a failed startup.
+    fn task_error(result: Result<Result<(), Error>, tokio::task::JoinError>) -> Option<Error> {
+        match result {
+            Ok(Ok(())) => None,
+            Ok(Err(error)) => Some(error),
+            Err(error) => Some(sword_diagnostic! {
+                code: "sword.runtime.application",
+                phase: DiagnosticPhase::Runtime,
+                target: "Application::run",
+                title: "Engine task failed",
+                reason: error,
+                source: "Application::run",
+                hints: ["Check the engine logs and the underlying cause"],
+                cause: error,
+            }),
+        }
     }
 
     #[cfg(any(feature = "web", feature = "socketio"))]

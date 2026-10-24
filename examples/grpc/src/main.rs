@@ -18,7 +18,7 @@ async fn main() -> Result<(), Error> {
         .with_module::<UsersModule>()
         .build();
 
-    app.run().await;
+    app.run().await?;
 
     Ok(())
 }

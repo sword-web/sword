@@ -10,7 +10,7 @@ async fn main() -> Result<(), Error> {
 
     let app = Application::builder().with_module::<OrdersModule>().build();
 
-    app.run().await;
+    app.run().await?;
 
     Ok(())
 }

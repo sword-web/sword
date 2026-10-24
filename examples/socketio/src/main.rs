@@ -13,7 +13,7 @@ async fn main() -> Result<(), Error> {
         .with_provider(database)
         .build();
 
-    app.run().await;
+    app.run().await?;
 
     Ok(())
 }
