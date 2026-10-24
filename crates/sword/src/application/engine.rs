@@ -38,9 +38,8 @@ impl Engine {
 
     /// Runs the engine until `shutdown` is cancelled.
     ///
-    /// Engines still report their own failures by returning `()`. Until each of
-    /// them is migrated, this returns `Ok(())` and the engine handles its own
-    /// reporting.
+    /// Engines that have not been migrated yet still report their own failures
+    /// by returning `()`; their arms wrap that in `Ok(())` for now.
     #[allow(unused_variables)]
     pub(crate) async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         #[allow(unreachable_patterns)]
@@ -49,17 +48,24 @@ impl Engine {
             Engine::Web(web) => web.run(shutdown).await,
 
             #[cfg(feature = "grpc")]
-            Engine::Grpc(grpc) => grpc.run(shutdown).await,
+            Engine::Grpc(grpc) => {
+                grpc.run(shutdown).await;
+                Ok(())
+            }
 
             #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-            Engine::Events(events) => events.run(shutdown).await,
+            Engine::Events(events) => {
+                events.run(shutdown).await;
+                Ok(())
+            }
 
             #[cfg(feature = "jobs")]
-            Engine::Jobs(jobs) => jobs.run(shutdown).await,
+            Engine::Jobs(jobs) => {
+                jobs.run(shutdown).await;
+                Ok(())
+            }
 
-            _ => {}
+            _ => Ok(()),
         }
-
-        Ok(())
     }
 }
