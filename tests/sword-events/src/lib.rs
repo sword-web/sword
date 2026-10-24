@@ -103,6 +103,7 @@ impl Module for TestModule {
 /// listener accepts connections.
 async fn start_app() -> tokio::task::JoinHandle<()> {
     let app = Application::from_config_path("Config.toml")
+        .expect("application builder")
         .with_provider(EventStore::new())
         .with_module::<TestModule>()
         .build();

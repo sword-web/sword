@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
+use sword_core::{ConfigErrors, ConfigIssue, ValidateConfig};
 use thisconfig::ConfigItem;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -108,5 +110,24 @@ impl ConfigItem for TracingConfig {
 impl TracingConfig {
     pub fn has_field(&self, field: TracingField) -> bool {
         self.with_fields.contains(&field)
+    }
+}
+
+impl ValidateConfig for TracingConfig {
+    const SECTION: &'static str = "tracing";
+    const CODE: &'static str = "sword.build.tracing";
+
+    fn validate(&self) -> ConfigErrors {
+        let mut errors = ConfigErrors::new();
+
+        if let Err(err) = EnvFilter::try_new(&self.filter) {
+            errors.push(ConfigIssue::new(
+                "filter",
+                format!("invalid tracing filter: {err}"),
+                "could not parse this filter",
+            ));
+        }
+
+        errors
     }
 }

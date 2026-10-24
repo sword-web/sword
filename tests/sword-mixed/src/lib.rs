@@ -60,6 +60,7 @@ mod tests {
         let config_path = format!("{}/config/config.toml", env!("CARGO_MANIFEST_DIR"));
 
         let app = Application::from_config_path(&config_path)
+            .expect("application builder")
             .with_module::<MixedModule>()
             .build();
 

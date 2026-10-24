@@ -48,6 +48,7 @@ inventory_submit! {[
 pub struct EngineBuildContext {
     pub state: State,
     pub config: Config,
+    pub config_document: Option<std::sync::Arc<crate::ConfigDocument>>,
     pub controllers: ControllerRegistry,
     pub layer_stack: LayerStack<State>,
 }

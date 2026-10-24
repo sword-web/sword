@@ -155,6 +155,7 @@ impl From<EngineBuildContext> for WebApplication {
             config,
             controllers,
             layer_stack,
+            ..
         } = ctx;
 
         let web_config = config.get_or_default::<WebApplicationConfig>();

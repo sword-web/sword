@@ -4,7 +4,7 @@ mod env;
 
 use std::path::Path;
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Config, Shutdown, sword_diagnostic, sword_error};
+use sword_core::{Config, Shutdown, sword_diagnostic};
 
 pub use builder::ApplicationBuilder;
 pub use env::Environment;
@@ -40,41 +40,42 @@ impl Application {
     /// - `SWORD_ENV=test` loads `config/config.test.toml`
     /// - If `SWORD_ENV` is not set, the legacy `config/config.toml` is used.
     ///
-    /// This function will panic if:
-    /// - The selected configuration file cannot be found
-    /// - The configuration file contains invalid TOML syntax
-    /// - `SWORD_ENV` is set to an invalid value
-    /// - Environment variable interpolation fails
-    /// - The configuration cannot be loaded for any other reason
-    pub fn builder() -> ApplicationBuilder {
+    /// Starts a new application from the configuration selected by `SWORD_ENV`.
+    ///
+    /// `SWORD_ENV` can be `dev`, `prod` or `test`; when it is missing, the legacy
+    /// `config/config.toml` is used. Loading the file, reading the environment
+    /// and initializing tracing can all fail, so the builder is returned inside
+    /// a `Result`.
+    pub fn builder() -> Result<ApplicationBuilder, Error> {
         ApplicationBuilder::new()
     }
 
     /// Creates a new application builder from an existing configuration.
-    pub fn from_config(config: Config) -> ApplicationBuilder {
+    pub fn from_config(config: Config) -> Result<ApplicationBuilder, Error> {
         ApplicationBuilder::from_config(config)
     }
 
     /// Creates a new application builder by loading configuration from a custom path.
-    pub fn from_config_path<P: AsRef<Path>>(path: P) -> ApplicationBuilder {
+    pub fn from_config_path<P: AsRef<Path>>(path: P) -> Result<ApplicationBuilder, Error> {
         let config_path = path.as_ref().display().to_string();
 
-        ApplicationBuilder::from_config(
-            Config::builder()
-                .add_required_file(path.as_ref())
-                .build()
-                .unwrap_or_else(|err| {
-                    sword_error! {
-                        title: "Failed to load configuration from custom path",
-                        reason: err,
-                        context: {
-                            "path" => config_path,
-                            "source" => "Application::from_config_path",
-                        },
-                        hints: ["Ensure the file exists and contains valid TOML"],
-                    }
-                }),
-        )
+        let config = Config::builder()
+            .add_required_file(path.as_ref())
+            .build()
+            .map_err(|err| {
+                sword_diagnostic! {
+                    code: "sword.build.config",
+                    phase: DiagnosticPhase::Build,
+                    target: config_path,
+                    title: "Failed to load configuration from a custom path",
+                    reason: err,
+                    source: "Application::from_config_path",
+                    hints: ["Ensure the file exists and contains valid TOML"],
+                    cause: err,
+                }
+            })?;
+
+        ApplicationBuilder::from_config(config)
     }
 
     /// Runs every configured engine until the application shuts down.

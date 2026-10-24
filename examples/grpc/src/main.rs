@@ -13,7 +13,7 @@ async fn main() -> Result<(), Error> {
         .build()
         .expect("Failed to load configuration");
 
-    let app = Application::from_config(config)
+    let app = Application::from_config(config)?
         .with_module::<SharedModule>()
         .with_module::<UsersModule>()
         .build();

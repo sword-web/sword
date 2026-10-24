@@ -29,7 +29,7 @@ async fn main() -> Result<(), Error> {
     let cors_config = config.expect::<CorsConfig>();
     let cors_layers = CorsLayer::from(cors_config);
 
-    let app = Application::from_config(config)
+    let app = Application::from_config(config)?
         .with_module::<ExampleModule>()
         .with_layer(cors_layers)
         .build();

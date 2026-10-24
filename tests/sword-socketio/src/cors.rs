@@ -46,6 +46,7 @@ impl Module for TestModule {
 
 fn test_server() -> TestServer {
     let app = Application::builder()
+        .expect("application builder")
         .with_module::<TestModule>()
         .with_layer(cors_layer())
         .build();
@@ -149,6 +150,7 @@ async fn cors_doesnt_break_rest() {
     }
 
     let app = Application::builder()
+        .expect("application builder")
         .with_module::<TestModuleWithRest>()
         .with_layer(cors_layer())
         .build();

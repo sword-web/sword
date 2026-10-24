@@ -19,6 +19,9 @@ use sword_web::{
 
 use std::any::Any;
 use std::path::Path;
+use std::sync::Arc;
+use sword_core::diagnostic::{DiagnosticPhase, Error};
+use sword_core::sword_diagnostic;
 use sword_core::*;
 use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
@@ -33,67 +36,77 @@ pub struct ApplicationBuilder {
     controller_registry: ControllerRegistry,
     layer_stack: LayerStack<State>,
     pub config: Config,
+    config_document: Option<Arc<ConfigDocument>>,
 }
 
 impl ApplicationBuilder {
     const DEFAULT_CONFIG_PATH: &str = "config/config.toml";
 
-    /// Initialization of the application builder. It can panic at runtime if the
-    /// environment is invalid, the config file can't be loaded, or tracing fails to init.
-    pub fn new() -> Self {
+    /// Initializes the builder from `SWORD_ENV`, falling back to the default
+    /// configuration path.
+    pub fn new() -> Result<Self, Error> {
         let config_path = match Environment::current() {
             Ok(Some(env)) => env.default_config_path(),
             Ok(None) => Self::DEFAULT_CONFIG_PATH,
             Err(err) => {
-                sword_error! {
+                return Err(sword_diagnostic! {
+                    code: "sword.build.application",
+                    phase: DiagnosticPhase::Build,
+                    target: "SWORD_ENV",
                     title: "Invalid SWORD_ENV variable",
                     reason: err,
-                    context: {
-                        "source" => "ApplicationBuilder::new",
-                    },
+                    source: "ApplicationBuilder::new",
                     hints: ["Valid values are: dev, prod, test"],
-                }
+                });
             }
         };
 
         let config = Config::builder()
             .add_required_file(Path::new(config_path))
             .build()
-            .unwrap_or_else(|err| {
-                sword_error! {
+            .map_err(|err| {
+                sword_diagnostic! {
+                    code: "sword.build.config",
+                    phase: DiagnosticPhase::Build,
+                    target: config_path,
                     title: "Failed to load required configuration file",
                     reason: err,
-                    context: {
-                        "path" => config_path,
-                        "source" => "Application initialization"
-                    },
+                    source: "ApplicationBuilder::new",
                     hints: ["Ensure the file exists and contains valid TOML"],
+                    cause: err,
                 }
-            });
+            })?;
 
         Self::from_config(config)
     }
 
     /// Initializes a sword application from a built `Config`.
     /// When using this method you don't get environment config detection via `SWORD_ENV`.
-    pub fn from_config(config: Config) -> Self {
-        let state = State::initialize_with(config.clone());
+    pub fn from_config(config: Config) -> Result<Self, Error> {
+        let config_document = ConfigDocument::load(&config);
+        let tracing_config =
+            ConfigSection::load::<TracingConfig>(&config, config_document.as_ref())?
+                .unwrap_or_default();
 
-        // Tracing subscriber initialization from the config value. If it's not configured,
-        // the default values are used.
-        TracingSubscriber::from(config.get_or_default::<TracingConfig>())
+        TracingSubscriber::from(tracing_config)
             .init()
-            .unwrap_or_else(|err| {
-                sword_error! {
+            .map_err(|err| {
+                sword_diagnostic! {
+                    code: "sword.build.tracing",
+                    phase: DiagnosticPhase::Build,
+                    target: "tracing subscriber",
                     title: "Failed to initialize tracing subscriber",
                     reason: err,
                     source: "ApplicationBuilder::from_config",
                     hints: [
-                        "Ensure tracing is initialized only once per process",
-                        "Avoid initializing tracing manually before building the app when using Sword bootstrap",
+                        "Initialize tracing only once per process",
+                        "Avoid initializing tracing manually before building the app",
                     ],
+                    cause: err,
                 }
-            });
+            })?;
+
+        let state = State::initialize_with(config.clone());
 
         // Collection and registration in the state of configuration structs
         // marked with the `#[config]` macro.
@@ -101,13 +114,14 @@ impl ApplicationBuilder {
             register(&state, &config)
         }
 
-        Self {
+        Ok(Self {
             state,
             config,
             container: DependencyContainer::new(),
             controller_registry: ControllerRegistry::new(),
             layer_stack: LayerStack::new(),
-        }
+            config_document: config_document.map(Arc::new),
+        })
     }
 
     /// Register a module with the application builder.
@@ -208,6 +222,7 @@ impl ApplicationBuilder {
         let ctx = EngineBuildContext {
             state: self.state,
             config: self.config.clone(),
+            config_document: self.config_document.clone(),
             controllers: self.controller_registry,
             layer_stack: self.layer_stack,
         };
@@ -259,11 +274,5 @@ impl ApplicationBuilder {
                 }
             }
         });
-    }
-}
-
-impl Default for ApplicationBuilder {
-    fn default() -> Self {
-        Self::new()
     }
 }

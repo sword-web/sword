@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub fn application_builder() -> sword::ApplicationBuilder {
-    sword::Application::from_config_path("Config.toml")
+    sword::Application::from_config_path("Config.toml").expect("application builder")
 }
 
 #[cfg(test)]

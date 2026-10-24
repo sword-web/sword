@@ -87,6 +87,7 @@ impl Module for GrpcModule {
 pub(crate) async fn start_server_for_test() -> tokio::task::JoinHandle<()> {
     let config_path = format!("{}/config/config.toml", env!("CARGO_MANIFEST_DIR"));
     let app = Application::from_config_path(&config_path)
+        .expect("application builder")
         .with_module::<GrpcModule>()
         .build();
 

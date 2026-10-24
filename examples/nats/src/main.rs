@@ -8,7 +8,9 @@ use crate::orders::OrdersModule;
 async fn main() -> Result<(), Error> {
     tracing::info!("Starting NATS events example...");
 
-    let app = Application::builder().with_module::<OrdersModule>().build();
+    let app = Application::builder()?
+        .with_module::<OrdersModule>()
+        .build();
 
     app.run().await?;
 

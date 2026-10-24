@@ -18,7 +18,7 @@ async fn main() -> Result<(), Error> {
 
     tracing::info!("Starting Users Management example...");
 
-    let app = Application::builder()
+    let app = Application::builder()?
         .with_module::<SharedModule>()
         .with_module::<UsersModule>()
         .with_module::<MailerModule>()
