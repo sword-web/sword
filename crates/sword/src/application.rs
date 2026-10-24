@@ -4,6 +4,11 @@ mod env;
 
 use std::path::Path;
 use sword_core::{Config, Shutdown, sword_error};
+#[cfg(any(feature = "web", feature = "socketio"))]
+use sword_core::{
+    diagnostic::{DiagnosticPhase, Error},
+    sword_diagnostic,
+};
 
 pub use builder::ApplicationBuilder;
 pub use env::Environment;
@@ -124,19 +129,20 @@ impl Application {
 
     #[cfg(any(feature = "web", feature = "socketio"))]
     #[allow(irrefutable_let_patterns)]
-    pub fn router(&self) -> sword_web::internal::AxumRouter {
+    pub fn router(&self) -> Result<sword_web::internal::AxumRouter, Error> {
         for engine in &self.engines {
             if let Engine::Web(web) = engine {
-                return web.router();
+                return Ok(web.router());
             }
         }
 
-        sword_error! {
+        Err(sword_diagnostic! {
+            code: "sword.runtime.router",
+            phase: DiagnosticPhase::Runtime,
+            target: "Application::router",
             title: "Router API is only available for web based applications",
             reason: "Application::router() is only valid for web/socketio applications",
-            context: {
-                "source" => "Application::router",
-            }
-        }
+            hints: ["Enable the web or socketio feature and call Application::router() there"],
+        })
     }
 }

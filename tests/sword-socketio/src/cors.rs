@@ -50,7 +50,7 @@ fn test_server() -> TestServer {
         .with_layer(cors_layer())
         .build();
 
-    TestServer::new(app.router())
+    TestServer::new(app.router().expect("socketio application expected"))
 }
 
 /// Test that CORS headers are present in SocketIO handshake (polling transport)
@@ -153,7 +153,7 @@ async fn cors_doesnt_break_rest() {
         .with_layer(cors_layer())
         .build();
 
-    let test = TestServer::new(app.router());
+    let test = TestServer::new(app.router().expect("socketio application expected"));
 
     let response = test.get("/api/test").await;
     assert_eq!(response.status_code(), 200);
