@@ -215,7 +215,7 @@ impl ApplicationBuilder {
         // Once the dependency container is built, the interceptors declared with the
         // #[derive(Interceptor)] macro are registered.
         for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
-            register(&self.state);
+            register(&self.state)?;
         }
 
         // Initialization of built-in layers by the `sword_layers` crate.
