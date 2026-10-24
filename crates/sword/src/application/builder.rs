@@ -237,7 +237,7 @@ impl ApplicationBuilder {
         engines.push(Engine::Web(WebApplication::try_from(ctx.clone())?));
 
         #[cfg(feature = "grpc")]
-        engines.push(Engine::Grpc(GrpcApplication::from(ctx.clone())));
+        engines.push(Engine::Grpc(GrpcApplication::try_from(ctx.clone())?));
 
         #[cfg(feature = "jobs")]
         engines.push(Engine::Jobs(JobSchedulerRuntime::from(ctx)));

@@ -8,7 +8,8 @@ use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{
-    ApplicationConfig, Controller, EngineBuildContext, Shutdown, State, sword_diagnostic,
+    ApplicationConfig, ConfigSection, Controller, EngineBuildContext, Shutdown, State,
+    sword_diagnostic,
 };
 
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
@@ -246,25 +247,30 @@ impl GrpcApplication {
     }
 }
 
-impl From<EngineBuildContext> for GrpcApplication {
-    fn from(ctx: EngineBuildContext) -> Self {
+impl TryFrom<EngineBuildContext> for GrpcApplication {
+    type Error = Error;
+
+    fn try_from(ctx: EngineBuildContext) -> Result<Self, Error> {
         let EngineBuildContext {
             state,
             config,
+            config_document,
             controllers,
             ..
         } = ctx;
 
         let app_config = config.get_or_default::<ApplicationConfig>();
-        let grpc_config = config.get_or_default::<GrpcApplicationConfig>();
+        let grpc_config =
+            ConfigSection::load::<GrpcApplicationConfig>(&config, config_document.as_deref())?
+                .unwrap_or_default();
 
         let grpc_controllers_ids = controllers.get_by_kind(Controller::Grpc);
 
-        GrpcApplication {
+        Ok(GrpcApplication {
             state,
             config: grpc_config,
             graceful_shutdown: app_config.graceful_shutdown,
             controller_ids: grpc_controllers_ids,
-        }
+        })
     }
 }
