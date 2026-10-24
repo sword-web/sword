@@ -1,5 +1,7 @@
 use serde::Deserialize;
-use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
+use sword_core::{
+    ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
+};
 
 #[derive(Clone, Debug, Deserialize, Default)]
 #[serde(default)]
@@ -28,6 +30,43 @@ pub struct NatsEventsConfig {
 impl ConfigItem for EventApplicationConfig {
     fn key() -> &'static str {
         "events"
+    }
+}
+
+impl ValidateConfig for EventApplicationConfig {
+    const SECTION: &'static str = "events";
+    const CODE: &'static str = "sword.build.events";
+
+    fn validate(&self) -> ConfigErrors {
+        let mut errors = ConfigErrors::new();
+
+        #[cfg(feature = "memory")]
+        if let Some(memory) = &self.memory
+            && memory.buffer_size == 0
+        {
+            errors.push(
+                ConfigIssue::new(
+                    "buffer_size",
+                    "`buffer_size` must be greater than 0",
+                    "must be greater than 0",
+                )
+                .with_section("events.memory")
+                .with_hint("Set `buffer_size` to a positive value; the default is 1024"),
+            );
+        }
+
+        #[cfg(feature = "nats")]
+        if let Some(nats) = &self.nats
+            && nats.url.trim().is_empty()
+        {
+            errors.push(
+                ConfigIssue::new("url", "`url` must not be empty", "must not be empty")
+                    .with_section("events.nats")
+                    .with_hint("Point `url` at a reachable NATS server"),
+            );
+        }
+
+        errors
     }
 }
 

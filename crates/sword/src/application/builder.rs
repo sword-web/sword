@@ -203,8 +203,11 @@ impl ApplicationBuilder {
         // register them before building the dependency container to make it available to components.
 
         #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-        let mut events_application =
-            EventApplication::new(&self.config, self.container.provider_registry());
+        let mut events_application = EventApplication::new(
+            &self.config,
+            self.container.provider_registry(),
+            self.config_document.as_deref(),
+        )?;
 
         // The dependency container is built once all providers and components are registered.
         self.build_dependency_container();

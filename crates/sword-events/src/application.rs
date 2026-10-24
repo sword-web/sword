@@ -16,8 +16,8 @@ use std::{
 
 use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{
-    Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State, sword_diagnostic,
-    sword_error,
+    Config, ConfigDocument, ConfigSection, Controller, ControllerRegistry, ProviderRegistry,
+    Shutdown, State, sword_diagnostic,
 };
 
 use tokio::task::JoinSet;
@@ -29,10 +29,15 @@ pub struct EventApplication {
 }
 
 impl EventApplication {
-    pub fn new(config: &Config, providers: &ProviderRegistry) -> Self {
-        check_event_key_uniqueness();
+    pub fn new(
+        config: &Config,
+        providers: &ProviderRegistry,
+        document: Option<&ConfigDocument>,
+    ) -> Result<Self, Error> {
+        check_event_key_uniqueness()?;
 
-        let events_config = config.get_or_default::<EventApplicationConfig>();
+        let events_config =
+            ConfigSection::load::<EventApplicationConfig>(config, document)?.unwrap_or_default();
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]
@@ -51,7 +56,7 @@ impl EventApplication {
             transports.push(EventTransport::Nats(transport));
         }
 
-        Self { transports }
+        Ok(Self { transports })
     }
 
     /// Registers the event handlers for all the controllers in the application,
@@ -237,12 +242,15 @@ fn controller_registrar(type_id: &TypeId) -> Option<&'static EventControllerRegi
     inventory::iter::<EventControllerRegistrar>().find(|controller| controller.ty == *type_id)
 }
 
-fn check_event_key_uniqueness() {
+fn check_event_key_uniqueness() -> Result<(), Error> {
     let mut keys = HashSet::new();
 
     for event in inventory::iter::<EventRegistrar>() {
         if !keys.insert(event.key) {
-            sword_error! {
+            return Err(sword_diagnostic! {
+                code: "sword.build.events",
+                phase: DiagnosticPhase::Build,
+                target: "event registry",
                 title: "Duplicate event key",
                 reason: format!(
                     "event key `{}` is registered more than once",
@@ -255,7 +263,9 @@ fn check_event_key_uniqueness() {
                 hints: [
                     "Each `#[event(key = ...)]` must use a unique key",
                 ],
-            }
+            });
         }
     }
+
+    Ok(())
 }
