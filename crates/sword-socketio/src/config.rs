@@ -6,7 +6,10 @@ use socketioxide_parser_common::CommonParser;
 use socketioxide_parser_msgpack::MsgPackParser;
 use std::collections::HashSet;
 use std::str::FromStr;
-use sword_core::{ByteConfig, ConfigItem, ConfigRegistrar, TimeConfig, inventory_submit};
+use sword_core::{
+    ByteConfig, ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, TimeConfig, ValidateConfig,
+    inventory_submit,
+};
 use sword_layers::DisplayConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -238,6 +241,39 @@ impl SocketIoServerLayer {
 impl ConfigItem for SocketIoServerConfig {
     fn key() -> &'static str {
         "socketio"
+    }
+}
+
+impl ValidateConfig for SocketIoServerConfig {
+    const SECTION: &'static str = "socketio";
+    const CODE: &'static str = "sword.build.socketio";
+
+    fn validate(&self) -> ConfigErrors {
+        let mut errors = ConfigErrors::new();
+
+        if self.max_buffer_size == Some(0) {
+            errors.push(
+                ConfigIssue::new(
+                    "max-buffer-size",
+                    "`max-buffer-size` must be greater than 0",
+                    "must be greater than 0",
+                )
+                .with_hint("Set a positive buffer size in [socketio]"),
+            );
+        }
+
+        if self.ws_read_buffer_size == Some(0) {
+            errors.push(
+                ConfigIssue::new(
+                    "ws-read-buffer-size",
+                    "`ws-read-buffer-size` must be greater than 0",
+                    "must be greater than 0",
+                )
+                .with_hint("Set a positive read buffer size in [socketio]"),
+            );
+        }
+
+        errors
     }
 }
 

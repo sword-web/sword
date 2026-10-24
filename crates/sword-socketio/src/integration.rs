@@ -9,7 +9,7 @@ use socketioxide::layer::SocketIoLayer;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Config, Controller, ControllerMap, State, sword_diagnostic, sword_error};
+use sword_core::{Config, ConfigSection, Controller, ControllerMap, State, sword_diagnostic};
 use sword_layers::DisplayConfig;
 use sword_web::application::{
     WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
@@ -22,9 +22,9 @@ impl SocketIoWebExtension {
         config.get_or_default::<SocketIoServerConfig>()
     }
 
-    fn register_handlers(state: &State, controller_map: &ControllerMap) {
+    fn register_handlers(state: &State, controller_map: &ControllerMap) -> Result<(), Error> {
         let Some(handlers) = controller_map.get(&Controller::SocketIo) else {
-            return;
+            return Ok(());
         };
 
         let setup_fns = inventory::iter::<SocketIoHandlerRegistrar>()
@@ -38,15 +38,17 @@ impl SocketIoWebExtension {
         for handler_id in handlers {
             let Some(setup) = setup_fns.get(handler_id) else {
                 if handler_controllers.contains(handler_id) {
-                    sword_error! {
+                    return Err(sword_diagnostic! {
+                        code: "sword.build.socketio",
+                        phase: DiagnosticPhase::Build,
+                        target: "Socket.IO handler registry",
                         title: "Controller has handlers but no setup function",
                         reason: "SocketIoHandlerRegistrar is missing for controller",
                         context: {
                             "handler_id" => format!("{handler_id:?}"),
-                            "source" => "SocketIoWebExtension::register_handlers",
                         },
                         hints: ["Verify #[controller(kind = Controller::SocketIo, namespace = \"...\")] and #[on(...)] annotations are applied correctly"],
-                    };
+                    });
                 }
 
                 continue;
@@ -54,6 +56,8 @@ impl SocketIoWebExtension {
 
             (setup.setup_fn)(state);
         }
+
+        Ok(())
     }
 }
 
@@ -65,11 +69,16 @@ impl WebExtension for SocketIoWebExtension {
     fn init_state(&self, ctx: &WebExtensionContext) -> Result<(), Error> {
         let state = &ctx.state;
 
+        let mut socketio_config = ConfigSection::load::<SocketIoServerConfig>(
+            &ctx.config,
+            ctx.config_document.as_deref(),
+        )?
+        .unwrap_or_default();
+
         if state.get::<SocketIo>().is_ok() && state.get::<SocketIoLayer>().is_ok() {
             return Ok(());
         }
 
-        let mut socketio_config = Self::get_config(&ctx.config);
         let web_config: WebApplicationConfig = ctx.config.get_or_default();
 
         if let Some(prefix) = &web_config.router_prefix
@@ -119,7 +128,7 @@ impl WebExtension for SocketIoWebExtension {
             },
         ));
 
-        Self::register_handlers(state, &ctx.controller_map);
+        Self::register_handlers(state, &ctx.controller_map)?;
 
         Ok(router)
     }
