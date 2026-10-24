@@ -14,8 +14,10 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{
-    Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State, sword_error,
+    Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State, sword_diagnostic,
+    sword_error,
 };
 
 use tokio::task::JoinSet;
@@ -67,7 +69,7 @@ impl EventApplication {
         }
     }
 
-    pub async fn run(self, shutdown: Shutdown) {
+    pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         let mut tasks = JoinSet::new();
 
         for transport in self.transports {
@@ -75,9 +77,53 @@ impl EventApplication {
             tasks.spawn(async move { transport.run(shutdown).await });
         }
 
-        shutdown.cancelled().await;
+        if tasks.is_empty() {
+            shutdown.cancelled().await;
+            return Ok(());
+        }
 
-        while tasks.join_next().await.is_some() {}
+        let mut first_error = None;
+
+        tokio::select! {
+            _ = shutdown.cancelled() => {}
+            result = tasks.join_next() => {
+                if let Some(result) = result {
+                    first_error = Self::task_error(result);
+                }
+
+                shutdown.cancel();
+            }
+        }
+
+        while let Some(result) = tasks.join_next().await {
+            if first_error.is_none() {
+                first_error = Self::task_error(result);
+            }
+        }
+
+        match first_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+
+    /// A transport that panics reaches us as a `JoinError`. Without this it
+    /// would look like a clean stop.
+    fn task_error(result: Result<Result<(), Error>, tokio::task::JoinError>) -> Option<Error> {
+        match result {
+            Ok(Ok(())) => None,
+            Ok(Err(error)) => Some(error),
+            Err(error) => Some(sword_diagnostic! {
+                code: "sword.runtime.events",
+                phase: DiagnosticPhase::Runtime,
+                target: "EventApplication::run",
+                title: "Event transport task failed",
+                reason: error,
+                source: "EventApplication::run",
+                hints: ["Check the event transport logs and the underlying cause"],
+                cause: error,
+            }),
+        }
     }
 }
 
@@ -111,7 +157,8 @@ impl EventTransport {
         }
     }
 
-    async fn run(self, shutdown: Shutdown) {
+    async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
+        #[allow(unreachable_patterns)]
         match self {
             #[cfg(feature = "memory")]
             EventTransport::Memory(transport) => {
@@ -122,7 +169,11 @@ impl EventTransport {
             EventTransport::Nats(transport) => {
                 transport.run(shutdown).await;
             }
+
+            _ => {}
         }
+
+        Ok(())
     }
 }
 

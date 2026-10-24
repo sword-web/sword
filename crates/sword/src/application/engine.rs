@@ -51,10 +51,7 @@ impl Engine {
             Engine::Grpc(grpc) => grpc.run(shutdown).await,
 
             #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-            Engine::Events(events) => {
-                events.run(shutdown).await;
-                Ok(())
-            }
+            Engine::Events(events) => events.run(shutdown).await,
 
             #[cfg(feature = "jobs")]
             Engine::Jobs(jobs) => {
