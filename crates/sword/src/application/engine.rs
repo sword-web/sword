@@ -37,9 +37,6 @@ impl Engine {
     }
 
     /// Runs the engine until `shutdown` is cancelled.
-    ///
-    /// Engines that have not been migrated yet still report their own failures
-    /// by returning `()`; their arms wrap that in `Ok(())` for now.
     #[allow(unused_variables)]
     pub(crate) async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         #[allow(unreachable_patterns)]
@@ -54,10 +51,7 @@ impl Engine {
             Engine::Events(events) => events.run(shutdown).await,
 
             #[cfg(feature = "jobs")]
-            Engine::Jobs(jobs) => {
-                jobs.run(shutdown).await;
-                Ok(())
-            }
+            Engine::Jobs(jobs) => jobs.run(shutdown).await,
 
             _ => Ok(()),
         }
