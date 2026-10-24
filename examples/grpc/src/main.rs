@@ -5,7 +5,7 @@ use crate::{shared::SharedModule, users::UsersModule};
 use sword::prelude::*;
 
 #[sword::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     tracing::info!("Starting gRPC Greeter example...");
 
     let config = Config::builder()
@@ -19,4 +19,6 @@ async fn main() {
         .build();
 
     app.run().await;
+
+    Ok(())
 }

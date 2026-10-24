@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[sword::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     dotenv().ok();
 
     tracing::info!("Starting Users Management example...");
@@ -27,4 +27,6 @@ async fn main() {
         .build();
 
     app.run().await;
+
+    Ok(())
 }

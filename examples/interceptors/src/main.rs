@@ -20,7 +20,7 @@ impl Module for ExampleModule {
 }
 
 #[sword::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     let config = Config::builder()
         .add_file("Config.toml")
         .build()
@@ -35,4 +35,6 @@ async fn main() {
         .build();
 
     app.run().await;
+
+    Ok(())
 }
