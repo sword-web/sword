@@ -31,6 +31,18 @@ on:
         description: "Run events checks"
         type: boolean
         default: false
+      run_deps:
+        description: "Run dependency checks"
+        type: boolean
+        default: false
+      run_mixed:
+        description: "Run mixed web+grpc checks"
+        type: boolean
+        default: false
+      run_examples:
+        description: "Check example crates"
+        type: boolean
+        default: false
   push:
     branches: ["main"]
     paths-ignore:
@@ -52,6 +64,10 @@ on:
       - ".vscode/**"
       - ".zed/**"
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -62,6 +78,7 @@ jobs:
       socketio: ${{ steps.filter.outputs.socketio }}
       jobs: ${{ steps.filter.outputs.jobs }}
       events: ${{ steps.filter.outputs.events }}
+      mixed: ${{ steps.filter.outputs.mixed }}
       formatting: ${{ steps.filter.outputs.formatting }}
       deps: ${{ steps.filter.outputs.deps }}
     steps:
@@ -77,43 +94,33 @@ jobs:
               - 'crates/sword-core/**'
               - 'crates/sword/**'
               - 'crates/sword-layers/**'
+              - 'crates/sword-macros/**'
               - 'rust-toolchain.toml'
               - '.github/workflows/**'
             grpc:
               - 'crates/sword-grpc/**'
-              - 'crates/sword-macros/**'
-              - 'rust-toolchain.toml'
-              - '.github/workflows/**'
+              - 'tests/sword-grpc/**'
+              - 'examples/grpc/**'
             web:
-              - 'crates/sword-core/**'
-              - 'crates/sword/**'
               - 'crates/sword-web/**'
-              - 'crates/sword-macros/**'
-              - 'rust-toolchain.toml'
-              - '.github/workflows/**'
+              - 'tests/sword-web/**'
+              - 'examples/web/**'
+              - 'examples/interceptors/**'
             socketio:
-              - 'crates/sword-core/**'
-              - 'crates/sword/**'
               - 'crates/sword-socketio/**'
-              - 'crates/sword-macros/**'
-              - 'rust-toolchain.toml'
-              - '.github/workflows/**'
+              - 'crates/sword-web/**'
+              - 'tests/sword-socketio/**'
+              - 'examples/socketio/**'
+              - 'examples/interceptors/**'
             jobs:
-              - 'crates/sword-core/**'
-              - 'crates/sword/**'
               - 'crates/sword-jobs/**'
-              - 'crates/sword-macros/**'
               - 'tests/sword-jobs/**'
-              - 'rust-toolchain.toml'
-              - '.github/workflows/**'
             events:
-              - 'crates/sword-core/**'
-              - 'crates/sword/**'
               - 'crates/sword-events/**'
-              - 'crates/sword-macros/**'
               - 'tests/sword-events/**'
-              - 'rust-toolchain.toml'
-              - '.github/workflows/**'
+              - 'examples/nats/**'
+            mixed:
+              - 'tests/sword-mixed/**'
             formatting:
               - '**/*.rs'
               - 'rustfmt.toml'
@@ -147,8 +154,9 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Run clippy (sword-core)
         run: cargo clippy -p sword-core --all-targets -- -D warnings
@@ -157,7 +165,10 @@ jobs:
         run: cargo clippy -p sword --all-targets -- -D warnings
 
       - name: Run clippy (sword-layers)
-        run: cargo clippy -p sword-layers --all-targets -- -D warnings
+        run: cargo clippy -p sword-layers --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (sword-macros, all features)
+        run: cargo clippy -p sword-macros --all-targets --all-features -- -D warnings
 
       - name: Build docs (sword-core)
         env:
@@ -172,11 +183,18 @@ jobs:
       - name: Build docs (sword-layers)
         env:
           RUSTDOCFLAGS: "-D warnings"
-        run: cargo doc -p sword-layers --no-deps
+        run: cargo doc -p sword-layers --no-deps --all-features
+
+      - name: Run unit tests
+        run: |
+          cargo test -p sword --lib
+          cargo test -p sword-core --lib
+          cargo test -p sword-macros --lib
+          cargo test -p sword-layers --all-features
 
   grpc-checks:
     needs: changes
-    if: needs.changes.outputs.grpc == 'true' || inputs.run_grpc == true
+    if: needs.changes.outputs.grpc == 'true' || needs.changes.outputs.core == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_grpc == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -184,8 +202,9 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
@@ -206,7 +225,7 @@ jobs:
 
   web-checks:
     needs: changes
-    if: needs.changes.outputs.web == 'true' || inputs.run_web == true
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.core == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_web == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -214,8 +233,9 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Run clippy (sword-web)
         run: cargo clippy -p sword-web --all-targets --all-features -- -D warnings
@@ -233,7 +253,7 @@ jobs:
 
   socketio-checks:
     needs: changes
-    if: needs.changes.outputs.socketio == 'true' || inputs.run_socketio == true
+    if: needs.changes.outputs.socketio == 'true' || needs.changes.outputs.core == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_socketio == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -241,8 +261,9 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Run clippy (sword-socketio)
         run: cargo clippy -p sword-socketio --all-targets --all-features -- -D warnings
@@ -260,7 +281,7 @@ jobs:
 
   jobs-checks:
     needs: changes
-    if: needs.changes.outputs.jobs == 'true' || inputs.run_jobs == true
+    if: needs.changes.outputs.jobs == 'true' || needs.changes.outputs.core == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_jobs == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -268,8 +289,9 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Run clippy (sword-jobs)
         run: cargo clippy -p sword-jobs --all-targets -- -D warnings
@@ -287,7 +309,7 @@ jobs:
 
   events-checks:
     needs: changes
-    if: needs.changes.outputs.events == 'true' || inputs.run_events == true
+    if: needs.changes.outputs.events == 'true' || needs.changes.outputs.core == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_events == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -295,8 +317,9 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Run clippy (sword-events)
         run: cargo clippy -p sword-events --all-targets --all-features -- -D warnings
@@ -314,7 +337,7 @@ jobs:
 
   deps-checks:
     needs: changes
-    if: needs.changes.outputs.deps == 'true'
+    if: needs.changes.outputs.deps == 'true' || inputs.run_deps == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -322,11 +345,57 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          cache: true
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
 
       - name: Check workspace compiles
-        run: cargo check --workspace --all-targets --locked
+        run: cargo check --workspace --all-targets --all-features --locked
+
+      - name: Run unit tests
+        run: |
+          cargo test -p sword --lib
+          cargo test -p sword-macros --lib
+
+  mixed-checks:
+    needs: changes
+    if: needs.changes.outputs.mixed == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.grpc == 'true' || needs.changes.outputs.core == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_mixed == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+
+      - name: Run mixed app tests
+        run: cargo test -p sword-mixed-tests -- --test-threads=1
+
+  examples-checks:
+    needs: changes
+    if: needs.changes.outputs.core == 'true' || needs.changes.outputs.web == 'true' || needs.changes.outputs.grpc == 'true' || needs.changes.outputs.socketio == 'true' || needs.changes.outputs.jobs == 'true' || needs.changes.outputs.events == 'true' || needs.changes.outputs.deps == 'true' || inputs.run_examples == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+
+      - name: Check examples compile
+        run: cargo check --workspace --bins --locked

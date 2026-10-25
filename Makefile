@@ -29,11 +29,17 @@ test:
 	cargo test -p sword-web-tests
 	cargo test -p sword-socketio-tests
 	cargo test -p sword-grpc-tests -- --test-threads=1
+	cargo test -p sword-events-tests
+	cargo test -p sword-jobs-tests
+	cargo test -p sword-mixed-tests -- --test-threads=1
 
 test-log:
 	cargo test -p sword-web-tests -- --nocapture
 	cargo test -p sword-socketio-tests -- --nocapture
 	cargo test -p sword-grpc-tests -- --test-threads=1 --nocapture
+	cargo test -p sword-events-tests -- --nocapture
+	cargo test -p sword-jobs-tests -- --nocapture
+	cargo test -p sword-mixed-tests -- --test-threads=1 --nocapture
 
 build:
 	cargo build --workspace --all-features
