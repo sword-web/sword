@@ -5,6 +5,7 @@ use std::any::TypeId;
 use std::pin::Pin;
 use stream::Stream;
 use sword_core::State;
+use sword_core::diagnostic::Error;
 
 pub mod stream {
     pub use tokio_stream::{Stream, StreamExt, wrappers::ReceiverStream};
@@ -42,7 +43,7 @@ pub struct GrpcControllerRegistrar {
     ///     state.insert::<Greeter>(Greeter::build(state).unwrap_or_else(|e| panic_sword_error(e)));
     /// }
     /// ```
-    pub build: fn(&State),
+    pub build: fn(&State) -> Result<(), Error>,
 
     /// Borrows the built controller and body limit from `State`, wraps the
     /// tonic service with the declared interceptors, and adds it to the
@@ -59,7 +60,7 @@ pub struct GrpcControllerRegistrar {
     ///     registry.mark_service_registered_with_name(GreeterServer::NAME);
     /// }
     /// ```
-    pub register: fn(&State, &mut GrpcServiceRegistry),
+    pub register: fn(&State, &mut GrpcServiceRegistry) -> Result<(), Error>,
 }
 
 inventory::collect!(GrpcControllerRegistrar);

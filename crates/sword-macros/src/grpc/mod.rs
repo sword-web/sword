@@ -38,18 +38,21 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let interceptor_wrappers = interceptors.iter().rev().map(|interceptor| match interceptor {
         InterceptorArgs::Traditional(path) => {
             quote! {
-                let interceptor = state.borrow::<#path>()
-                    .unwrap_or_else(|err| {
-                        #sword_error! {
-                            title: "Failed to retrieve gRPC interceptor from State",
-                            reason: err,
-                            context: {
-                                "controller" => #stringify!(#self_ty),
-                                "interceptor" => #stringify!(#path),
-                            },
-                            hints: ["Ensure the interceptor is registered and built before gRPC controller setup"],
-                        }
-                    });
+                let interceptor = state.borrow::<#path>().map_err(|err| {
+                    #sword_diagnostic! {
+                        code: "sword.build.grpc",
+                        phase: #DiagnosticPhase::Build,
+                        target: "gRPC interceptor",
+                        title: "Failed to retrieve gRPC interceptor from State",
+                        reason: err,
+                        context: {
+                            "controller" => #stringify!(#self_ty),
+                            "interceptor" => #stringify!(#path),
+                        },
+                        hints: ["Ensure the interceptor is registered and built before gRPC controller setup"],
+                        cause: err,
+                    }
+                })?;
 
                 let service = #tonic_async_interceptor::AsyncInterceptedService::new(
                     service,
@@ -65,18 +68,21 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         }
         InterceptorArgs::WithConfig { interceptor, config } => {
             quote! {
-                let interceptor = state.borrow::<#interceptor>()
-                    .unwrap_or_else(|err| {
-                        #sword_error! {
-                            title: "Failed to retrieve gRPC interceptor from State",
-                            reason: err,
-                            context: {
-                                "controller" => #stringify!(#self_ty),
-                                "interceptor" => #stringify!(#interceptor),
-                            },
-                            hints: ["Ensure the interceptor is registered and built before gRPC controller setup"],
-                        }
-                    });
+                let interceptor = state.borrow::<#interceptor>().map_err(|err| {
+                    #sword_diagnostic! {
+                        code: "sword.build.grpc",
+                        phase: #DiagnosticPhase::Build,
+                        target: "gRPC interceptor",
+                        title: "Failed to retrieve gRPC interceptor from State",
+                        reason: err,
+                        context: {
+                            "controller" => #stringify!(#self_ty),
+                            "interceptor" => #stringify!(#interceptor),
+                        },
+                        hints: ["Ensure the interceptor is registered and built before gRPC controller setup"],
+                        cause: err,
+                    }
+                })?;
 
                 let service = #tonic_async_interceptor::AsyncInterceptedService::new(
                     service,
@@ -112,51 +118,62 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
             #GrpcControllerRegistrar {
                 controller_id: #TypeId::of::<#self_ty>(),
                 reflection_descriptor_set: #reflection_descriptor_set,
-                build: |state: &#State| {
-                    state.insert::<#self_ty>(#self_ty::build(state).unwrap_or_else(|e| {
-                        #sword_error! {
+                build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
+                    let controller = #self_ty::build(state).map_err(|e| {
+                        #sword_diagnostic! {
+                            code: "sword.build.grpc",
+                            phase: #DiagnosticPhase::Build,
+                            target: "gRPC controller",
                             title: "Failed to build gRPC controller",
-                            reason: "An error occurred while building the gRPC controller",
+                            reason: format!("Failed to build the gRPC controller dependency graph: {e}"),
                             context: {
                                 "controller_name" => #stringify!(#self_ty),
                                 "service" => #stringify!(#service),
-                                "error" => #format!("{e:?}"),
-                                "source" => "GrpcControllerRegistrar::build",
                             },
                             hints: ["Check the error message for details on what went wrong during construction"],
+                            cause: e,
                         }
-                    }));
+                    })?;
+
+                    state.insert::<#self_ty>(controller);
+
+                    Ok(())
                 },
-                register: |_state: &#State, _registry: &mut #GrpcServiceRegistry| {
+                register: |_state: &#State, _registry: &mut #GrpcServiceRegistry| -> ::std::result::Result<(), #DiagnosticError> {
                     let state = _state;
                     let registry = _registry;
 
-                    let controller = state.borrow::<#self_ty>().unwrap_or_else(|err| {
-                        #sword_error! {
+                    let controller = state.borrow::<#self_ty>().map_err(|err| {
+                        #sword_diagnostic! {
+                            code: "sword.build.grpc",
+                            phase: #DiagnosticPhase::Build,
+                            target: "gRPC controller",
                             title: "Failed to retrieve gRPC controller from State",
                             reason: err,
                             context: {
                                 "controller_name" => #stringify!(#self_ty),
                                 "service" => #stringify!(#service),
-                                "source" => "GrpcControllerRegistrar::register",
                             },
                             hints: ["Ensure the controller is built before registration"],
+                            cause: err,
                         }
-                    });
+                    })?;
 
-                    let body_limit = state.borrow::<#GrpcBodyLimitValue>()
-                        .unwrap_or_else(|err| {
-                            #sword_error! {
-                                title: "Failed to retrieve gRPC body-limit settings from State",
-                                reason: err,
-                                context: {
-                                    "controller_name" => #stringify!(#self_ty),
-                                    "service" => #stringify!(#service),
-                                    "source" => "GrpcControllerRegistrar::register",
-                                },
-                                hints: ["Ensure gRPC body-limit settings are inserted into State before controller registration"],
-                            }
-                        });
+                    let body_limit = state.borrow::<#GrpcBodyLimitValue>().map_err(|err| {
+                        #sword_diagnostic! {
+                            code: "sword.build.grpc",
+                            phase: #DiagnosticPhase::Build,
+                            target: "gRPC body limit",
+                            title: "Failed to retrieve gRPC body-limit settings from State",
+                            reason: err,
+                            context: {
+                                "controller_name" => #stringify!(#self_ty),
+                                "service" => #stringify!(#service),
+                            },
+                            hints: ["Ensure gRPC body-limit settings are inserted into State before controller registration"],
+                            cause: err,
+                        }
+                    })?;
 
                     let service = <#service<#self_ty>>::new((*controller).clone())
                         .max_decoding_message_size(body_limit.max_decoding_message_size)
@@ -164,6 +181,8 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                     #(#interceptor_wrappers)*
                     registry.routes_builder_mut().add_service(service);
                     registry.mark_service_registered_with_name(<#service<#self_ty> as #tonic::server::NamedService>::NAME);
+
+                    Ok(())
                 },
             }
         }

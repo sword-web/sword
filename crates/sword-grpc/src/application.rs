@@ -105,10 +105,10 @@ impl GrpcApplication {
             } = registrar;
 
             // Build first: this inserts the controller into State.
-            build_controller(&self.state);
+            build_controller(&self.state)?;
 
             // Register after: it borrows the controller built above and adds its tonic service.
-            register_controller(&self.state, &mut grpc_registry);
+            register_controller(&self.state, &mut grpc_registry)?;
 
             #[cfg(feature = "reflection")]
             if let Some(descriptor) = _reflection_descriptor_set {
