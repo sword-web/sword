@@ -39,17 +39,20 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
 
     let interceptor_applications = interceptors.iter().rev().map(|interceptor_path| {
         quote! {
-            let interceptor = state.borrow::<#interceptor_path>()
-                .unwrap_or_else(|err| {
-                    #sword_error! {
-                        title: "Failed to retrieve Socket.IO interceptor from State",
-                        reason: err,
-                        context: {
-                            "interceptor" => #stringify!(#interceptor_path),
-                        },
-                        hints: ["Ensure the interceptor is registered and built before controller setup"],
-                    }
-                });
+            let interceptor = state.borrow::<#interceptor_path>().map_err(|err| {
+                #sword_diagnostic! {
+                    code: "sword.build.socketio",
+                    phase: #DiagnosticPhase::Build,
+                    target: "Socket.IO interceptor",
+                    title: "Failed to retrieve Socket.IO interceptor from State",
+                    reason: err,
+                    context: {
+                        "interceptor" => #stringify!(#interceptor_path),
+                    },
+                    hints: ["Ensure the interceptor is registered and built before controller setup"],
+                    cause: err,
+                }
+            })?;
 
             let handler = handler.with(move |ctx: #SocketContext| {
                 let interceptor = #Arc::clone(&interceptor);
@@ -65,36 +68,41 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
 
     let setup_impl = quote! {
         #[doc(hidden)]
-        pub fn __socketio_setup(state: &#State) {
+        pub fn __socketio_setup(state: &#State) -> ::std::result::Result<(), #DiagnosticError> {
             use #ConnectHandler;
 
-            let controller = #Arc::new(
-                <#self_ty as #Build>::build(state).unwrap_or_else(|err| {
-                    #sword_error! {
-                        title: "Failed to build Socket.IO controller",
-                        reason: err,
-                        context: {
-                            "controller" => #stringify!(#self_ty),
-                        },
-                        hints: ["Ensure all controller dependencies are registered as providers or components"],
-                    }
-                })
-            );
+            let controller = #Arc::new(<#self_ty as #Build>::build(state).map_err(|err| {
+                #sword_diagnostic! {
+                    code: "sword.build.socketio",
+                    phase: #DiagnosticPhase::Build,
+                    target: "Socket.IO controller",
+                    title: "Failed to build Socket.IO controller",
+                    reason: err,
+                    context: {
+                        "controller" => #stringify!(#self_ty),
+                    },
+                    hints: ["Ensure all controller dependencies are registered as providers or components"],
+                    cause: err,
+                }
+            })?);
 
-            let io = state.get::<#SocketIo>()
-                .unwrap_or_else(|err| {
-                    #sword_error! {
-                        title: "Socket.IO component not found in application state",
-                        reason: err,
-                        context: {
-                            "controller" => #stringify!(#self_ty),
-                        },
-                        hints: [
-                            "Enable the `socketio` feature in Cargo.toml",
-                            "Configure the socketio server section in your configuration file",
-                        ],
-                    }
-                });
+            let io = state.get::<#SocketIo>().map_err(|err| {
+                #sword_diagnostic! {
+                    code: "sword.build.socketio",
+                    phase: #DiagnosticPhase::Build,
+                    target: "Socket.IO controller",
+                    title: "Socket.IO component not found in application state",
+                    reason: err,
+                    context: {
+                        "controller" => #stringify!(#self_ty),
+                    },
+                    hints: [
+                        "Enable the `socketio` feature in Cargo.toml",
+                        "Configure the socketio server section in your configuration file",
+                    ],
+                    cause: err,
+                }
+            })?;
 
             let controller_type_id = #TypeId::of::<#self_ty>();
             let mut connection_handler: Option<#HandlerRegistrar> = None;
@@ -108,13 +116,16 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 match handler_meta.event_kind {
                     #SocketEventKind::Connection => {
                         if connection_handler.is_some() {
-                            #sword_error! {
+                            return Err(#sword_diagnostic! {
+                                code: "sword.build.socketio",
+                                phase: #DiagnosticPhase::Build,
+                                target: "Socket.IO controller",
                                 title: "Multiple connection handlers found in Socket.IO controller",
                                 reason: "Only one #[on(\"connection\")] handler is allowed per controller",
                                 context: {
                                     "controller" => #stringify!(#self_ty),
                                 },
-                            }
+                            });
                         }
 
                         connection_handler = Some(handler_meta.clone());
@@ -134,12 +145,16 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 let socket = ctx.socket_ref().clone();
 
                 #Box::pin(async move {
-                    if let Some(handler) = connection_handler {
-                        (handler.call_fn)(controller.clone(), ctx).await;
+                    if let Some(handler) = connection_handler
+                        && let Err(err) = (handler.call_fn)(controller.clone(), ctx).await
+                    {
+                        err.report();
                     }
 
                     for handler in message_handlers.iter() {
-                        (handler.register_fn)(controller.clone(), socket.clone());
+                        if let Err(err) = (handler.register_fn)(controller.clone(), socket.clone()) {
+                            err.report();
+                        }
                     }
                 })
             };
@@ -148,6 +163,8 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
             #(#interceptor_applications)*
 
             io.ns(#namespace, handler);
+
+            Ok(())
         }
     };
 

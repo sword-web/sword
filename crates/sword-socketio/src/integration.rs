@@ -54,7 +54,7 @@ impl SocketIoWebExtension {
                 continue;
             };
 
-            (setup.setup_fn)(state);
+            (setup.setup_fn)(state)?;
         }
 
         Ok(())
