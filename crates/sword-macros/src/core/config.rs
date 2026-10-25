@@ -46,18 +46,38 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
         const _: () = {
             #inventory::submit! {
                 #ConfigRegistrar::new(|state, config| {
-                    let config_item = config.get::<#self_ty>().unwrap_or_else(|| {
-                        #sword_error! {
+                    let config_item = config.try_get::<#self_ty>().map_err(|err| {
+                        #sword_diagnostic! {
+                            code: "sword.build.config",
+                            phase: #DiagnosticPhase::Build,
+                            target: "config registry",
                             title: "Failed to load registered config item",
+                            reason: err,
+                            context: {
+                                "key" => #config_key,
+                            },
+                            hints: ["Check the types of the values in this section"],
+                            cause: err,
+                        }
+                    })?;
+
+                    let Some(config_item) = config_item else {
+                        return Err(#sword_diagnostic! {
+                            code: "sword.build.config",
+                            phase: #DiagnosticPhase::Build,
+                            target: "config registry",
+                            title: "Config item not found",
                             reason: format!("Config item '{}' was not found", #config_key),
                             context: {
                                 "key" => #config_key,
                             },
                             hints: ["Ensure the configuration file contains this section"],
-                        }
-                     });
+                        });
+                    };
 
                     state.insert(config_item);
+
+                    Ok(())
                 })
             }
         };

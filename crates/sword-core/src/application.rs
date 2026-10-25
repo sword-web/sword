@@ -37,6 +37,8 @@ impl ConfigItem for ApplicationConfig {
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
         state.insert(config.get_or_default::<ApplicationConfig>());
+
+        Ok(())
     })
 ]}
 

@@ -74,6 +74,8 @@ path!(DependencyInjectionError => ::sword::internal::core::DependencyInjectionEr
 
 path!(inventory => ::sword::internal::inventory);
 path!(sword_error => ::sword::internal::core::sword_error);
+path!(sword_diagnostic => ::sword::internal::core::sword_diagnostic);
+path!(DiagnosticPhase => ::sword::internal::core::diagnostic::DiagnosticPhase);
 path!(tracing => ::sword::internal::tracing);
 
 path!(Job => ::sword::internal::jobs::Job);

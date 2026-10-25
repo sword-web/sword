@@ -78,5 +78,7 @@ impl ValidateConfig for GrpcApplicationConfig {
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
         state.insert(config.get_or_default::<GrpcApplicationConfig>());
+
+        Ok(())
     })
 ]}

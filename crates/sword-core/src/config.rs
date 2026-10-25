@@ -342,11 +342,11 @@ fn section_error(
 /// A struct that holds a function to register a config type.
 /// Used by the inventory system to collect all config types at compile time.
 pub struct ConfigRegistrar {
-    pub register: fn(&State, &Config) -> (),
+    pub register: fn(&State, &Config) -> Result<(), Error>,
 }
 
 impl ConfigRegistrar {
-    pub const fn new(register: fn(&State, &Config) -> ()) -> Self {
+    pub const fn new(register: fn(&State, &Config) -> Result<(), Error>) -> Self {
         Self { register }
     }
 }

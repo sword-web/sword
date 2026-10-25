@@ -93,5 +93,7 @@ impl Default for NatsEventsConfig {
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
         state.insert(config.get_or_default::<EventApplicationConfig>());
+
+        Ok(())
     })
 ]}

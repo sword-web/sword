@@ -111,7 +111,7 @@ impl ApplicationBuilder {
         // Collection and registration in the state of configuration structs
         // marked with the `#[config]` macro.
         for ConfigRegistrar { register } in inventory::iter::<ConfigRegistrar> {
-            register(&state, &config)
+            register(&state, &config)?;
         }
 
         Ok(Self {
