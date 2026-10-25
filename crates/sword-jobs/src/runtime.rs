@@ -52,7 +52,7 @@ impl JobSchedulerRuntime {
         // Build only the controllers the user actually registered in a module.
         for registrar in inventory::iter::<JobControllerRegistrar>() {
             if self.controller_ids.contains(&registrar.type_id) {
-                (registrar.build_fn)(&self.state);
+                (registrar.build_fn)(&self.state)?;
             }
         }
 
@@ -62,7 +62,7 @@ impl JobSchedulerRuntime {
                 continue;
             }
 
-            let job = (registrar.handler)(&self.state);
+            let job = (registrar.handler)(&self.state)?;
 
             if let Err(err) = scheduler.add(job).await {
                 tracing::error!(

@@ -38,21 +38,25 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         #inventory::submit! {
             #JobControllerRegistrar {
                 type_id: #TypeId::of::<#self_ty>(),
-                build_fn: |state: &#State| {
-                    let controller = #self_ty::build(state).unwrap_or_else(|e| {
-                        #sword_error! {
+                build_fn: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
+                    let controller = #self_ty::build(state).map_err(|e| {
+                        #sword_diagnostic! {
+                            code: "sword.build.jobs",
+                            phase: #DiagnosticPhase::Build,
+                            target: "job controller",
                             title: "Failed to build controller",
                             reason: format!("Failed to build job controller dependency graph: {e}"),
                             context: {
                                 "controller_name" => stringify!(#self_ty),
-                                "error" => format!("{e:?}"),
-                                "source" => "JobControllerRegistrar::build",
                             },
                             hints: ["Check the error message for details on what went wrong during construction"],
+                            cause: e,
                         }
-                    });
+                    })?;
 
                     state.insert::<#self_ty>(controller);
+
+                    Ok(())
                 }
             }
         }
