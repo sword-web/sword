@@ -27,8 +27,11 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
     let expanded = quote! {
         #original_function
 
-        pub fn #route_fn_name(controller: #Arc<Self>, state: #State) -> #MethodRouter<#State> {
-            #route_fn_body
+        pub fn #route_fn_name(
+            controller: #Arc<Self>,
+            state: #State,
+        ) -> ::std::result::Result<#MethodRouter<#State>, #DiagnosticError> {
+            Ok(#route_fn_body)
         }
 
         #[allow(non_upper_case_globals)]
@@ -38,9 +41,15 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
                 #RouteRegistrar {
                     controller_id: #TypeId::of::<#controller_ty>(),
                     path: #path,
-                    handler: |state: #State| -> #MethodRouter<#State> {
-                        let controller = state.borrow::<#controller_ty>().unwrap_or_else(|err| {
-                            #sword_error! {
+                    handler: |state: #State| -> ::std::result::Result<
+                        #MethodRouter<#State>,
+                        #DiagnosticError,
+                    > {
+                        let controller = state.borrow::<#controller_ty>().map_err(|err| {
+                            #sword_diagnostic! {
+                                code: "sword.build.web",
+                                phase: #DiagnosticPhase::Build,
+                                target: "web route",
                                 title: "Failed to build HTTP controller",
                                 reason: err,
                                 context: {
@@ -48,8 +57,9 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
                                     "route" => format!("{} {}", #method, #path),
                                 },
                                 hints: ["Ensure all controller dependencies are registered in the DI container"],
+                                cause: err,
                             }
-                        });
+                        })?;
 
                         #controller_ty::#route_fn_name(controller, state)
                     }

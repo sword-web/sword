@@ -76,6 +76,7 @@ path!(inventory => ::sword::internal::inventory);
 path!(sword_error => ::sword::internal::core::sword_error);
 path!(sword_diagnostic => ::sword::internal::core::sword_diagnostic);
 path!(DiagnosticPhase => ::sword::internal::core::diagnostic::DiagnosticPhase);
+path!(DiagnosticError => ::sword::internal::core::diagnostic::Error);
 path!(tracing => ::sword::internal::tracing);
 
 path!(Job => ::sword::internal::jobs::Job);

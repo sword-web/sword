@@ -47,17 +47,20 @@ fn generate_sword_traditional(path: &Path, mode: &RequestModeTokens) -> TokenStr
         {
             fn __check_on_request__<M: #simple_trait>(mw: &M) -> &M { mw }
 
-            let middleware = state.borrow::<#path>()
-                .unwrap_or_else(|err| {
-                    #sword_error!(
-                        title: "Failed to retrieve HTTP interceptor from State",
-                        reason: err,
-                        context: {
-                            "interceptor" => stringify!(#path),
-                        },
-                        hints: ["Ensure the interceptor is registered and built before controller initialization"],
-                    )
-                });
+            let middleware = state.borrow::<#path>().map_err(|err| {
+                #sword_diagnostic! {
+                    code: "sword.build.web",
+                    phase: #DiagnosticPhase::Build,
+                    target: "web interceptor",
+                    title: "Failed to retrieve HTTP interceptor from State",
+                    reason: err,
+                    context: {
+                        "interceptor" => stringify!(#path),
+                    },
+                    hints: ["Ensure the interceptor is registered and built before controller initialization"],
+                    cause: err,
+                }
+            })?;
 
             let _ = __check_on_request__(&*middleware);
 
@@ -91,17 +94,20 @@ fn generate_sword_with_config(
                 mw
             }
 
-            let interceptor = state.borrow::<#interceptor_ty>()
-                .unwrap_or_else(|err| {
-                    #sword_error! {
-                        title: "Failed to retrieve HTTP interceptor from State",
-                        reason: err,
-                        context: {
-                            "interceptor" => stringify!(#interceptor_ty),
-                        },
-                        hints: ["Ensure the interceptor is registered and built before controller initialization"],
-                    }
-                });
+            let interceptor = state.borrow::<#interceptor_ty>().map_err(|err| {
+                #sword_diagnostic! {
+                    code: "sword.build.web",
+                    phase: #DiagnosticPhase::Build,
+                    target: "web interceptor",
+                    title: "Failed to retrieve HTTP interceptor from State",
+                    reason: err,
+                    context: {
+                        "interceptor" => stringify!(#interceptor_ty),
+                    },
+                    hints: ["Ensure the interceptor is registered and built before controller initialization"],
+                    cause: err,
+                }
+            })?;
 
             let _ = __check_on_request_configured__::<#interceptor_ty, _>(&*interceptor);
 

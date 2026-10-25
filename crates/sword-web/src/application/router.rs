@@ -123,7 +123,7 @@ impl WebApplicationRouter {
             };
 
             // Build the controller into State before resolving its route handlers.
-            (controller_registrar.build)(&self.state);
+            (controller_registrar.build)(&self.state)?;
 
             let controller_routes = routes_by_controller
                 .get(&controller_id)
@@ -148,7 +148,7 @@ impl WebApplicationRouter {
 
             for route in controller_routes {
                 // Each route handler closes over State and produces its own MethodRouter.
-                let route_handler = (route.handler)(self.state.clone());
+                let route_handler = (route.handler)(self.state.clone())?;
                 controller_router = controller_router.route(route.path, route_handler);
             }
 

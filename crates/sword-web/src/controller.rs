@@ -38,12 +38,13 @@ pub trait WebController: ControllerSpec {
 use axum::routing::MethodRouter;
 use std::any::TypeId;
 use sword_core::State;
+use sword_core::diagnostic::Error;
 
 #[derive(Clone)]
 pub struct WebControllerRegistrar {
     pub controller_id: TypeId,
     pub controller_path: &'static str,
-    pub build: fn(&State),
+    pub build: fn(&State) -> Result<(), Error>,
 }
 
 #[derive(Clone)]
@@ -56,7 +57,7 @@ pub struct RouteRegistrar {
 
     /// Function that builds the MethodRouter for this route
     /// The closure constructs the controller from state and calls the specific __sword_route_* method
-    pub handler: fn(State) -> MethodRouter<State>,
+    pub handler: fn(State) -> Result<MethodRouter<State>, Error>,
 }
 
 inventory::collect!(WebControllerRegistrar);
