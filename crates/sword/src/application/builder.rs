@@ -231,7 +231,7 @@ impl ApplicationBuilder {
         };
 
         #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-        events_application.with_controllers(&ctx.controllers, &ctx.state);
+        events_application.with_controllers(&ctx.controllers, &ctx.state)?;
 
         #[allow(unused_mut, clippy::vec_init_then_push)]
         let mut engines: Vec<Engine> = Vec::new();

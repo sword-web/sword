@@ -87,13 +87,18 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
         #[allow(non_upper_case_globals)]
         #[doc(hidden)]
         const #registration_name: () = {
-            fn #build_fn_name(state: &#State) -> #EventHandlerFn {
-                let controller = state.borrow::<#controller_ty>().unwrap_or_else(|_| {
-                    #sword_error! {
+            fn #build_fn_name(
+                state: &#State,
+            ) -> ::std::result::Result<#EventHandlerFn, #DiagnosticError> {
+                let controller = state.borrow::<#controller_ty>().map_err(|err| {
+                    #sword_diagnostic! {
+                        code: "sword.build.events",
+                        phase: #DiagnosticPhase::Build,
+                        target: "event handler registry",
                         title: "Failed to retrieve event handler controller from state",
-                        reason: #format!(
-                            "Controller {} was not built for event handler",
-                            #stringify!(#controller_ty)
+                        reason: format!(
+                            "Controller {} was not built for event handler: {err}",
+                            #stringify!(#controller_ty),
                         ),
                         context: {
                             "controller" => #stringify!(#controller_ty),
@@ -102,10 +107,11 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                         hints: [
                             "Ensure the controller is registered via Module::register_controllers",
                         ],
+                        cause: err,
                     }
-                });
+                })?;
 
-                #Arc::new(
+                Ok(#Arc::new(
                     move |event: #Arc<dyn #Event>| -> #EventsBoxedFuture {
                         let controller = #Arc::clone(&controller);
 
@@ -113,7 +119,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                             #body
                         })
                     },
-                )
+                ))
             }
 
             #inventory::submit! {

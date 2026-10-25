@@ -61,8 +61,12 @@ impl EventApplication {
 
     /// Registers the event handlers for all the controllers in the application,
     /// grouping them by their source kind and event key.
-    pub fn with_controllers(&mut self, controllers: &ControllerRegistry, state: &State) {
-        let mut subscriptions = EventSubscriptions::collect(state, controllers);
+    pub fn with_controllers(
+        &mut self,
+        controllers: &ControllerRegistry,
+        state: &State,
+    ) -> Result<(), Error> {
+        let mut subscriptions = EventSubscriptions::collect(state, controllers)?;
 
         // Set the handlers for each transport based on its source kind
         //
@@ -72,6 +76,8 @@ impl EventApplication {
         for transport in &mut self.transports {
             transport.set_handlers(subscriptions.take(transport.source()));
         }
+
+        Ok(())
     }
 
     pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
@@ -198,7 +204,7 @@ struct EventSubscriptions {
 impl EventSubscriptions {
     /// Builds all the registered event controllers and its handlers,
     /// grouping them by their source kind
-    fn collect(state: &State, controllers: &ControllerRegistry) -> Self {
+    fn collect(state: &State, controllers: &ControllerRegistry) -> Result<Self, Error> {
         let mut events_by_source: HashMap<EventSource, Vec<HandlerEntry>> = HashMap::new();
 
         for type_id in controllers.get_by_kind(Controller::Events) {
@@ -207,7 +213,7 @@ impl EventSubscriptions {
                 continue;
             };
 
-            (controller.build)(state); // Build the controller and register into the state
+            (controller.build)(state)?; // Build the controller and register into the state
 
             // iterate over all the handlers registered for this controller type
 
@@ -217,7 +223,7 @@ impl EventSubscriptions {
                 let handler_entry = HandlerEntry {
                     key: handler.key,
                     group: handler.group,
-                    handler: (handler.handler_fn)(state),
+                    handler: (handler.handler_fn)(state)?,
                 };
 
                 events_by_source
@@ -227,9 +233,9 @@ impl EventSubscriptions {
             }
         }
 
-        Self {
+        Ok(Self {
             by_source: events_by_source,
-        }
+        })
     }
 
     /// Returns the map of event handlers for a specific source, removing it from the subscriptions.
