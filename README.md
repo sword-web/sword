@@ -64,17 +64,35 @@ impl UsersController {
 - [Interceptors (Web + Socket.IO controllers)](./examples/interceptors)
 - [gRPC Application with error handling](./examples/grpc)
 
-## Cargo Features
+## Application Features
+
+Sword provides a set of application types based on cargo features: 
 
 - `web`: enables the web application type
 - `socketio`: enables Socket.IO controllers for web applications (implies `web`)
 - `grpc`: enables the gRPC application type
-- `events-in-memory`: enables in-memory event publishing and handling
+- `events`: enables event handling application primitives 
 - `jobs`: enables cron/repeated/once job scheduling
+
+Algo gives a set of sub-features for the top-level applications:
+
+**Web Features**:
+
 - `web-multipart`: enables `multipart/form-data` support in web controllers
 - `web-swagger-ui`: enables Swagger UI for OpenAPI specs
+
+**Grpc Features**:
+
 - `grpc-reflection`: enables gRPC reflection
 - `grpc-error-details`: enables detailed gRPC errors with `GrpcStatus`
+
+**Events Features**:
+
+- `events-memory`: enables in-memory pub/sub event handling
+- `events-nats`: enables NATS event handling support
+
+**Cross type sub-features**:
+
 - `validation-validator`: enables input validation with the `validator` crate
 - `hot-reload`: enables hot reload during development
 
