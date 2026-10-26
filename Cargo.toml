@@ -65,7 +65,7 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json", "chrono"] }
 
 inventory = "0.3.21"
-parking_lot = "0.12.5"
+parking_lot = "0.13.0"
 heck = "0.5"
 
 bon = "3.9.1"
