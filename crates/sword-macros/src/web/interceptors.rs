@@ -1,4 +1,8 @@
-use crate::{core::InterceptorArgs, shared::paths::*, web::routes::RequestMode};
+use crate::{
+    core::InterceptorArgs,
+    shared::{location, paths::*},
+    web::routes::RequestMode,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Expr, Path};
@@ -42,6 +46,8 @@ pub fn expand_sword_interceptor(args: &InterceptorArgs, req_mode: RequestMode) -
 fn generate_sword_traditional(path: &Path, mode: &RequestModeTokens) -> TokenStream {
     let request_type = mode.request_ty.clone();
     let simple_trait = mode.traditional_trait.clone();
+    let ident = &path.segments.last().expect("interceptor path").ident;
+    let location = location::tokens(ident.span(), &ident.to_string());
 
     quote! {
         {
@@ -54,6 +60,13 @@ fn generate_sword_traditional(path: &Path, mode: &RequestModeTokens) -> TokenStr
                     target: "web interceptor",
                     title: "Failed to retrieve HTTP interceptor from State",
                     reason: err,
+                    source_location: {
+                        file: (#location).file(),
+                        line: (#location).line(),
+                        column: (#location).column(),
+                        length: (#location).length(),
+                        message: format!("interceptor `{}` was not built", stringify!(#path)),
+                    },
                     context: {
                         "interceptor" => stringify!(#path),
                     },
@@ -84,6 +97,12 @@ fn generate_sword_with_config(
 ) -> TokenStream {
     let request_ty = &req_mode.request_ty;
     let with_config_trait = &req_mode.with_config_trait;
+    let ident = &interceptor_ty
+        .segments
+        .last()
+        .expect("interceptor path")
+        .ident;
+    let location = location::tokens(ident.span(), &ident.to_string());
 
     quote! {
         {
@@ -101,6 +120,13 @@ fn generate_sword_with_config(
                     target: "web interceptor",
                     title: "Failed to retrieve HTTP interceptor from State",
                     reason: err,
+                    source_location: {
+                        file: (#location).file(),
+                        line: (#location).line(),
+                        column: (#location).column(),
+                        length: (#location).length(),
+                        message: format!("interceptor `{}` was not built", stringify!(#interceptor_ty)),
+                    },
                     context: {
                         "interceptor" => stringify!(#interceptor_ty),
                     },

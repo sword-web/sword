@@ -7,6 +7,7 @@ use crate::{
     shared::{
         Result,
         cmeta::CMetaStack,
+        location,
         paths::*,
         traits::{generate_build_impl, generate_clone_impl},
     },
@@ -23,6 +24,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     };
 
     let self_ty = controller.ty();
+    let location = location::tokens(self_ty.span(), &self_ty.to_string());
     let fields = controller.fields();
 
     let interceptors: Vec<Path> = controller
@@ -78,6 +80,13 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                     target: "Socket.IO controller",
                     title: "Failed to build Socket.IO controller",
                     reason: err,
+                    source_location: {
+                        file: (#location).file(),
+                        line: (#location).line(),
+                        column: (#location).column(),
+                        length: (#location).length(),
+                        message: format!("`{}` could not be built", stringify!(#self_ty)),
+                    },
                     context: {
                         "controller" => #stringify!(#self_ty),
                     },
@@ -93,6 +102,13 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                     target: "Socket.IO controller",
                     title: "Socket.IO component not found in application state",
                     reason: err,
+                    source_location: {
+                        file: (#location).file(),
+                        line: (#location).line(),
+                        column: (#location).column(),
+                        length: (#location).length(),
+                        message: format!("`{}` was not set up", stringify!(#self_ty)),
+                    },
                     context: {
                         "controller" => #stringify!(#self_ty),
                     },
@@ -122,6 +138,13 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                                 target: "Socket.IO controller",
                                 title: "Multiple connection handlers found in Socket.IO controller",
                                 reason: "Only one #[on(\"connection\")] handler is allowed per controller",
+                                source_location: {
+                                    file: (#location).file(),
+                                    line: (#location).line(),
+                                    column: (#location).column(),
+                                    length: (#location).length(),
+                                    message: format!("`{}` declares two connection handlers", stringify!(#self_ty)),
+                                },
                                 context: {
                                     "controller" => #stringify!(#self_ty),
                                 },

@@ -1,4 +1,4 @@
-use crate::shared::{Result, paths::*};
+use crate::shared::{Result, location, paths::*};
 
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
@@ -18,6 +18,7 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
     let config_key = args.key;
     let struct_name = &input.ident;
     let self_ty = quote! { #struct_name };
+    let location = location::tokens(struct_name.span(), &struct_name.to_string());
 
     let expanded = quote! {
         #input
@@ -53,6 +54,13 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
                             target: "config registry",
                             title: "Failed to load registered config item",
                             reason: err,
+                            source_location: {
+                                file: (#location).file(),
+                                line: (#location).line(),
+                                column: (#location).column(),
+                                length: (#location).length(),
+                                message: format!("config item `{}`", #config_key),
+                            },
                             context: {
                                 "key" => #config_key,
                             },
@@ -68,6 +76,13 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
                             target: "config registry",
                             title: "Config item not found",
                             reason: format!("Config item '{}' was not found", #config_key),
+                            source_location: {
+                                file: (#location).file(),
+                                line: (#location).line(),
+                                column: (#location).column(),
+                                length: (#location).length(),
+                                message: format!("config item `{}` was not found", #config_key),
+                            },
                             context: {
                                 "key" => #config_key,
                             },
