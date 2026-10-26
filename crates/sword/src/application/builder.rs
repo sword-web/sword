@@ -266,6 +266,21 @@ impl ApplicationBuilder {
                 diagnostic = diagnostic.context(key, value);
             }
 
+            if let Some(location) = err.source_location() {
+                let dependency = err
+                    .missing_dependency_path()
+                    .and_then(|path| path.rsplit("::").next())
+                    .unwrap_or("unknown dependency");
+
+                diagnostic = diagnostic.source_location(
+                    location.file(),
+                    location.line(),
+                    location.column(),
+                    location.length(),
+                    format!("missing dependency `{dependency}`"),
+                );
+            }
+
             Error::new(diagnostic.build()).with_source(err)
         })
     }
