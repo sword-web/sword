@@ -47,7 +47,7 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
             #inventory::submit! {
                 #ConfigRegistrar::new(|state, config| {
                     let config_item = config.try_get::<#self_ty>().map_err(|err| {
-                        #sword_diagnostic! {
+                        #sword_error! {
                             code: "sword.build.config",
                             phase: #DiagnosticPhase::Build,
                             target: "config registry",
@@ -62,7 +62,7 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
                     })?;
 
                     let Some(config_item) = config_item else {
-                        return Err(#sword_diagnostic! {
+                        return Err(#sword_error! {
                             code: "sword.build.config",
                             phase: #DiagnosticPhase::Build,
                             target: "config registry",

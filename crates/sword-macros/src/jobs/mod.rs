@@ -40,7 +40,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 type_id: #TypeId::of::<#self_ty>(),
                 build_fn: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
                     let controller = #self_ty::build(state).map_err(|e| {
-                        #sword_diagnostic! {
+                        #sword_error! {
                             code: "sword.build.jobs",
                             phase: #DiagnosticPhase::Build,
                             target: "job controller",

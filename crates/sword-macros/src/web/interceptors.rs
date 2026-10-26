@@ -48,7 +48,7 @@ fn generate_sword_traditional(path: &Path, mode: &RequestModeTokens) -> TokenStr
             fn __check_on_request__<M: #simple_trait>(mw: &M) -> &M { mw }
 
             let middleware = state.borrow::<#path>().map_err(|err| {
-                #sword_diagnostic! {
+                #sword_error! {
                     code: "sword.build.web",
                     phase: #DiagnosticPhase::Build,
                     target: "web interceptor",
@@ -95,7 +95,7 @@ fn generate_sword_with_config(
             }
 
             let interceptor = state.borrow::<#interceptor_ty>().map_err(|err| {
-                #sword_diagnostic! {
+                #sword_error! {
                     code: "sword.build.web",
                     phase: #DiagnosticPhase::Build,
                     target: "web interceptor",

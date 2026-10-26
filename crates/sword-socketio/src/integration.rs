@@ -9,7 +9,7 @@ use socketioxide::layer::SocketIoLayer;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Config, ConfigSection, Controller, ControllerMap, State, sword_diagnostic};
+use sword_core::{Config, ConfigSection, Controller, ControllerMap, State, sword_error};
 use sword_layers::DisplayConfig;
 use sword_web::application::{
     WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
@@ -38,7 +38,7 @@ impl SocketIoWebExtension {
         for handler_id in handlers {
             let Some(setup) = setup_fns.get(handler_id) else {
                 if handler_controllers.contains(handler_id) {
-                    return Err(sword_diagnostic! {
+                    return Err(sword_error! {
                         code: "sword.build.socketio",
                         phase: DiagnosticPhase::Build,
                         target: "Socket.IO handler registry",
@@ -106,7 +106,7 @@ impl WebExtension for SocketIoWebExtension {
         let socketio_config = Self::get_config(&ctx.config);
 
         let socketio_layer = state.get::<SocketIoLayer>().map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.build.socketio",
                 phase: DiagnosticPhase::Build,
                 target: "socketio layer",

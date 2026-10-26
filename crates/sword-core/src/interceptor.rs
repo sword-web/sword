@@ -1,5 +1,5 @@
 use crate::diagnostic::{DiagnosticPhase, Error};
-use crate::{Build, State, sword_diagnostic};
+use crate::{Build, State, sword_error};
 
 /// Base trait for all interceptors in Sword.
 /// Implement this trait to create interceptors that can be automatically
@@ -10,7 +10,7 @@ use crate::{Build, State, sword_diagnostic};
 pub trait Interceptor: Build {
     fn register(state: &State) -> Result<(), Error> {
         let interceptor = Self::build(state).map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.build.interceptor",
                 phase: DiagnosticPhase::Build,
                 target: "interceptor registration",

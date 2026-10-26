@@ -6,8 +6,10 @@ use axum::{Router, extract::Request, middleware::Next};
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
+#[cfg(feature = "swagger-ui")]
+use sword_core::diagnostic::{Diagnostic, Severity};
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::sword_diagnostic;
+use sword_core::sword_error;
 
 use sword_core::*;
 use sword_layers::prelude::*;
@@ -109,7 +111,7 @@ impl WebApplicationRouter {
         for controller_id in self.controller_registry.get_by_kind(Controller::Web) {
             let Some(controller_registrar) = controller_registrars.get(&controller_id).copied()
             else {
-                return Err(sword_diagnostic! {
+                return Err(sword_error! {
                     code: "sword.build.router",
                     phase: DiagnosticPhase::Build,
                     target: "controller registry",
@@ -131,7 +133,7 @@ impl WebApplicationRouter {
                 .unwrap_or_default();
 
             if controller_routes.is_empty() {
-                return Err(sword_diagnostic! {
+                return Err(sword_error! {
                     code: "sword.build.router",
                     phase: DiagnosticPhase::Build,
                     target: "controller registry",
@@ -228,17 +230,18 @@ impl WebApplicationRouter {
                 "yaml" | "yml" => "application/x-yaml",
                 "json" => "application/json",
                 ext => {
-                    sword_error! {
-                        title: "Unsupported OpenAPI spec file type",
-                        reason: "The OpenAPI spec file has an unsupported extension",
-                        context: {
-                            "spec_path" => spec_path.clone(),
-                            "file_extension" => ext.to_string(),
-                            "source" => "WebRouter::apply_openapi",
-                        },
-                        hints: ["Supported extensions are .yaml, .yml, and .json"],
-                        fatal: false,
-                    }
+                    Diagnostic::builder()
+                        .code("sword.build.web")
+                        .severity(Severity::Warning)
+                        .phase(DiagnosticPhase::Build)
+                        .target(spec_path.clone())
+                        .title("Unsupported OpenAPI spec file type")
+                        .reason("The OpenAPI spec file has an unsupported extension")
+                        .context("file_extension", ext.to_string())
+                        .hint("Supported extensions are .yaml, .yml, and .json")
+                        .build()
+                        .report();
+
                     continue;
                 }
             };
@@ -246,17 +249,17 @@ impl WebApplicationRouter {
             let file_content = match std::fs::read_to_string(spec_path) {
                 Ok(c) => c,
                 Err(err) => {
-                    sword_error! {
-                        title: "Failed to read OpenAPI spec file",
-                        reason: "An error occurred while reading the OpenAPI spec file",
-                        context: {
-                            "spec_path" => spec_path.clone(),
-                            "error" => err.to_string(),
-                            "source" => "WebRouter::apply_openapi",
-                        },
-                        hints: ["Ensure the file exists and is readable"],
-                        fatal: false,
-                    }
+                    Diagnostic::builder()
+                        .code("sword.build.web")
+                        .severity(Severity::Warning)
+                        .phase(DiagnosticPhase::Build)
+                        .target(spec_path.clone())
+                        .title("Failed to read OpenAPI spec file")
+                        .reason(err.to_string())
+                        .hint("Ensure the file exists and is readable")
+                        .build()
+                        .report();
+
                     continue;
                 }
             };

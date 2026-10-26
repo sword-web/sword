@@ -46,7 +46,7 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
                         #DiagnosticError,
                     > {
                         let controller = state.borrow::<#controller_ty>().map_err(|err| {
-                            #sword_diagnostic! {
+                            #sword_error! {
                                 code: "sword.build.web",
                                 phase: #DiagnosticPhase::Build,
                                 target: "web route",

@@ -39,7 +39,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         InterceptorArgs::Traditional(path) => {
             quote! {
                 let interceptor = state.borrow::<#path>().map_err(|err| {
-                    #sword_diagnostic! {
+                    #sword_error! {
                         code: "sword.build.grpc",
                         phase: #DiagnosticPhase::Build,
                         target: "gRPC interceptor",
@@ -69,7 +69,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         InterceptorArgs::WithConfig { interceptor, config } => {
             quote! {
                 let interceptor = state.borrow::<#interceptor>().map_err(|err| {
-                    #sword_diagnostic! {
+                    #sword_error! {
                         code: "sword.build.grpc",
                         phase: #DiagnosticPhase::Build,
                         target: "gRPC interceptor",
@@ -120,7 +120,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 reflection_descriptor_set: #reflection_descriptor_set,
                 build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
                     let controller = #self_ty::build(state).map_err(|e| {
-                        #sword_diagnostic! {
+                        #sword_error! {
                             code: "sword.build.grpc",
                             phase: #DiagnosticPhase::Build,
                             target: "gRPC controller",
@@ -144,7 +144,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                     let registry = _registry;
 
                     let controller = state.borrow::<#self_ty>().map_err(|err| {
-                        #sword_diagnostic! {
+                        #sword_error! {
                             code: "sword.build.grpc",
                             phase: #DiagnosticPhase::Build,
                             target: "gRPC controller",
@@ -160,7 +160,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                     })?;
 
                     let body_limit = state.borrow::<#GrpcBodyLimitValue>().map_err(|err| {
-                        #sword_diagnostic! {
+                        #sword_error! {
                             code: "sword.build.grpc",
                             phase: #DiagnosticPhase::Build,
                             target: "gRPC body limit",

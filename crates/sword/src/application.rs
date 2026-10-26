@@ -4,7 +4,7 @@ mod env;
 
 use std::path::Path;
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Config, Shutdown, sword_diagnostic};
+use sword_core::{Config, Shutdown, sword_error};
 
 pub use builder::ApplicationBuilder;
 pub use env::Environment;
@@ -63,7 +63,7 @@ impl Application {
             .add_required_file(path.as_ref())
             .build()
             .map_err(|err| {
-                sword_diagnostic! {
+                sword_error! {
                     code: "sword.build.config",
                     phase: DiagnosticPhase::Build,
                     target: config_path,
@@ -149,7 +149,7 @@ impl Application {
         match result {
             Ok(Ok(())) => None,
             Ok(Err(error)) => Some(error),
-            Err(error) => Some(sword_diagnostic! {
+            Err(error) => Some(sword_error! {
                 code: "sword.runtime.application",
                 phase: DiagnosticPhase::Runtime,
                 target: "Application::run",
@@ -171,7 +171,7 @@ impl Application {
             }
         }
 
-        Err(sword_diagnostic! {
+        Err(sword_error! {
             code: "sword.runtime.router",
             phase: DiagnosticPhase::Runtime,
             target: "Application::router",

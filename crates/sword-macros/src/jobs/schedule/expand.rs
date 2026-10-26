@@ -35,7 +35,7 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                     controller_type_id: #TypeId::of::<#controller_ty>(),
                     handler: |state: &#State| -> ::std::result::Result<#Job, #DiagnosticError> {
                         let controller = state.borrow::<#controller_ty>().map_err(|err| {
-                            #sword_diagnostic! {
+                            #sword_error! {
                                 code: "sword.build.jobs",
                                 phase: #DiagnosticPhase::Build,
                                 target: "job schedule",
@@ -60,7 +60,7 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                             })
                         })
                         .map_err(|err| {
-                            #sword_diagnostic! {
+                            #sword_error! {
                                 code: "sword.build.jobs",
                                 phase: #DiagnosticPhase::Build,
                                 target: "job schedule",

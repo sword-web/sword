@@ -17,7 +17,7 @@ use std::{
 use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{
     Config, ConfigDocument, ConfigSection, Controller, ControllerRegistry, ProviderRegistry,
-    Shutdown, State, sword_diagnostic,
+    Shutdown, State, sword_error,
 };
 
 use tokio::task::JoinSet;
@@ -42,7 +42,7 @@ impl EventApplication {
 
         #[cfg(feature = "memory")]
         {
-            let (publisher, transport) = MemoryTransport::new(&events_config);
+            let (publisher, transport) = MemoryTransport::new(&events_config)?;
 
             providers.register(publisher);
             transports.push(EventTransport::Memory(transport));
@@ -124,7 +124,7 @@ impl EventApplication {
         match result {
             Ok(Ok(())) => None,
             Ok(Err(error)) => Some(error),
-            Err(error) => Some(sword_diagnostic! {
+            Err(error) => Some(sword_error! {
                 code: "sword.runtime.events",
                 phase: DiagnosticPhase::Runtime,
                 target: "EventApplication::run",
@@ -178,7 +178,7 @@ impl EventTransport {
 
             #[cfg(feature = "nats")]
             EventTransport::Nats(transport) => {
-                transport.run(shutdown).await;
+                transport.run(shutdown).await?;
             }
 
             _ => {}
@@ -253,7 +253,7 @@ fn check_event_key_uniqueness() -> Result<(), Error> {
 
     for event in inventory::iter::<EventRegistrar>() {
         if !keys.insert(event.key) {
-            return Err(sword_diagnostic! {
+            return Err(sword_error! {
                 code: "sword.build.events",
                 phase: DiagnosticPhase::Build,
                 target: "event registry",

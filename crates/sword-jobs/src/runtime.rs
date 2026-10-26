@@ -2,7 +2,7 @@ use crate::{JobControllerRegistrar, JobFunctionRegistrar};
 
 use std::{any::TypeId, collections::HashSet};
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Controller, EngineBuildContext, Shutdown, State, sword_diagnostic};
+use sword_core::{Controller, EngineBuildContext, Shutdown, State, sword_error};
 use tokio_cron_scheduler::JobScheduler;
 
 /// Runtime that builds job controllers, registers their jobs and keeps the
@@ -38,7 +38,7 @@ impl JobSchedulerRuntime {
         );
 
         let scheduler = JobScheduler::new().await.map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.jobs",
                 phase: DiagnosticPhase::Runtime,
                 target: "job scheduler",
@@ -74,7 +74,7 @@ impl JobSchedulerRuntime {
         }
 
         scheduler.start().await.map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.jobs",
                 phase: DiagnosticPhase::Runtime,
                 target: "job scheduler",
@@ -95,7 +95,7 @@ impl JobSchedulerRuntime {
         shutdown.cancelled().await;
 
         scheduler.shutdown().await.map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.jobs",
                 phase: DiagnosticPhase::Runtime,
                 target: "job scheduler",

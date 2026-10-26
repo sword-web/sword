@@ -40,7 +40,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let interceptor_applications = interceptors.iter().rev().map(|interceptor_path| {
         quote! {
             let interceptor = state.borrow::<#interceptor_path>().map_err(|err| {
-                #sword_diagnostic! {
+                #sword_error! {
                     code: "sword.build.socketio",
                     phase: #DiagnosticPhase::Build,
                     target: "Socket.IO interceptor",
@@ -72,7 +72,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
             use #ConnectHandler;
 
             let controller = #Arc::new(<#self_ty as #Build>::build(state).map_err(|err| {
-                #sword_diagnostic! {
+                #sword_error! {
                     code: "sword.build.socketio",
                     phase: #DiagnosticPhase::Build,
                     target: "Socket.IO controller",
@@ -87,7 +87,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
             })?);
 
             let io = state.get::<#SocketIo>().map_err(|err| {
-                #sword_diagnostic! {
+                #sword_error! {
                     code: "sword.build.socketio",
                     phase: #DiagnosticPhase::Build,
                     target: "Socket.IO controller",
@@ -116,7 +116,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 match handler_meta.event_kind {
                     #SocketEventKind::Connection => {
                         if connection_handler.is_some() {
-                            return Err(#sword_diagnostic! {
+                            return Err(#sword_error! {
                                 code: "sword.build.socketio",
                                 phase: #DiagnosticPhase::Build,
                                 target: "Socket.IO controller",

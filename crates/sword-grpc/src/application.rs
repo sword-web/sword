@@ -8,8 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{
-    ApplicationConfig, ConfigSection, Controller, EngineBuildContext, Shutdown, State,
-    sword_diagnostic,
+    ApplicationConfig, ConfigSection, Controller, EngineBuildContext, Shutdown, State, sword_error,
 };
 
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
@@ -34,7 +33,7 @@ impl GrpcApplication {
 
         // Controllers are discovered at runtime, so an empty set is only caught here.
         if self.controller_ids.is_empty() {
-            return Err(sword_diagnostic! {
+            return Err(sword_error! {
                 code: "sword.runtime.grpc",
                 phase: DiagnosticPhase::Runtime,
                 target: "gRPC controller registry",
@@ -48,7 +47,7 @@ impl GrpcApplication {
         }
 
         let bind_addr = bind.parse::<SocketAddr>().map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.grpc",
                 phase: DiagnosticPhase::Runtime,
                 target: "GrpcApplication::run",
@@ -84,7 +83,7 @@ impl GrpcApplication {
 
         for controller_id in &self.controller_ids {
             let Some(registrar) = registrars.get(controller_id).copied() else {
-                return Err(sword_diagnostic! {
+                return Err(sword_error! {
                     code: "sword.runtime.grpc",
                     phase: DiagnosticPhase::Runtime,
                     target: "gRPC controller registry",
@@ -119,7 +118,7 @@ impl GrpcApplication {
         // A registered controller may still add no tonic services
         // this catches broken macro expansions.
         if grpc_registry.services_count() == 0 {
-            return Err(sword_diagnostic! {
+            return Err(sword_error! {
                 code: "sword.runtime.grpc",
                 phase: DiagnosticPhase::Runtime,
                 target: "GrpcApplication::run",
@@ -174,7 +173,7 @@ impl GrpcApplication {
                 .serve_with_shutdown(bind_addr, shutdown.cancelled())
                 .await
                 .map_err(|err| {
-                    sword_diagnostic! {
+                    sword_error! {
                         code: "sword.runtime.grpc",
                         phase: DiagnosticPhase::Runtime,
                         target: "GrpcApplication::run",
@@ -195,7 +194,7 @@ impl GrpcApplication {
         tokio::select! {
             res = router.serve(bind_addr) => {
                 res.map_err(|err| {
-                    sword_diagnostic! {
+                    sword_error! {
                         code: "sword.runtime.grpc",
                         phase: DiagnosticPhase::Runtime,
                         target: "GrpcApplication::run",
@@ -235,7 +234,7 @@ impl GrpcApplication {
         }
 
         reflection_builder.build_v1().map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.grpc",
                 phase: DiagnosticPhase::Runtime,
                 target: "GrpcApplication::run",

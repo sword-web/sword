@@ -20,8 +20,8 @@ use sword_web::{
 use std::any::Any;
 use std::path::Path;
 use std::sync::Arc;
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::sword_diagnostic;
+use sword_core::diagnostic::{Diagnostic, DiagnosticPhase, Error};
+use sword_core::sword_error;
 use sword_core::*;
 use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
@@ -49,7 +49,7 @@ impl ApplicationBuilder {
             Ok(Some(env)) => env.default_config_path(),
             Ok(None) => Self::DEFAULT_CONFIG_PATH,
             Err(err) => {
-                return Err(sword_diagnostic! {
+                return Err(sword_error! {
                     code: "sword.build.application",
                     phase: DiagnosticPhase::Build,
                     target: "SWORD_ENV",
@@ -65,7 +65,7 @@ impl ApplicationBuilder {
             .add_required_file(Path::new(config_path))
             .build()
             .map_err(|err| {
-                sword_diagnostic! {
+                sword_error! {
                     code: "sword.build.config",
                     phase: DiagnosticPhase::Build,
                     target: config_path,
@@ -91,7 +91,7 @@ impl ApplicationBuilder {
         TracingSubscriber::from(tracing_config)
             .init()
             .map_err(|err| {
-                sword_diagnostic! {
+                sword_error! {
                     code: "sword.build.tracing",
                     phase: DiagnosticPhase::Build,
                     target: "tracing subscriber",
@@ -210,7 +210,7 @@ impl ApplicationBuilder {
         )?;
 
         // The dependency container is built once all providers and components are registered.
-        self.build_dependency_container();
+        self.build_dependency_container()?;
 
         // Once the dependency container is built, the interceptors declared with the
         // #[derive(Interceptor)] macro are registered.
@@ -251,31 +251,22 @@ impl ApplicationBuilder {
         Ok(Application::new(engines, self.config))
     }
 
-    fn build_dependency_container(&mut self) {
-        self.container.build_all(&self.state).unwrap_or_else(|err| {
-            match (err.dependency_path(), err.missing_dependency_path()) {
-                (Some(dependency_path), Some(missing_dependency_path)) => {
-                    sword_error! {
-                        title: "Failed to Build DI Container",
-                        reason: err,
-                        source: "ApplicationBuilder::build_dependency_container",
-                        fields: {
-                            dependency_path = dependency_path,
-                            missing_dependency_path = missing_dependency_path,
-                        },
-                        hints: ["Check that all required components and providers are registered"],
-                    }
-                }
-                _ => {
-                    sword_error! {
-                        title: "Failed to Build DI Container",
-                        reason: err,
-                        source: "ApplicationBuilder::build_dependency_container",
-                        extra_context: err.diagnostic_context(),
-                        hints: ["Check that all required components and providers are registered"],
-                    }
-                }
+    fn build_dependency_container(&mut self) -> Result<(), Error> {
+        self.container.build_all(&self.state).map_err(|err| {
+            let mut diagnostic = Diagnostic::builder()
+                .code("sword.build.di")
+                .phase(DiagnosticPhase::Build)
+                .target("dependency container")
+                .title("Failed to build the dependency container")
+                .reason(err.to_string())
+                .source("ApplicationBuilder::build_dependency_container")
+                .hint("Check that all required components and providers are registered");
+
+            for (key, value) in err.diagnostic_context() {
+                diagnostic = diagnostic.context(key, value);
             }
-        });
+
+            Error::new(diagnostic.build()).with_source(err)
+        })
     }
 }

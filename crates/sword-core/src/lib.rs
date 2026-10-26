@@ -10,14 +10,6 @@ mod state;
 
 pub mod diagnostic;
 
-pub mod error {
-    #[macro_use]
-    mod macros;
-    mod diagnostic;
-
-    pub use diagnostic::{StartupDiagnostic, emit};
-}
-
 pub use application::*;
 pub use config::*;
 pub use controllers::*;

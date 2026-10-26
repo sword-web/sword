@@ -74,7 +74,6 @@ path!(DependencyInjectionError => ::sword::internal::core::DependencyInjectionEr
 
 path!(inventory => ::sword::internal::inventory);
 path!(sword_error => ::sword::internal::core::sword_error);
-path!(sword_diagnostic => ::sword::internal::core::sword_diagnostic);
 path!(DiagnosticPhase => ::sword::internal::core::diagnostic::DiagnosticPhase);
 path!(DiagnosticError => ::sword::internal::core::diagnostic::Error);
 path!(SocketResultFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::std::result::Result<(), ::sword::internal::core::diagnostic::Error>> + ::std::marker::Send>>);

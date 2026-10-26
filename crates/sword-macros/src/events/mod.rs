@@ -51,7 +51,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 ty: #TypeId::of::<#self_ty>(),
                 build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
                     let controller = #self_ty::build(state).map_err(|e| {
-                        #sword_diagnostic! {
+                        #sword_error! {
                             code: "sword.build.events",
                             phase: #DiagnosticPhase::Build,
                             target: "event controller",

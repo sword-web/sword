@@ -7,7 +7,7 @@ use axum::Router;
 use router::WebApplicationRouter;
 use std::net::SocketAddr;
 use sword_core::diagnostic::Error;
-use sword_core::sword_diagnostic;
+use sword_core::sword_error;
 use sword_core::*;
 use tokio::net::TcpListener;
 
@@ -67,7 +67,7 @@ impl WebApplication {
         let app = self.router.clone().with_state(self.state.clone());
 
         let bind_addr: SocketAddr = bind.parse::<SocketAddr>().map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.web",
                 phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
                 target: "WebApplication::run",
@@ -81,7 +81,7 @@ impl WebApplication {
         })?;
 
         let listener = TcpListener::bind(bind_addr).await.map_err(|err| {
-            sword_diagnostic! {
+            sword_error! {
                 code: "sword.runtime.web",
                 phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
                 target: "WebApplication::run",
@@ -101,7 +101,7 @@ impl WebApplication {
                 .with_graceful_shutdown(shutdown.cancelled())
                 .await
                 .map_err(|err| {
-                    sword_diagnostic! {
+                    sword_error! {
                         code: "sword.runtime.web",
                         phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
                         target: "WebApplication::run",
@@ -122,7 +122,7 @@ impl WebApplication {
         tokio::select! {
             res = axum::serve(listener, app) => {
                 res.map_err(|err| {
-                    sword_diagnostic! {
+                    sword_error! {
                         code: "sword.runtime.web",
                         phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
                         target: "WebApplication::run",

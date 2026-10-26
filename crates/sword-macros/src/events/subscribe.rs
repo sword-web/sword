@@ -91,7 +91,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                 state: &#State,
             ) -> ::std::result::Result<#EventHandlerFn, #DiagnosticError> {
                 let controller = state.borrow::<#controller_ty>().map_err(|err| {
-                    #sword_diagnostic! {
+                    #sword_error! {
                         code: "sword.build.events",
                         phase: #DiagnosticPhase::Build,
                         target: "event handler registry",

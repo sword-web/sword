@@ -33,7 +33,7 @@ pub fn expand_on_attribute(handler: ParsedOnHandler) -> TokenStream {
                     let controller = controller_any
                         .downcast::<#controller_ty>()
                         .map_err(|_| {
-                            #sword_diagnostic! {
+                            #sword_error! {
                                 code: "sword.runtime.socketio",
                                 phase: #DiagnosticPhase::Runtime,
                                 target: "Socket.IO handler",
@@ -65,7 +65,7 @@ pub fn expand_on_attribute(handler: ParsedOnHandler) -> TokenStream {
                     ctx: #SocketContext,
                 ) -> #SocketResultFuture {
                     let Ok(controller) = controller_any.downcast::<#controller_ty>() else {
-                        let error = #sword_diagnostic! {
+                        let error = #sword_error! {
                             code: "sword.runtime.socketio",
                             phase: #DiagnosticPhase::Runtime,
                             target: "Socket.IO handler",

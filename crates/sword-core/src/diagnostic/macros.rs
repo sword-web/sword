@@ -4,7 +4,7 @@
 /// it and does not panic, so it can be used anywhere a `Result` is expected:
 ///
 /// ```ignore
-/// return Err(sword_diagnostic! {
+/// return Err(sword_error! {
 ///     code: "sword.build.config",
 ///     phase: DiagnosticPhase::Build,
 ///     title: "Failed to load configuration",
@@ -20,7 +20,7 @@
 /// `reason`) are always present. Optional fields can be omitted, but they cannot
 /// be reordered.
 #[macro_export]
-macro_rules! sword_diagnostic {
+macro_rules! sword_error {
     (
         code: $code:expr
         $(, phase: $phase:expr)?

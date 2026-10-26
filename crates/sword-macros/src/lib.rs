@@ -361,7 +361,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
                 {
                     Ok(runtime) => runtime,
                     Err(err) => {
-                        let error = ::sword::internal::core::sword_diagnostic! {
+                        let error = ::sword::internal::core::sword_error! {
                             code: "sword.runtime.main",
                             phase: ::sword::internal::core::diagnostic::DiagnosticPhase::Runtime,
                             target: "#[sword::main]",
@@ -395,7 +395,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
                         .build()
                     {
                         Ok(runtime) => runtime.block_on(async #body),
-                        Err(err) => Err(::sword::internal::core::sword_diagnostic! {
+                        Err(err) => Err(::sword::internal::core::sword_error! {
                             code: "sword.runtime.main",
                             phase: ::sword::internal::core::diagnostic::DiagnosticPhase::Runtime,
                             target: "#[sword::main]",

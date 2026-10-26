@@ -39,7 +39,7 @@ impl DiagnosticsMode {
             Self::Miette => Renderer::Miette,
             Self::Tracing if tracing::dispatcher::has_been_set() => Renderer::Tracing,
             Self::Tracing => {
-                return Err(crate::sword_diagnostic! {
+                return Err(crate::sword_error! {
                     code: "sword.build.diagnostics",
                     phase: DiagnosticPhase::Build,
                     target: "diagnostics configuration",
