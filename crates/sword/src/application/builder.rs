@@ -106,6 +106,24 @@ impl ApplicationBuilder {
                 }
             })?;
 
+        let app_config = config
+            .try_get::<ApplicationConfig>()
+            .map_err(|err| {
+                sword_error! {
+                    code: "sword.build.application",
+                    phase: DiagnosticPhase::Build,
+                    target: "application configuration",
+                    title: "Invalid [application] configuration",
+                    reason: err,
+                    source: "ApplicationBuilder::from_config",
+                    hints: ["Check the types of the values in [application]"],
+                    cause: err,
+                }
+            })?
+            .unwrap_or_default();
+
+        app_config.diagnostics.apply()?;
+
         let state = State::initialize_with(config.clone());
 
         // Collection and registration in the state of configuration structs
