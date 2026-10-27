@@ -4,6 +4,7 @@ use crate::core::{ControllerKind, ControllerStruct};
 use crate::shared::{
     Result,
     cmeta::CMetaStack,
+    location,
     paths::*,
     traits::{generate_build_impl, generate_clone_impl},
 };
@@ -18,6 +19,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     };
 
     let self_ty = &controller.ty();
+    let location = location::tokens(self_ty.span(), &self_ty.to_string());
     let fields = controller.fields();
 
     CMetaStack::push("job_controller", "controller_ty", &controller.name());
@@ -38,21 +40,32 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         #inventory::submit! {
             #JobControllerRegistrar {
                 type_id: #TypeId::of::<#self_ty>(),
-                build_fn: |state: &#State| {
-                    let controller = #self_ty::build(state).unwrap_or_else(|e| {
+                build_fn: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
+                    let controller = #self_ty::build(state).map_err(|e| {
                         #sword_error! {
+                            code: "sword.build.jobs",
+                            phase: #DiagnosticPhase::Build,
+                            target: "job controller",
                             title: "Failed to build controller",
                             reason: format!("Failed to build job controller dependency graph: {e}"),
+                            source_location: {
+                                file: (#location).file(),
+                                line: (#location).line(),
+                                column: (#location).column(),
+                                length: (#location).length(),
+                                message: format!("`{}`", stringify!(#self_ty)),
+                            },
                             context: {
                                 "controller_name" => stringify!(#self_ty),
-                                "error" => format!("{e:?}"),
-                                "source" => "JobControllerRegistrar::build",
                             },
-                            hints: ["Check the error message for details on what went wrong during construction"],
+                            hints: ["Register the missing dependencies as providers or components"],
+                            cause: e,
                         }
-                    });
+                    })?;
 
                     state.insert::<#self_ty>(controller);
+
+                    Ok(())
                 }
             }
         }

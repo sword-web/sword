@@ -46,11 +46,13 @@ impl Module for TestModule {
 
 fn test_server() -> TestServer {
     let app = Application::builder()
+        .expect("application builder")
         .with_module::<TestModule>()
         .with_layer(cors_layer())
-        .build();
+        .build()
+        .expect("application");
 
-    TestServer::new(app.router())
+    TestServer::new(app.router().expect("socketio application expected"))
 }
 
 /// Test that CORS headers are present in SocketIO handshake (polling transport)
@@ -149,11 +151,13 @@ async fn cors_doesnt_break_rest() {
     }
 
     let app = Application::builder()
+        .expect("application builder")
         .with_module::<TestModuleWithRest>()
         .with_layer(cors_layer())
-        .build();
+        .build()
+        .expect("application");
 
-    let test = TestServer::new(app.router());
+    let test = TestServer::new(app.router().expect("socketio application expected"));
 
     let response = test.get("/api/test").await;
     assert_eq!(response.status_code(), 200);

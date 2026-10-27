@@ -89,11 +89,13 @@ impl Module for ErrorModule {
     }
 }
 
-async fn start_error_server() -> tokio::task::JoinHandle<()> {
+async fn start_error_server() -> tokio::task::JoinHandle<Result<(), sword::diagnostic::Error>> {
     let config_path = format!("{}/config/config.toml", env!("CARGO_MANIFEST_DIR"));
     let app = Application::from_config_path(&config_path)
+        .expect("application builder")
         .with_module::<ErrorModule>()
-        .build();
+        .build()
+        .expect("application");
 
     let handle = tokio::spawn(async move { app.run().await });
 
@@ -102,7 +104,8 @@ async fn start_error_server() -> tokio::task::JoinHandle<()> {
     for _ in 0..50 {
         if handle.is_finished() {
             match handle.await {
-                Ok(()) => panic!("gRPC server task exited before accepting connections"),
+                Ok(Ok(())) => panic!("gRPC server task exited before accepting connections"),
+                Ok(Err(err)) => panic!("gRPC server task failed: {err}"),
                 Err(err) => panic!("gRPC server task failed: {err}"),
             }
         }

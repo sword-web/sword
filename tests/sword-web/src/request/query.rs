@@ -122,7 +122,10 @@ impl Module for UserModule {
 
 #[tokio::test]
 async fn unvalidated_query_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/simple-query?page=1&limit=5").await;
@@ -142,7 +145,10 @@ async fn unvalidated_query_test() {
 
 #[tokio::test]
 async fn validated_query_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/validate-query?page=1&limit=5").await;
@@ -163,7 +169,10 @@ async fn validated_query_test() {
 
 #[tokio::test]
 async fn validated_query_error_test_validator() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/validate-query?page=1001&limit=5").await;
@@ -191,7 +200,10 @@ async fn validated_query_error_test_validator() {
 
 #[tokio::test]
 async fn ergonomic_optional_query_with_params_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app
@@ -214,7 +226,10 @@ async fn ergonomic_optional_query_with_params_test() {
 
 #[tokio::test]
 async fn ergonomic_optional_query_without_params_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/ergonomic-optional-query").await;
@@ -233,7 +248,10 @@ async fn ergonomic_optional_query_without_params_test() {
 
 #[tokio::test]
 async fn ergonomic_validated_optional_query_with_params_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app
@@ -255,7 +273,10 @@ async fn ergonomic_validated_optional_query_with_params_test() {
 
 #[tokio::test]
 async fn ergonomic_validated_optional_query_without_params_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/ergonomic-validated-optional-query").await;
@@ -272,7 +293,10 @@ async fn ergonomic_validated_optional_query_without_params_test() {
 
 #[tokio::test]
 async fn pattern_match_query_with_params_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/pattern-match-query?page=1&limit=5").await;
@@ -288,7 +312,10 @@ async fn pattern_match_query_with_params_test() {
 
 #[tokio::test]
 async fn pattern_match_query_without_params_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/users/pattern-match-query").await;
@@ -304,7 +331,10 @@ async fn pattern_match_query_without_params_test() {
 
 #[tokio::test]
 async fn complex_encoded_query_test() {
-    let app = application_builder().with_module::<UserModule>().build();
+    let app = application_builder()
+        .with_module::<UserModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let encoded_url = "/users/complex-query?page=1&limit=-10&price=99.99&search=hello%20world&category=electronics%26gadgets&active=true&user_name=john%2Bdoe&email_filter=test%40example.com";

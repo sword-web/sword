@@ -20,7 +20,7 @@ impl Module for ExampleModule {
 }
 
 #[sword::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     let config = Config::builder()
         .add_file("Config.toml")
         .build()
@@ -29,10 +29,12 @@ async fn main() {
     let cors_config = config.expect::<CorsConfig>();
     let cors_layers = CorsLayer::from(cors_config);
 
-    let app = Application::from_config(config)
+    let app = Application::from_config(config)?
         .with_module::<ExampleModule>()
         .with_layer(cors_layers)
-        .build();
+        .build()?;
 
-    app.run().await;
+    app.run().await?;
+
+    Ok(())
 }

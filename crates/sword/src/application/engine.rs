@@ -1,4 +1,5 @@
 use sword_core::Shutdown;
+use sword_core::diagnostic::Error;
 
 /// One runnable piece of the application.
 pub(crate) enum Engine {
@@ -37,7 +38,7 @@ impl Engine {
 
     /// Runs the engine until `shutdown` is cancelled.
     #[allow(unused_variables)]
-    pub(crate) async fn run(self, shutdown: Shutdown) {
+    pub(crate) async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         #[allow(unreachable_patterns)]
         match self {
             #[cfg(any(feature = "web", feature = "socketio"))]
@@ -52,7 +53,7 @@ impl Engine {
             #[cfg(feature = "jobs")]
             Engine::Jobs(jobs) => jobs.run(shutdown).await,
 
-            _ => {}
+            _ => Ok(()),
         }
     }
 }

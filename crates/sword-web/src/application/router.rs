@@ -5,6 +5,11 @@ use crate::response::JsonResponse;
 use axum::{Router, extract::Request, middleware::Next};
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::sync::Arc;
+#[cfg(feature = "swagger-ui")]
+use sword_core::diagnostic::{Diagnostic, Severity};
+use sword_core::diagnostic::{DiagnosticPhase, Error};
+use sword_core::sword_error;
 
 use sword_core::*;
 use sword_layers::prelude::*;
@@ -15,10 +20,11 @@ pub(crate) struct WebApplicationRouter {
     pub layer_stack: LayerStack<State>,
     pub controller_registry: ControllerRegistry,
     pub web_config: WebApplicationConfig,
+    pub config_document: Option<Arc<ConfigDocument>>,
 }
 
 impl WebApplicationRouter {
-    pub fn build(&mut self) -> Router<State> {
+    pub fn build(&mut self) -> Result<Router<State>, Error> {
         // Collect extensions once and let each seed State before controllers and routes are built.
         let extensions = inventory::iter::<WebExtensionRegistrar>()
             .map(|entry| entry.extension)
@@ -27,18 +33,19 @@ impl WebApplicationRouter {
         let extension_ctx = WebExtensionContext {
             state: self.state.clone(),
             config: self.config.clone(),
+            config_document: self.config_document.clone(),
             controller_map: self.controller_registry.snapshot(),
         };
 
         for extension in &extensions {
-            extension.init_state(&extension_ctx);
+            extension.init_state(&extension_ctx)?;
         }
 
         // Build the API router: controllers, mandatory layers, health, OpenAPI, and services
         // Everything goes into api_router so it's consistently under prefix when configured
         let mut api_router = Router::new();
 
-        api_router = self.apply_web_controllers(api_router);
+        api_router = self.apply_web_controllers(api_router)?;
         api_router = self.apply_web_layers(api_router);
 
         api_router = api_router.route(
@@ -73,7 +80,7 @@ impl WebApplicationRouter {
         }
 
         for extension in extensions {
-            router = extension.extend_router(&extension_ctx, router);
+            router = extension.extend_router(&extension_ctx, router)?;
         }
 
         // Cookie parsing first, then user layers; NotFound is outermost so it only sees unmatched
@@ -82,10 +89,10 @@ impl WebApplicationRouter {
         router = self.layer_stack.apply(router);
         router = router.layer(NotFoundLayer);
 
-        router
+        Ok(router)
     }
 
-    fn apply_web_controllers(&mut self, mut router: Router<State>) -> Router<State> {
+    fn apply_web_controllers(&mut self, mut router: Router<State>) -> Result<Router<State>, Error> {
         let controller_registrars = inventory::iter::<WebControllerRegistrar>()
             .map(|reg| (reg.controller_id, reg))
             .collect::<HashMap<TypeId, &WebControllerRegistrar>>();
@@ -102,23 +109,23 @@ impl WebApplicationRouter {
         }
 
         for controller_id in self.controller_registry.get_by_kind(Controller::Web) {
-            let controller_registrar = controller_registrars
-                .get(&controller_id)
-                .copied()
-                .unwrap_or_else(|| {
-                    sword_error! {
-                        title: "Controller metadata not found",
-                        reason: "No WebControllerRegistrar entry was found for controller",
-                        context: {
-                            "controller_id" => format!("{controller_id:?}"),
-                            "source" => "WebRouter::apply_http_controllers",
-                        },
-                        hints: ["This usually indicates a controller macro expansion issue"],
-                    }
+            let Some(controller_registrar) = controller_registrars.get(&controller_id).copied()
+            else {
+                return Err(sword_error! {
+                    code: "sword.build.router",
+                    phase: DiagnosticPhase::Build,
+                    target: "controller registry",
+                    title: "Controller metadata not found",
+                    reason: "No WebControllerRegistrar entry was found for controller",
+                    context: {
+                        "controller_id" => format!("{controller_id:?}"),
+                    },
+                    hints: ["This usually indicates a controller macro expansion issue"],
                 });
+            };
 
             // Build the controller into State before resolving its route handlers.
-            (controller_registrar.build)(&self.state);
+            (controller_registrar.build)(&self.state)?;
 
             let controller_routes = routes_by_controller
                 .get(&controller_id)
@@ -126,22 +133,24 @@ impl WebApplicationRouter {
                 .unwrap_or_default();
 
             if controller_routes.is_empty() {
-                sword_error! {
+                return Err(sword_error! {
+                    code: "sword.build.router",
+                    phase: DiagnosticPhase::Build,
+                    target: "controller registry",
                     title: "Controller has no registered routes",
                     reason: "No RouteRegistrar entries were found for controller",
                     context: {
                         "controller_id" => format!("{controller_id:?}"),
-                        "source" => "WebRouter::apply_http_controllers",
                     },
                     hints: ["This usually indicates a controller macro expansion issue"],
-                }
+                });
             }
 
             let mut controller_router = Router::new();
 
             for route in controller_routes {
                 // Each route handler closes over State and produces its own MethodRouter.
-                let route_handler = (route.handler)(self.state.clone());
+                let route_handler = (route.handler)(self.state.clone())?;
                 controller_router = controller_router.route(route.path, route_handler);
             }
 
@@ -157,7 +166,7 @@ impl WebApplicationRouter {
             }
         }
 
-        router
+        Ok(router)
     }
 
     /// Apply mandatory web layers.
@@ -221,17 +230,18 @@ impl WebApplicationRouter {
                 "yaml" | "yml" => "application/x-yaml",
                 "json" => "application/json",
                 ext => {
-                    sword_error! {
-                        title: "Unsupported OpenAPI spec file type",
-                        reason: "The OpenAPI spec file has an unsupported extension",
-                        context: {
-                            "spec_path" => spec_path.clone(),
-                            "file_extension" => ext.to_string(),
-                            "source" => "WebRouter::apply_openapi",
-                        },
-                        hints: ["Supported extensions are .yaml, .yml, and .json"],
-                        fatal: false,
-                    }
+                    Diagnostic::builder()
+                        .code("sword.build.web")
+                        .severity(Severity::Warning)
+                        .phase(DiagnosticPhase::Build)
+                        .target(spec_path.clone())
+                        .title("Unsupported OpenAPI spec file type")
+                        .reason(format!("extension `{ext}` is not supported"))
+                        .context("file_extension", ext.to_string())
+                        .hint("Supported extensions are .yaml, .yml, and .json")
+                        .build()
+                        .report();
+
                     continue;
                 }
             };
@@ -239,17 +249,17 @@ impl WebApplicationRouter {
             let file_content = match std::fs::read_to_string(spec_path) {
                 Ok(c) => c,
                 Err(err) => {
-                    sword_error! {
-                        title: "Failed to read OpenAPI spec file",
-                        reason: "An error occurred while reading the OpenAPI spec file",
-                        context: {
-                            "spec_path" => spec_path.clone(),
-                            "error" => err.to_string(),
-                            "source" => "WebRouter::apply_openapi",
-                        },
-                        hints: ["Ensure the file exists and is readable"],
-                        fatal: false,
-                    }
+                    Diagnostic::builder()
+                        .code("sword.build.web")
+                        .severity(Severity::Warning)
+                        .phase(DiagnosticPhase::Build)
+                        .target(spec_path.clone())
+                        .title("Failed to read OpenAPI spec file")
+                        .reason(err.to_string())
+                        .hint("Ensure the file exists and is readable")
+                        .build()
+                        .report();
+
                     continue;
                 }
             };

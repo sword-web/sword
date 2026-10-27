@@ -53,7 +53,8 @@ impl Module for TestErrorModule {
 async fn web_error_route_not_found_returns_json_response() {
     let app = application_builder()
         .with_module::<TestErrorModule>()
-        .build();
+        .build()
+        .expect("application");
 
     let app = test_server(app);
 
@@ -73,7 +74,8 @@ async fn web_error_route_not_found_returns_json_response() {
 async fn web_error_route_conflict_returns_error_field() {
     let app = application_builder()
         .with_module::<TestErrorModule>()
-        .build();
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/test-errors/conflict").await;

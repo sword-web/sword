@@ -6,6 +6,7 @@ use crate::{EventApplicationConfig, EventHandlerFn, EventRegistrar, application:
 
 use client::NatsClient;
 use std::{collections::HashMap, sync::Arc};
+use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{Shutdown, sword_error};
 use tokio::task::JoinSet;
 
@@ -55,9 +56,12 @@ impl NatsTransport {
         self.subscriptions = by_subscription;
     }
 
-    pub async fn run(self, shutdown: Shutdown) {
-        self.client.connect().await.unwrap_or_else(|error| {
+    pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
+        self.client.connect().await.map_err(|error| {
             sword_error! {
+                code: "sword.runtime.events.nats",
+                phase: DiagnosticPhase::Runtime,
+                target: "NATS transport",
                 title: "Failed to connect to NATS",
                 reason: error,
                 source: "NatsTransport::run",
@@ -68,16 +72,21 @@ impl NatsTransport {
                     "Ensure the NATS server is running and reachable",
                     "Check the `[events.nats] url` value in your configuration",
                 ],
+                cause: error,
             }
-        });
+        })?;
 
-        let client = self.client.get().cloned().unwrap_or_else(|| {
+        let client = self.client.get().cloned().ok_or_else(|| {
             sword_error! {
+                code: "sword.runtime.events.nats",
+                phase: DiagnosticPhase::Runtime,
+                target: "NATS transport",
                 title: "Failed to get NATS client",
                 reason: "Client is not connected",
                 source: "NatsTransport::run",
+                hints: ["Ensure the NATS connection was established successfully"],
             }
-        });
+        })?;
 
         tracing::info!(
             target: "sword.events.nats",
@@ -99,5 +108,7 @@ impl NatsTransport {
         let _ = client.drain().await;
 
         while tasks.join_next().await.is_some() {}
+
+        Ok(())
     }
 }

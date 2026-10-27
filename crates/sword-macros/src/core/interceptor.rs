@@ -1,5 +1,5 @@
 use crate::shared::{
-    Result,
+    Result, location,
     paths::*,
     structs::Struct,
     traits::{generate_build_impl, generate_clone_impl, generate_has_deps_impl},
@@ -22,6 +22,7 @@ pub fn expand_interceptor_derive(item: TokenStream) -> Result<TokenStream> {
 
     let self_name = &parsed_struct.ident;
     let self_fields = &parsed_struct.fields();
+    let location = location::tokens(self_name.span(), &self_name.to_string());
 
     let build_impl = generate_build_impl(self_name, self_fields);
     let clone_impl = generate_clone_impl(self_name, self_fields);
@@ -32,7 +33,32 @@ pub fn expand_interceptor_derive(item: TokenStream) -> Result<TokenStream> {
         #clone_impl
         #deps_impl
 
-        impl #Interceptor for #self_name {}
+        impl #Interceptor for #self_name {
+            fn register(state: &#State) -> ::std::result::Result<(), #DiagnosticError> {
+                let interceptor = <Self as #Build>::build(state).map_err(|err| {
+                    #sword_error! {
+                        code: "sword.build.interceptor",
+                        phase: #DiagnosticPhase::Build,
+                        target: "interceptor registration",
+                        title: "Failed to build interceptor",
+                        reason: err,
+                        source_location: {
+                            file: (#location).file(),
+                            line: (#location).line(),
+                            column: (#location).column(),
+                            length: (#location).length(),
+                            message: format!("`{}`", stringify!(#self_name)),
+                        },
+                        hints: ["Ensure interceptor dependencies are registered in the DI container"],
+                        cause: err,
+                    }
+                })?;
+
+                state.insert(interceptor);
+
+                Ok(())
+            }
+        }
 
         #inventory::submit! {
             #InterceptorRegistrar {

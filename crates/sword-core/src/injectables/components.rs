@@ -1,3 +1,4 @@
+use crate::diagnostic::SourceLocation;
 use crate::{DependencyInjectionError, HasDeps, Injectable, RwMap, State};
 use std::{
     any::{TypeId, type_name},
@@ -14,7 +15,13 @@ type ComponentBuilderFn = Box<dyn Fn(&State) -> Result<Injectable, DependencyInj
 /// components in the State.
 ///
 /// Use the `#[injectable]` macro to automatically implement this trait.
-pub trait Component: HasDeps {}
+pub trait Component: HasDeps {
+    /// Returns where the component was declared, when the `#[injectable]` macro
+    /// could capture it.
+    fn source_location() -> Option<SourceLocation> {
+        None
+    }
+}
 
 pub struct ComponentRegistry {
     builders: RwMap<TypeId, ComponentBuilderFn>,
@@ -36,11 +43,12 @@ impl ComponentRegistry {
     pub fn register<T: Component>(&self) {
         let type_id = TypeId::of::<T>();
         let type_name = type_name::<T>();
+        let location = T::source_location();
 
         let component_builder = Box::new(move |state: &State| {
             T::build(state)
                 .map(|instance| Arc::new(instance) as Injectable)
-                .map_err(|e| DependencyInjectionError::build_failed(type_name, e))
+                .map_err(|e| DependencyInjectionError::build_failed(type_name, e, location))
         });
 
         self.dependency_graph.write().insert(type_id, T::deps());

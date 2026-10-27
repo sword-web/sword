@@ -40,7 +40,10 @@ impl Module for SseModule {
 
 #[tokio::test]
 async fn sse_handler_streams_events() {
-    let app = application_builder().with_module::<SseModule>().build();
+    let app = application_builder()
+        .with_module::<SseModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/sse/stream").await;
@@ -55,7 +58,10 @@ async fn sse_handler_streams_events() {
 
 #[tokio::test]
 async fn sse_handler_keep_alive_composes() {
-    let app = application_builder().with_module::<SseModule>().build();
+    let app = application_builder()
+        .with_module::<SseModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.get("/sse/keep-alive").await;

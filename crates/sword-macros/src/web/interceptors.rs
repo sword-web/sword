@@ -1,4 +1,8 @@
-use crate::{core::InterceptorArgs, shared::paths::*, web::routes::RequestMode};
+use crate::{
+    core::InterceptorArgs,
+    shared::{location, paths::*},
+    web::routes::RequestMode,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Expr, Path};
@@ -42,22 +46,34 @@ pub fn expand_sword_interceptor(args: &InterceptorArgs, req_mode: RequestMode) -
 fn generate_sword_traditional(path: &Path, mode: &RequestModeTokens) -> TokenStream {
     let request_type = mode.request_ty.clone();
     let simple_trait = mode.traditional_trait.clone();
+    let ident = &path.segments.last().expect("interceptor path").ident;
+    let location = location::tokens(ident.span(), &ident.to_string());
 
     quote! {
         {
             fn __check_on_request__<M: #simple_trait>(mw: &M) -> &M { mw }
 
-            let middleware = state.borrow::<#path>()
-                .unwrap_or_else(|err| {
-                    #sword_error!(
-                        title: "Failed to retrieve HTTP interceptor from State",
-                        reason: err,
-                        context: {
-                            "interceptor" => stringify!(#path),
-                        },
-                        hints: ["Ensure the interceptor is registered and built before controller initialization"],
-                    )
-                });
+            let middleware = state.borrow::<#path>().map_err(|err| {
+                #sword_error! {
+                    code: "sword.build.web",
+                    phase: #DiagnosticPhase::Build,
+                    target: "web interceptor",
+                    title: "Failed to retrieve HTTP interceptor from State",
+                    reason: err,
+                    source_location: {
+                        file: (#location).file(),
+                        line: (#location).line(),
+                        column: (#location).column(),
+                        length: (#location).length(),
+                        message: format!("interceptor `{}`", stringify!(#path)),
+                    },
+                    context: {
+                        "interceptor" => stringify!(#path),
+                    },
+                    hints: ["Register the interceptor in a module before building the app"],
+                    cause: err,
+                }
+            })?;
 
             let _ = __check_on_request__(&*middleware);
 
@@ -81,6 +97,12 @@ fn generate_sword_with_config(
 ) -> TokenStream {
     let request_ty = &req_mode.request_ty;
     let with_config_trait = &req_mode.with_config_trait;
+    let ident = &interceptor_ty
+        .segments
+        .last()
+        .expect("interceptor path")
+        .ident;
+    let location = location::tokens(ident.span(), &ident.to_string());
 
     quote! {
         {
@@ -91,17 +113,27 @@ fn generate_sword_with_config(
                 mw
             }
 
-            let interceptor = state.borrow::<#interceptor_ty>()
-                .unwrap_or_else(|err| {
-                    #sword_error! {
-                        title: "Failed to retrieve HTTP interceptor from State",
-                        reason: err,
-                        context: {
-                            "interceptor" => stringify!(#interceptor_ty),
-                        },
-                        hints: ["Ensure the interceptor is registered and built before controller initialization"],
-                    }
-                });
+            let interceptor = state.borrow::<#interceptor_ty>().map_err(|err| {
+                #sword_error! {
+                    code: "sword.build.web",
+                    phase: #DiagnosticPhase::Build,
+                    target: "web interceptor",
+                    title: "Failed to retrieve HTTP interceptor from State",
+                    reason: err,
+                    source_location: {
+                        file: (#location).file(),
+                        line: (#location).line(),
+                        column: (#location).column(),
+                        length: (#location).length(),
+                        message: format!("interceptor `{}`", stringify!(#interceptor_ty)),
+                    },
+                    context: {
+                        "interceptor" => stringify!(#interceptor_ty),
+                    },
+                    hints: ["Register the interceptor in a module before building the app"],
+                    cause: err,
+                }
+            })?;
 
             let _ = __check_on_request_configured__::<#interceptor_ty, _>(&*interceptor);
 

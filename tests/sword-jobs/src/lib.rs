@@ -27,7 +27,7 @@ async fn repeated_job_runs() {
         registry.get_by_kind(Controller::Jobs),
     );
 
-    let mut scheduler = runtime.start().await;
+    let mut scheduler = runtime.start().await.expect("job scheduler should start");
 
     // The scheduler ticks every 500ms, so allow some slack.
     tokio::time::sleep(Duration::from_millis(1500)).await;

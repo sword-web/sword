@@ -2,7 +2,9 @@ use crate::{client::GrpcClientConfig, logger::GrpcLoggerConfig};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use sword_core::{ConfigItem, ConfigRegistrar, inventory_submit};
+use sword_core::{
+    ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
+};
 use sword_layers::body_limit::GrpcBodyLimitConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,8 +57,28 @@ impl ConfigItem for GrpcApplicationConfig {
     }
 }
 
+impl ValidateConfig for GrpcApplicationConfig {
+    const SECTION: &'static str = "grpc";
+    const CODE: &'static str = "sword.build.grpc";
+
+    fn validate(&self) -> ConfigErrors {
+        let mut errors = ConfigErrors::new();
+
+        if self.host.trim().is_empty() {
+            errors.push(
+                ConfigIssue::new("host", "host must not be empty")
+                    .with_hint("Use 0.0.0.0, 127.0.0.1, or a specific interface"),
+            );
+        }
+
+        errors
+    }
+}
+
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.get_or_default::<GrpcApplicationConfig>());
+        state.insert(config.try_get::<GrpcApplicationConfig>().ok().flatten().unwrap_or_default());
+
+        Ok(())
     })
 ]}

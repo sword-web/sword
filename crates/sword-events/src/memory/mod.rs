@@ -7,6 +7,7 @@ pub use publisher::MemoryEventPublisher;
 use subscriber::MemoryEventSubscriber;
 
 use std::{collections::HashMap, sync::Arc};
+use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{Shutdown, sword_error};
 use tokio::sync::mpsc;
 
@@ -18,26 +19,28 @@ pub struct MemoryTransport {
 }
 
 impl MemoryTransport {
-    pub fn new(config: &EventApplicationConfig) -> (MemoryEventPublisher, Self) {
+    pub fn new(config: &EventApplicationConfig) -> Result<(MemoryEventPublisher, Self), Error> {
         let engine_config = config.memory.clone().unwrap_or_default();
 
         if engine_config.buffer_size == 0 {
-            sword_error! {
+            return Err(sword_error! {
+                code: "sword.build.events",
+                phase: DiagnosticPhase::Build,
+                target: "events.memory",
                 title: "Invalid in-memory events buffer size",
                 reason: format!(
-                    "`buffer-size` must be greater than 0, got {}",
+                    "`buffer_size` must be greater than 0, got {}",
                     engine_config.buffer_size,
                 ),
                 source: "MemoryTransport::new",
                 context: {
-                    "buffer-size" => engine_config.buffer_size,
-                    "config-section" => "events.memory",
+                    "buffer_size" => engine_config.buffer_size,
                 },
                 hints: [
-                    "Set `buffer-size` to a positive value in the [events.memory] config section",
+                    "Set `buffer_size` to a positive value in the [events.memory] config section",
                     "The default is 1024",
                 ],
-            }
+            });
         }
 
         let (tx, rx) = mpsc::channel::<Arc<dyn Event>>(engine_config.buffer_size);
@@ -49,7 +52,7 @@ impl MemoryTransport {
             config: engine_config,
         };
 
-        (publisher, Self { subscriber })
+        Ok((publisher, Self { subscriber }))
     }
 
     pub fn set_handlers(&mut self, entries: Vec<HandlerEntry>) {

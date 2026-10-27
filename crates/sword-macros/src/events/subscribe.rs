@@ -1,6 +1,6 @@
 use crate::{
     core::EventSourceKind,
-    shared::{Result, cmeta::CMetaStack, paths::*},
+    shared::{Result, cmeta::CMetaStack, location, paths::*},
 };
 
 use darling::{Error, FromMeta, ast::NestedMeta};
@@ -48,6 +48,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
 
     let controller_ty: syn::Ident = syn::parse_str(&controller_ty_str)?;
     let fn_name = &item_fn.sig.ident;
+    let location = location::tokens(fn_name.span(), &fn_name.to_string());
 
     let body = match event_param {
         EventParam::Typed(boxed) => {
@@ -87,14 +88,26 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
         #[allow(non_upper_case_globals)]
         #[doc(hidden)]
         const #registration_name: () = {
-            fn #build_fn_name(state: &#State) -> #EventHandlerFn {
-                let controller = state.borrow::<#controller_ty>().unwrap_or_else(|_| {
+            fn #build_fn_name(
+                state: &#State,
+            ) -> ::std::result::Result<#EventHandlerFn, #DiagnosticError> {
+                let controller = state.borrow::<#controller_ty>().map_err(|err| {
                     #sword_error! {
+                        code: "sword.build.events",
+                        phase: #DiagnosticPhase::Build,
+                        target: "event handler registry",
                         title: "Failed to retrieve event handler controller from state",
-                        reason: #format!(
-                            "Controller {} was not built for event handler",
-                            #stringify!(#controller_ty)
+                        reason: format!(
+                            "Controller {} was not built for event handler: {err}",
+                            #stringify!(#controller_ty),
                         ),
+                        source_location: {
+                            file: (#location).file(),
+                            line: (#location).line(),
+                            column: (#location).column(),
+                            length: (#location).length(),
+                            message: format!("handler for `{}`", #event_key),
+                        },
                         context: {
                             "controller" => #stringify!(#controller_ty),
                             "event_key" => #event_key,
@@ -102,10 +115,11 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                         hints: [
                             "Ensure the controller is registered via Module::register_controllers",
                         ],
+                        cause: err,
                     }
-                });
+                })?;
 
-                #Arc::new(
+                Ok(#Arc::new(
                     move |event: #Arc<dyn #Event>| -> #EventsBoxedFuture {
                         let controller = #Arc::clone(&controller);
 
@@ -113,7 +127,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                             #body
                         })
                     },
-                )
+                ))
             }
 
             #inventory::submit! {

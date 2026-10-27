@@ -1,4 +1,4 @@
-use crate::shared::paths::*;
+use crate::shared::{location, paths::*};
 use crate::web::interceptors::expand_sword_interceptor;
 use crate::web::routes::ParsedRouteAttribute;
 
@@ -15,6 +15,9 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
     let path = &route.path;
     let method = route.method.as_str();
 
+    let route_ident = &route.function.sig.ident;
+    let location = location::tokens(route_ident.span(), &route_ident.to_string());
+
     let registration_name = format_ident!(
         "__SWORD_ROUTE_REGISTRAR_{}_{}",
         &route.context.controller_name.replace("::", "_"),
@@ -27,8 +30,11 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
     let expanded = quote! {
         #original_function
 
-        pub fn #route_fn_name(controller: #Arc<Self>, state: #State) -> #MethodRouter<#State> {
-            #route_fn_body
+        pub fn #route_fn_name(
+            controller: #Arc<Self>,
+            state: #State,
+        ) -> ::std::result::Result<#MethodRouter<#State>, #DiagnosticError> {
+            Ok(#route_fn_body)
         }
 
         #[allow(non_upper_case_globals)]
@@ -38,18 +44,32 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
                 #RouteRegistrar {
                     controller_id: #TypeId::of::<#controller_ty>(),
                     path: #path,
-                    handler: |state: #State| -> #MethodRouter<#State> {
-                        let controller = state.borrow::<#controller_ty>().unwrap_or_else(|err| {
+                    handler: |state: #State| -> ::std::result::Result<
+                        #MethodRouter<#State>,
+                        #DiagnosticError,
+                    > {
+                        let controller = state.borrow::<#controller_ty>().map_err(|err| {
                             #sword_error! {
+                                code: "sword.build.web",
+                                phase: #DiagnosticPhase::Build,
+                                target: "web route",
                                 title: "Failed to build HTTP controller",
                                 reason: err,
+                                source_location: {
+                                    file: (#location).file(),
+                                    line: (#location).line(),
+                                    column: (#location).column(),
+                                    length: (#location).length(),
+                                    message: format!("`{}`", stringify!(#controller_ty)),
+                                },
                                 context: {
                                     "controller" => #stringify!(#controller_ty),
                                     "route" => format!("{} {}", #method, #path),
                                 },
                                 hints: ["Ensure all controller dependencies are registered in the DI container"],
+                                cause: err,
                             }
-                        });
+                        })?;
 
                         #controller_ty::#route_fn_name(controller, state)
                     }

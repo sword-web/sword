@@ -6,7 +6,10 @@ use crate::registry::GrpcServiceRegistry;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
-use sword_core::{ApplicationConfig, Controller, EngineBuildContext, Shutdown, State, sword_error};
+use sword_core::diagnostic::{DiagnosticPhase, Error};
+use sword_core::{
+    ApplicationConfig, ConfigSection, Controller, EngineBuildContext, Shutdown, State, sword_error,
+};
 
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
 
@@ -18,7 +21,7 @@ pub struct GrpcApplication {
 }
 
 impl GrpcApplication {
-    pub async fn run(self, shutdown: Shutdown) {
+    pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         let bind = format!("{}:{}", self.config.host, self.config.port);
 
         tracing::info!(
@@ -30,28 +33,32 @@ impl GrpcApplication {
 
         // Controllers are discovered at runtime, so an empty set is only caught here.
         if self.controller_ids.is_empty() {
-            sword_error! {
+            return Err(sword_error! {
+                code: "sword.runtime.grpc",
+                phase: DiagnosticPhase::Runtime,
+                target: "gRPC controller registry",
                 title: "No gRPC controllers registered",
-                reason: "At least one gRPC controller must be registered before starting the server",
+                reason: "The server has nothing to serve",
                 context: {
                     "bind" => bind,
-                    "source" => "GrpcApplication::run",
                 },
-                hints: ["Register a controller with `controllers.register::<MyGrpcController>()` in your module"],
-            }
+                hints: ["Register at least one controller with `controllers.register::<MyGrpcController>()`"],
+            });
         }
 
-        let bind_addr = bind.parse::<SocketAddr>().unwrap_or_else(|err| {
+        let bind_addr = bind.parse::<SocketAddr>().map_err(|err| {
             sword_error! {
+                code: "sword.runtime.grpc",
+                phase: DiagnosticPhase::Runtime,
+                target: "GrpcApplication::run",
                 title: "Invalid gRPC bind address",
                 reason: err,
                 context: {
                     "bind" => bind,
-                    "source" => "GrpcApplication::run",
                 },
                 hints: ["Ensure host and port values are valid"],
             }
-        });
+        })?;
 
         // Collect all registrars once, indexed by controller_id. The loop below uses this
         // map to avoid walking the inventory for each controller.
@@ -75,28 +82,32 @@ impl GrpcApplication {
         self.state.insert(GrpcBodyLimitValue::from(body_limit));
 
         for controller_id in &self.controller_ids {
+            let Some(registrar) = registrars.get(controller_id).copied() else {
+                return Err(sword_error! {
+                    code: "sword.runtime.grpc",
+                    phase: DiagnosticPhase::Runtime,
+                    target: "gRPC controller registry",
+                    title: "Controller metadata not found",
+                    reason: "No GrpcControllerRegistrar entry was found for controller",
+                    context: {
+                        "controller_id" => format!("{controller_id:?}"),
+                    },
+                    hints: ["This usually indicates a controller macro expansion issue"],
+                });
+            };
+
             let GrpcControllerRegistrar {
                 build: build_controller,
                 register: register_controller,
                 reflection_descriptor_set: _reflection_descriptor_set,
                 ..
-            } = registrars.get(controller_id).copied().unwrap_or_else(|| {
-                sword_error! {
-                    title: "Controller metadata not found",
-                    reason: "No GrpcControllerRegistrar entry was found for controller",
-                    context: {
-                        "controller_id" => format!("{controller_id:?}"),
-                        "source" => "GrpcApplication::run",
-                    },
-                    hints: ["This usually indicates a controller macro expansion issue"],
-                }
-            });
+            } = registrar;
 
             // Build first: this inserts the controller into State.
-            build_controller(&self.state);
+            build_controller(&self.state)?;
 
             // Register after: it borrows the controller built above and adds its tonic service.
-            register_controller(&self.state, &mut grpc_registry);
+            register_controller(&self.state, &mut grpc_registry)?;
 
             #[cfg(feature = "reflection")]
             if let Some(descriptor) = _reflection_descriptor_set {
@@ -107,15 +118,17 @@ impl GrpcApplication {
         // A registered controller may still add no tonic services
         // this catches broken macro expansions.
         if grpc_registry.services_count() == 0 {
-            sword_error! {
+            return Err(sword_error! {
+                code: "sword.runtime.grpc",
+                phase: DiagnosticPhase::Runtime,
+                target: "GrpcApplication::run",
                 title: "No gRPC services were registered",
                 reason: "Controllers were discovered but no tonic services were added to routes",
                 context: {
                     "controllers_count" => self.controller_ids.len().to_string(),
-                    "source" => "GrpcApplication::run",
                 },
                 hints: ["Implement generated register hooks to add tonic services into GrpcServiceRegistry"],
-            }
+            });
         }
 
         // Pull names out before the registry is consumed, so each service can be marked healthy.
@@ -151,7 +164,7 @@ impl GrpcApplication {
 
         #[cfg(feature = "reflection")]
         {
-            router = router.add_service(self.build_reflection_service(reflection_descriptor_sets));
+            router = router.add_service(self.build_reflection_service(reflection_descriptor_sets)?);
         }
 
         // With graceful shutdown the server waits for a signal and drains connections.
@@ -159,8 +172,11 @@ impl GrpcApplication {
             router
                 .serve_with_shutdown(bind_addr, shutdown.cancelled())
                 .await
-                .unwrap_or_else(|err| {
+                .map_err(|err| {
                     sword_error! {
+                        code: "sword.runtime.grpc",
+                        phase: DiagnosticPhase::Runtime,
+                        target: "GrpcApplication::run",
                         title: "gRPC server stopped with an internal error",
                         reason: err,
                         context: {
@@ -168,16 +184,20 @@ impl GrpcApplication {
                             "host" => self.config.host.clone(),
                             "port" => self.config.port.to_string(),
                         },
+                        hints: ["Check the gRPC server logs and listener configuration"],
                     }
-                });
+                })?;
 
-            return;
+            return Ok(());
         }
 
         tokio::select! {
             res = router.serve(bind_addr) => {
-                res.unwrap_or_else(|err| {
+                res.map_err(|err| {
                     sword_error! {
+                        code: "sword.runtime.grpc",
+                        phase: DiagnosticPhase::Runtime,
+                        target: "GrpcApplication::run",
                         title: "gRPC server stopped with an internal error",
                         reason: err,
                         context: {
@@ -185,19 +205,25 @@ impl GrpcApplication {
                             "host" => self.config.host.clone(),
                             "port" => self.config.port.to_string(),
                         },
+                        hints: ["Check the gRPC server logs and listener configuration"],
                     }
-                });
+                })?;
             }
             _ = shutdown.cancelled() => {}
         }
+
+        Ok(())
     }
 
     #[cfg(feature = "reflection")]
     fn build_reflection_service(
         &self,
         descriptors: Vec<&'static [u8]>,
-    ) -> tonic_reflection::server::v1::ServerReflectionServer<
-        impl tonic_reflection::server::v1::ServerReflection,
+    ) -> Result<
+        tonic_reflection::server::v1::ServerReflectionServer<
+            impl tonic_reflection::server::v1::ServerReflection,
+        >,
+        Error,
     > {
         let mut reflection_builder = tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET);
@@ -207,38 +233,43 @@ impl GrpcApplication {
                 reflection_builder.register_encoded_file_descriptor_set(descriptor);
         }
 
-        reflection_builder.build_v1().unwrap_or_else(|err| {
+        reflection_builder.build_v1().map_err(|err| {
             sword_error! {
+                code: "sword.runtime.grpc",
+                phase: DiagnosticPhase::Runtime,
+                target: "GrpcApplication::run",
                 title: "Failed to build tonic reflection service",
                 reason: err,
-                context: {
-                    "source" => "GrpcApplication::run",
-                },
                 hints: ["Ensure build.rs generates `sword_descriptor_set.bin` when reflection support is enabled"],
             }
         })
     }
 }
 
-impl From<EngineBuildContext> for GrpcApplication {
-    fn from(ctx: EngineBuildContext) -> Self {
+impl TryFrom<EngineBuildContext> for GrpcApplication {
+    type Error = Error;
+
+    fn try_from(ctx: EngineBuildContext) -> Result<Self, Error> {
         let EngineBuildContext {
             state,
             config,
+            config_document,
             controllers,
             ..
         } = ctx;
 
         let app_config = config.get_or_default::<ApplicationConfig>();
-        let grpc_config = config.get_or_default::<GrpcApplicationConfig>();
+        let grpc_config =
+            ConfigSection::load::<GrpcApplicationConfig>(&config, config_document.as_deref())?
+                .unwrap_or_default();
 
         let grpc_controllers_ids = controllers.get_by_kind(Controller::Grpc);
 
-        GrpcApplication {
+        Ok(GrpcApplication {
             state,
             config: grpc_config,
             graceful_shutdown: app_config.graceful_shutdown,
             controller_ids: grpc_controllers_ids,
-        }
+        })
     }
 }

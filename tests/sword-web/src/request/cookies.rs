@@ -65,7 +65,10 @@ impl Module for CookieModule {
 
 #[tokio::test]
 async fn test_set_cookie() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<CookieModule>().build();
+    let app = application_builder()
+        .with_module::<CookieModule>()
+        .build()
+        .expect("application");
     let server = test_server(app);
 
     let response = server.get("/cookies/set").await;
@@ -89,7 +92,10 @@ async fn test_set_cookie() -> std::result::Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 async fn test_with_middleware() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let app = application_builder().with_module::<CookieModule>().build();
+    let app = application_builder()
+        .with_module::<CookieModule>()
+        .build()
+        .expect("application");
     let server = test_server(app);
 
     let response = server.get("/cookies/with_middleware").await;

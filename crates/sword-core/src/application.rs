@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::LayerStack;
+use crate::diagnostic::DiagnosticsMode;
 use crate::{Config, ConfigItem, ConfigRegistrar, ControllerRegistry, State, inventory_submit};
 
 /// Configuration structure for the Sword application.
@@ -26,6 +27,9 @@ pub struct ApplicationConfig {
     /// Defaults `false`
     #[serde(rename = "graceful-shutdown")]
     pub graceful_shutdown: bool,
+
+    /// Renderer used for process-level diagnostics. Defaults to `miette`.
+    pub diagnostics: DiagnosticsMode,
 }
 
 impl ConfigItem for ApplicationConfig {
@@ -36,7 +40,9 @@ impl ConfigItem for ApplicationConfig {
 
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.get_or_default::<ApplicationConfig>());
+        state.insert(config.try_get::<ApplicationConfig>().ok().flatten().unwrap_or_default());
+
+        Ok(())
     })
 ]}
 
@@ -48,6 +54,7 @@ inventory_submit! {[
 pub struct EngineBuildContext {
     pub state: State,
     pub config: Config,
+    pub config_document: Option<std::sync::Arc<crate::ConfigDocument>>,
     pub controllers: ControllerRegistry,
     pub layer_stack: LayerStack<State>,
 }

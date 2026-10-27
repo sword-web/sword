@@ -103,11 +103,15 @@ impl Module for TestModule {
 /// listener accepts connections.
 async fn start_app() -> tokio::task::JoinHandle<()> {
     let app = Application::from_config_path("Config.toml")
+        .expect("application builder")
         .with_provider(EventStore::new())
         .with_module::<TestModule>()
-        .build();
+        .build()
+        .expect("application");
 
-    let handle = tokio::spawn(async move { app.run().await });
+    let handle = tokio::spawn(async move {
+        let _ = app.run().await;
+    });
 
     for _ in 0..100 {
         if tokio::net::TcpStream::connect(WEB_ADDR).await.is_ok() {

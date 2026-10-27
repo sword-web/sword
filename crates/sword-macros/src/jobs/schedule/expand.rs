@@ -1,5 +1,5 @@
 use super::parsing::{ParsedScheduleHandler, Schedule};
-use crate::shared::{Result, paths::*};
+use crate::shared::{Result, location, paths::*};
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -11,6 +11,8 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
         controller_ty,
         schedule,
     } = schedule;
+
+    let location = location::tokens(fn_name.span(), &fn_name.to_string());
 
     let (job_constructor, schedule_arg) = match &schedule {
         Schedule::Cron(lit) => (quote!(#Job::new_async), quote!(#lit)),
@@ -33,11 +35,21 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
             #inventory::submit! {
                 #JobFunctionRegistrar {
                     controller_type_id: #TypeId::of::<#controller_ty>(),
-                    handler: |state: &#State| -> #Job {
-                        let controller = state.borrow::<#controller_ty>().unwrap_or_else(|err| {
+                    handler: |state: &#State| -> ::std::result::Result<#Job, #DiagnosticError> {
+                        let controller = state.borrow::<#controller_ty>().map_err(|err| {
                             #sword_error! {
+                                code: "sword.build.jobs",
+                                phase: #DiagnosticPhase::Build,
+                                target: "job schedule",
                                 title: "Failed to retrieve job controller from state",
                                 reason: err,
+                                source_location: {
+                                    file: (#location).file(),
+                                    line: (#location).line(),
+                                    column: (#location).column(),
+                                    length: (#location).length(),
+                                    message: format!("job `{}`", stringify!(#fn_name)),
+                                },
                                 context: {
                                     "controller" => #stringify!(#controller_ty),
                                     "job" => stringify!(#fn_name),
@@ -45,8 +57,9 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                                 hints: [
                                     "Ensure the controller is registered via Module::register_controllers",
                                 ],
+                                cause: err,
                             }
-                        });
+                        })?;
 
                         #job_constructor(#schedule_arg, move |uuid, scheduler| {
                             let controller = #Arc::clone(&controller);
@@ -55,10 +68,20 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                                 controller.#fn_name(uuid, scheduler).await
                             })
                         })
-                        .unwrap_or_else(|err| {
+                        .map_err(|err| {
                             #sword_error! {
+                                code: "sword.build.jobs",
+                                phase: #DiagnosticPhase::Build,
+                                target: "job schedule",
                                 title: "Failed to register job",
                                 reason: err,
+                                source_location: {
+                                    file: (#location).file(),
+                                    line: (#location).line(),
+                                    column: (#location).column(),
+                                    length: (#location).length(),
+                                    message: format!("job `{}`", stringify!(#fn_name)),
+                                },
                                 context: {
                                     "controller" => #stringify!(#controller_ty),
                                     "job" => stringify!(#fn_name),
@@ -66,6 +89,7 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                                 hints: [
                                     "Check the cron expression or duration passed to the job attribute",
                                 ],
+                                cause: err,
                             }
                         })
                     }

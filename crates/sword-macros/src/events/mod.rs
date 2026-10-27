@@ -8,6 +8,7 @@ use crate::core::{ControllerKind, ControllerStruct, EventSourceKind};
 use crate::shared::{
     Result,
     cmeta::CMetaStack,
+    location,
     paths::*,
     traits::{generate_build_impl, generate_clone_impl},
 };
@@ -24,6 +25,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     };
 
     let self_ty = controller.ty();
+    let location = location::tokens(self_ty.span(), &self_ty.to_string());
     let fields = controller.fields();
 
     CMetaStack::push("event_controller", "controller_ty", &self_ty.to_string());
@@ -49,21 +51,32 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
         #inventory::submit! {
             #EventControllerRegistrar {
                 ty: #TypeId::of::<#self_ty>(),
-                build: |state: &#State| {
-                    let controller = #self_ty::build(state).unwrap_or_else(|e| {
+                build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
+                    let controller = #self_ty::build(state).map_err(|e| {
                         #sword_error! {
+                            code: "sword.build.events",
+                            phase: #DiagnosticPhase::Build,
+                            target: "event controller",
                             title: "Failed to build controller",
-                            reason: #format!("Failed to build event controller dependency graph: {e}"),
+                            reason: format!("Failed to build event controller dependency graph: {e}"),
+                            source_location: {
+                                file: (#location).file(),
+                                line: (#location).line(),
+                                column: (#location).column(),
+                                length: (#location).length(),
+                                message: format!("`{}`", stringify!(#self_ty)),
+                            },
                             context: {
                                 "controller_name" => #stringify!(#self_ty),
-                                "error" => #format!("{e:?}"),
-                                "source" => "EventControllerRegistrar::build",
                             },
-                            hints: ["Check the error message for details on what went wrong during construction"],
+                            hints: ["Register the missing dependencies as providers or components"],
+                            cause: e,
                         }
-                    });
+                    })?;
 
                     state.insert::<#self_ty>(controller);
+
+                    Ok(())
                 },
             }
         }

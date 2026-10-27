@@ -38,7 +38,11 @@
 
 - Added `Interceptor` trait for creating custom interceptors that can access and modify requests and responses.
 
+- Added `[application] diagnostics = "miette" | "tracing"`. The default is `miette`; `tracing` requires an active subscriber and emits one structured event per diagnostic.
+
 ### Changed
+
+- **BREAKING:** Startup failures are process diagnostics now. `sword_error!` builds an `Error` instead of emitting and panicking, startup APIs return `Result<(), Error>`, and `#[sword::main]` handles the result and exits through `ExitCode`. Configuration sections are validated by the crate that owns them, and an invalid section renders a miette snippet instead of falling back to its defaults.
 
 - **BREAKING:** `sword-layers` `Helmet::build()` now returns `Result<HelmetLayer, HelmetError>` (axum-helmet 1.0.2 validates header names/values eagerly via `into_layer`). The `ContentSecurityPolicyDirective` re-export was removed (dropped upstream) and `HelmetError` is re-exported in its place.
 - **BREAKING:** Renamed `Controller::MemEventHandler` to `Controller::EventHandler`. The whole `Mem` family was renamed: trait `MemEventHandler` → `EventHandler`, `MemEventControllerRegistrar` → `EventControllerRegistrar`, `MemEventRouteRegistrar` → `EventRouteRegistrar`.

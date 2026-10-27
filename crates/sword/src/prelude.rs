@@ -1,6 +1,8 @@
 pub use crate::application::*;
 pub use sword_core::Controller;
 pub use sword_core::Module;
+pub use sword_core::diagnostic::{Diagnostic, Error};
+pub use sword_core::sword_error;
 
 pub use sword_core::{
     ComponentRegistry, Config, ControllerRegistry, Interceptor, Provider, ProviderRegistry,

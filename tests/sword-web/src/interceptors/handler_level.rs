@@ -420,7 +420,10 @@ impl Module for TestModule {
 
 #[tokio::test]
 async fn extensions_mw_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/extensions-test").await;
@@ -435,7 +438,10 @@ async fn extensions_mw_test() {
 
 #[tokio::test]
 async fn middleware_state() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/middleware-state").await;
@@ -452,7 +458,10 @@ async fn middleware_state() {
 
 #[tokio::test]
 async fn role_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/role-test").await;
@@ -468,7 +477,10 @@ async fn role_middleware_test() {
 
 #[tokio::test]
 async fn error_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/error-test").await;
@@ -484,7 +496,10 @@ async fn error_middleware_test() {
 
 #[tokio::test]
 async fn tower_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/tower-middleware-test").await;
@@ -500,7 +515,10 @@ async fn tower_middleware_test() {
 
 #[tokio::test]
 async fn tuple_config_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/tuple-config-test").await;
@@ -514,7 +532,10 @@ async fn tuple_config_middleware_test() {
 
 #[tokio::test]
 async fn array_config_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/array-config-test").await;
@@ -528,7 +549,10 @@ async fn array_config_middleware_test() {
 
 #[tokio::test]
 async fn string_config_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/string-config-test").await;
@@ -542,7 +566,10 @@ async fn string_config_middleware_test() {
 
 #[tokio::test]
 async fn str_config_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/str-config-test").await;
@@ -556,7 +583,10 @@ async fn str_config_middleware_test() {
 
 #[tokio::test]
 async fn number_config_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/number-config-test").await;
@@ -570,7 +600,10 @@ async fn number_config_middleware_test() {
 
 #[tokio::test]
 async fn bool_config_middleware_test() {
-    let app = application_builder().with_module::<TestModule>().build();
+    let app = application_builder()
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
     let test = test_server(app);
 
     let response = test.get("/test/bool-config-test").await;

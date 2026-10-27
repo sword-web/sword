@@ -41,7 +41,8 @@ impl Module for HttpMethodsModule {
 fn test_server_with_module() -> axum_test::TestServer {
     let app = application_builder()
         .with_module::<HttpMethodsModule>()
-        .build();
+        .build()
+        .expect("application");
 
     test_server(app)
 }

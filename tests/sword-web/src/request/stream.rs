@@ -77,7 +77,10 @@ impl Module for StreamModule {
 
 #[tokio::test]
 async fn stream_route_with_interceptor_works() {
-    let app = application_builder().with_module::<StreamModule>().build();
+    let app = application_builder()
+        .with_module::<StreamModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app.post("/stream/echo").text("hello-stream").await;
@@ -90,7 +93,10 @@ async fn stream_route_with_interceptor_works() {
 
 #[tokio::test]
 async fn stream_route_with_config_interceptor_works() {
-    let app = application_builder().with_module::<StreamModule>().build();
+    let app = application_builder()
+        .with_module::<StreamModule>()
+        .build()
+        .expect("application");
     let app = test_server(app);
 
     let response = app

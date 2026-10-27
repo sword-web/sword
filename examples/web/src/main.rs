@@ -13,18 +13,20 @@ use crate::{
 };
 
 #[sword::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     dotenv().ok();
 
     tracing::info!("Starting Users Management example...");
 
-    let app = Application::builder()
+    let app = Application::builder()?
         .with_module::<SharedModule>()
         .with_module::<UsersModule>()
         .with_module::<MailerModule>()
         .with_module::<SseModule>()
         .with_module::<JobsModule>()
-        .build();
+        .build()?;
 
-    app.run().await;
+    app.run().await?;
+
+    Ok(())
 }

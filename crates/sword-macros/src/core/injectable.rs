@@ -1,5 +1,5 @@
 use crate::shared::{
-    Result,
+    Result, location,
     paths::*,
     structs::Struct,
     traits::{generate_build_impl, generate_clone_impl, generate_has_deps_impl},
@@ -84,6 +84,7 @@ pub fn expand_injectable(attr: TokenStream, item: TokenStream) -> Result<TokenSt
 
 fn generate_component_trait(item: &Struct) -> TokenStream2 {
     let struct_name = &item.ident;
+    let location = location::tokens(struct_name.span(), &struct_name.to_string());
 
     let deps_impl = generate_has_deps_impl(struct_name, &item.fields());
     let build_impl = generate_build_impl(struct_name, &item.fields());
@@ -92,7 +93,11 @@ fn generate_component_trait(item: &Struct) -> TokenStream2 {
         #build_impl
         #deps_impl
 
-        impl #Component for #struct_name {}
+        impl #Component for #struct_name {
+            fn source_location() -> ::std::option::Option<#DiagnosticSourceLocation> {
+                ::std::option::Option::Some(#location)
+            }
+        }
     }
 }
 

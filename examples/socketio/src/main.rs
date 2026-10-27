@@ -5,13 +5,15 @@ use crate::{chat::ChatModule, database::Database};
 use sword::prelude::*;
 
 #[sword::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     let database = Database::new();
 
-    let app = Application::from_config_path("Config.toml")
+    let app = Application::from_config_path("Config.toml")?
         .with_module::<ChatModule>()
         .with_provider(database)
-        .build();
+        .build()?;
 
-    app.run().await;
+    app.run().await?;
+
+    Ok(())
 }

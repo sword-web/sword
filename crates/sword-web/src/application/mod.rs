@@ -6,6 +6,8 @@ mod router;
 use axum::Router;
 use router::WebApplicationRouter;
 use std::net::SocketAddr;
+use sword_core::diagnostic::Error;
+use sword_core::sword_error;
 use sword_core::*;
 use tokio::net::TcpListener;
 
@@ -20,7 +22,7 @@ pub struct WebApplication {
 }
 
 impl WebApplication {
-    pub async fn run(self, shutdown: Shutdown) {
+    pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         let bind = format!("{}:{}", self.config.host, self.config.port);
         let router_prefix = self
             .config
@@ -64,20 +66,25 @@ impl WebApplication {
         // The router is built as Router<State>; state is attached just before serving.
         let app = self.router.clone().with_state(self.state.clone());
 
-        let bind_addr: SocketAddr = bind.parse::<SocketAddr>().unwrap_or_else(|err| {
+        let bind_addr: SocketAddr = bind.parse::<SocketAddr>().map_err(|err| {
             sword_error! {
+                code: "sword.runtime.web",
+                phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                target: "WebApplication::run",
                 title: "Invalid web bind address",
                 reason: err,
                 context: {
                     "bind" => bind,
-                    "source" => "WebApplication::run",
                 },
                 hints: ["Ensure host and port values are valid"],
             }
-        });
+        })?;
 
-        let listener = TcpListener::bind(bind_addr).await.unwrap_or_else(|err| {
+        let listener = TcpListener::bind(bind_addr).await.map_err(|err| {
             sword_error! {
+                code: "sword.runtime.web",
+                phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                target: "WebApplication::run",
                 title: "Failed to bind HTTP listener",
                 reason: err,
                 context: {
@@ -86,15 +93,18 @@ impl WebApplication {
                 },
                 hints: ["Ensure the host/port is available and not already in use"],
             }
-        });
+        })?;
 
         // Graceful shutdown waits for a signal and drains in-flight requests.
         if self.graceful_shutdown {
             axum::serve(listener, app)
                 .with_graceful_shutdown(shutdown.cancelled())
                 .await
-                .unwrap_or_else(|err| {
+                .map_err(|err| {
                     sword_error! {
+                        code: "sword.runtime.web",
+                        phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                        target: "WebApplication::run",
                         title: "HTTP server stopped with an internal error",
                         reason: err,
                         context: {
@@ -102,16 +112,20 @@ impl WebApplication {
                             "host" => self.config.host.clone(),
                             "port" => self.config.port.to_string(),
                         },
+                        hints: ["Check the web server logs and listener configuration"],
                     }
-                });
+                })?;
 
-            return;
+            return Ok(());
         }
 
         tokio::select! {
             res = axum::serve(listener, app) => {
-                res.unwrap_or_else(|err| {
+                res.map_err(|err| {
                     sword_error! {
+                        code: "sword.runtime.web",
+                        phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                        target: "WebApplication::run",
                         title: "HTTP server stopped with an internal error",
                         reason: err,
                         context: {
@@ -119,11 +133,14 @@ impl WebApplication {
                             "host" => self.config.host.clone(),
                             "port" => self.config.port.to_string(),
                         },
+                        hints: ["Check the web server logs and listener configuration"],
                     }
-                });
+                })?;
             }
             _ = shutdown.cancelled() => {}
         }
+
+        Ok(())
     }
 
     pub fn router(&self) -> axum::Router {
@@ -131,16 +148,22 @@ impl WebApplication {
     }
 }
 
-impl From<EngineBuildContext> for WebApplication {
-    fn from(ctx: EngineBuildContext) -> Self {
+impl TryFrom<EngineBuildContext> for WebApplication {
+    type Error = Error;
+
+    fn try_from(ctx: EngineBuildContext) -> Result<Self, Error> {
         let EngineBuildContext {
             state,
             config,
+            config_document,
             controllers,
             layer_stack,
         } = ctx;
 
-        let web_config = config.get_or_default::<WebApplicationConfig>();
+        let web_config =
+            ConfigSection::load::<WebApplicationConfig>(&config, config_document.as_deref())?
+                .unwrap_or_default();
+
         let graceful_shutdown = config
             .get_or_default::<ApplicationConfig>()
             .graceful_shutdown;
@@ -148,16 +171,17 @@ impl From<EngineBuildContext> for WebApplication {
         let mut router = WebApplicationRouter {
             state: state.clone(),
             config,
+            config_document,
             layer_stack,
             controller_registry: controllers,
             web_config: web_config.clone(),
         };
 
-        Self {
+        Ok(Self {
             state,
             config: web_config,
             graceful_shutdown,
-            router: router.build(),
-        }
+            router: router.build()?,
+        })
     }
 }

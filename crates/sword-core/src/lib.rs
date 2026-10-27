@@ -8,13 +8,7 @@ mod module;
 mod shutdown;
 mod state;
 
-pub mod error {
-    #[macro_use]
-    mod macros;
-    mod diagnostic;
-
-    pub use diagnostic::{StartupDiagnostic, emit};
-}
+pub mod diagnostic;
 
 pub use application::*;
 pub use config::*;

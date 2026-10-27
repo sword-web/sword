@@ -20,6 +20,7 @@ pub use sword_grpc::prelude as grpc;
 
 pub use application::*;
 pub use sword_core::Module;
+pub use sword_core::diagnostic;
 pub use sword_macros::main;
 
 #[doc(hidden)]

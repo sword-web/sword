@@ -15,6 +15,7 @@ use std::any::{Any, TypeId};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use sword_core::diagnostic::Error;
 use sword_core::{ControllerSpec, State};
 
 pub use sword_macros::on;
@@ -36,7 +37,7 @@ pub enum SocketEventKind {
     Fallback,
 }
 
-type BoxedFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
+type BoxedResultFuture = Pin<Box<dyn Future<Output = Result<(), Error>> + Send>>;
 
 /// Metadata for a SocketIO event handler registered via the `#[on]` attribute.
 ///
@@ -58,17 +59,17 @@ pub struct HandlerRegistrar {
     pub method_name: &'static str,
 
     /// Registers the handler on the socket (used for Message/Disconnection/Fallback events).
-    pub register_fn: fn(Arc<dyn Any + Send + Sync>, SocketRef),
+    pub register_fn: fn(Arc<dyn Any + Send + Sync>, SocketRef) -> Result<(), Error>,
 
     /// Executes the handler directly (used for Connection events).
-    pub call_fn: fn(Arc<dyn Any + Send + Sync>, SocketContext) -> BoxedFuture,
+    pub call_fn: fn(Arc<dyn Any + Send + Sync>, SocketContext) -> BoxedResultFuture,
 }
 
 /// Setup function that initializes a SocketIO controller at runtime.
 pub struct SocketIoHandlerRegistrar {
     pub handler_type_id: TypeId,
     pub handler_type_name: &'static str,
-    pub setup_fn: fn(&State),
+    pub setup_fn: fn(&State) -> Result<(), Error>,
 }
 
 inventory::collect!(HandlerRegistrar);

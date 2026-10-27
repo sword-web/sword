@@ -85,7 +85,8 @@ fn test_server() -> TestServer {
                 ],
             },
         ))
-        .build();
+        .build()
+        .expect("application");
 
     crate::test_server(app)
 }

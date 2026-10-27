@@ -29,13 +29,16 @@ pub fn expand_on_attribute(handler: ParsedOnHandler) -> TokenStream {
                 pub fn register_handler(
                     controller_any: #Arc<dyn #Any + Send + Sync>,
                     socket: #SocketRef,
-                ) {
+                ) -> ::std::result::Result<(), #DiagnosticError> {
                     let controller = controller_any
                         .downcast::<#controller_ty>()
-                        .unwrap_or_else(|_| {
+                        .map_err(|_| {
                             #sword_error! {
+                                code: "sword.runtime.socketio",
+                                phase: #DiagnosticPhase::Runtime,
+                                target: "Socket.IO handler",
                                 title: "Failed to downcast Socket.IO controller type",
-                                reason: #format!(
+                                reason: format!(
                                     "Expected controller type {} during handler registration",
                                     #stringify!(#controller_ty)
                                 ),
@@ -44,7 +47,7 @@ pub fn expand_on_attribute(handler: ParsedOnHandler) -> TokenStream {
                                 },
                                 hints: ["This indicates an internal macro invariant violation"],
                             }
-                        });
+                        })?;
 
                     socket.on(#event_name, move |ctx: #SocketContext| {
                         let controller = #Arc::clone(&controller);
@@ -53,30 +56,37 @@ pub fn expand_on_attribute(handler: ParsedOnHandler) -> TokenStream {
                             controller.#fn_name(ctx).await;
                         }
                     });
+
+                    Ok(())
                 }
 
                 pub fn call_handler(
                     controller_any: #Arc<dyn #Any + Send + Sync>,
                     ctx: #SocketContext,
-                ) -> #SocketBoxedFuture {
-                    let controller = controller_any
-                        .downcast::<#controller_ty>()
-                        .unwrap_or_else(|_| {
-                            #sword_error! {
-                                title: "Failed to downcast Socket.IO controller type",
-                                reason: #format!(
-                                    "Type mismatch while executing handler for {}",
-                                    #stringify!(#controller_ty)
-                                ),
-                                context: {
-                                    "controller" => #stringify!(#controller_ty),
-                                },
-                                hints: ["This indicates an internal macro invariant violation"],
-                            }
-                        });
+                ) -> #SocketResultFuture {
+                    let Ok(controller) = controller_any.downcast::<#controller_ty>() else {
+                        let error = #sword_error! {
+                            code: "sword.runtime.socketio",
+                            phase: #DiagnosticPhase::Runtime,
+                            target: "Socket.IO handler",
+                            title: "Failed to downcast Socket.IO controller type",
+                            reason: format!(
+                                "Type mismatch while executing handler for {}",
+                                #stringify!(#controller_ty)
+                            ),
+                            context: {
+                                "controller" => #stringify!(#controller_ty),
+                            },
+                            hints: ["This indicates an internal macro invariant violation"],
+                        };
+
+                        return #Box::pin(async move { Err(error) });
+                    };
 
                     #Box::pin(async move {
                         controller.#fn_name(ctx).await;
+
+                        Ok(())
                     })
                 }
             }

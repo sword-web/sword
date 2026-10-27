@@ -1,3 +1,4 @@
+use crate::diagnostic::SourceLocation;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
@@ -5,6 +6,7 @@ pub enum DependencyInjectionError {
     BuildFailed {
         type_name: String,
         source: Box<DependencyInjectionError>,
+        location: Option<SourceLocation>,
     },
 
     DependencyNotFound {
@@ -15,10 +17,15 @@ pub enum DependencyInjectionError {
 }
 
 impl DependencyInjectionError {
-    pub fn build_failed(type_name: impl Into<String>, source: DependencyInjectionError) -> Self {
+    pub fn build_failed(
+        type_name: impl Into<String>,
+        source: DependencyInjectionError,
+        location: Option<SourceLocation>,
+    ) -> Self {
         Self::BuildFailed {
             type_name: type_name.into(),
             source: Box::new(source),
+            location,
         }
     }
 
@@ -32,6 +39,16 @@ impl DependencyInjectionError {
         let mut context = Vec::new();
         self.collect_diagnostic_context(&mut context);
         context
+    }
+
+    /// The innermost component declaration that has a captured location.
+    pub fn source_location(&self) -> Option<SourceLocation> {
+        match self {
+            Self::BuildFailed {
+                source, location, ..
+            } => source.source_location().or(*location),
+            _ => None,
+        }
     }
 
     pub fn dependency_path(&self) -> Option<&str> {
@@ -51,7 +68,9 @@ impl DependencyInjectionError {
 
     fn collect_diagnostic_context(&self, context: &mut Vec<(String, String)>) {
         match self {
-            Self::BuildFailed { type_name, source } => {
+            Self::BuildFailed {
+                type_name, source, ..
+            } => {
                 context.push(("dependency_path".to_string(), type_name.clone()));
                 source.collect_diagnostic_context(context);
             }
@@ -66,7 +85,9 @@ impl DependencyInjectionError {
 impl Display for DependencyInjectionError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::BuildFailed { type_name, source } => write!(
+            Self::BuildFailed {
+                type_name, source, ..
+            } => write!(
                 f,
                 "Failed to build dependency '{}': {}",
                 short_type_name(type_name),

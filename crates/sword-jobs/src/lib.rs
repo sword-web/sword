@@ -2,6 +2,7 @@ mod runtime;
 
 use std::any::TypeId;
 use sword_core::State;
+use sword_core::diagnostic::Error;
 use tokio_cron_scheduler::Job;
 
 pub use runtime::JobSchedulerRuntime;
@@ -14,12 +15,12 @@ pub enum JobKind {
 }
 
 /// Builds the `Job` for a single handler method.
-pub type JobHandlerFn = fn(&State) -> Job;
+pub type JobHandlerFn = fn(&State) -> Result<Job, Error>;
 
 /// Builds a job controller into the `State`.
 pub struct JobControllerRegistrar {
     pub type_id: TypeId,
-    pub build_fn: fn(&State),
+    pub build_fn: fn(&State) -> Result<(), Error>,
 }
 
 /// Registers a single job belonging to a controller.

@@ -14,8 +14,10 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{
-    Config, Controller, ControllerRegistry, ProviderRegistry, Shutdown, State, sword_error,
+    Config, ConfigDocument, ConfigSection, Controller, ControllerRegistry, ProviderRegistry,
+    Shutdown, State, sword_error,
 };
 
 use tokio::task::JoinSet;
@@ -27,15 +29,20 @@ pub struct EventApplication {
 }
 
 impl EventApplication {
-    pub fn new(config: &Config, providers: &ProviderRegistry) -> Self {
-        check_event_key_uniqueness();
+    pub fn new(
+        config: &Config,
+        providers: &ProviderRegistry,
+        document: Option<&ConfigDocument>,
+    ) -> Result<Self, Error> {
+        check_event_key_uniqueness()?;
 
-        let events_config = config.get_or_default::<EventApplicationConfig>();
+        let events_config =
+            ConfigSection::load::<EventApplicationConfig>(config, document)?.unwrap_or_default();
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]
         {
-            let (publisher, transport) = MemoryTransport::new(&events_config);
+            let (publisher, transport) = MemoryTransport::new(&events_config)?;
 
             providers.register(publisher);
             transports.push(EventTransport::Memory(transport));
@@ -49,13 +56,17 @@ impl EventApplication {
             transports.push(EventTransport::Nats(transport));
         }
 
-        Self { transports }
+        Ok(Self { transports })
     }
 
     /// Registers the event handlers for all the controllers in the application,
     /// grouping them by their source kind and event key.
-    pub fn with_controllers(&mut self, controllers: &ControllerRegistry, state: &State) {
-        let mut subscriptions = EventSubscriptions::collect(state, controllers);
+    pub fn with_controllers(
+        &mut self,
+        controllers: &ControllerRegistry,
+        state: &State,
+    ) -> Result<(), Error> {
+        let mut subscriptions = EventSubscriptions::collect(state, controllers)?;
 
         // Set the handlers for each transport based on its source kind
         //
@@ -65,9 +76,11 @@ impl EventApplication {
         for transport in &mut self.transports {
             transport.set_handlers(subscriptions.take(transport.source()));
         }
+
+        Ok(())
     }
 
-    pub async fn run(self, shutdown: Shutdown) {
+    pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         let mut tasks = JoinSet::new();
 
         for transport in self.transports {
@@ -75,9 +88,53 @@ impl EventApplication {
             tasks.spawn(async move { transport.run(shutdown).await });
         }
 
-        shutdown.cancelled().await;
+        if tasks.is_empty() {
+            shutdown.cancelled().await;
+            return Ok(());
+        }
 
-        while tasks.join_next().await.is_some() {}
+        let mut first_error = None;
+
+        tokio::select! {
+            _ = shutdown.cancelled() => {}
+            result = tasks.join_next() => {
+                if let Some(result) = result {
+                    first_error = Self::task_error(result);
+                }
+
+                shutdown.cancel();
+            }
+        }
+
+        while let Some(result) = tasks.join_next().await {
+            if first_error.is_none() {
+                first_error = Self::task_error(result);
+            }
+        }
+
+        match first_error {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+
+    /// A transport that panics reaches us as a `JoinError`. Without this it
+    /// would look like a clean stop.
+    fn task_error(result: Result<Result<(), Error>, tokio::task::JoinError>) -> Option<Error> {
+        match result {
+            Ok(Ok(())) => None,
+            Ok(Err(error)) => Some(error),
+            Err(error) => Some(sword_error! {
+                code: "sword.runtime.events",
+                phase: DiagnosticPhase::Runtime,
+                target: "EventApplication::run",
+                title: "Event transport task failed",
+                reason: error,
+                source: "EventApplication::run",
+                hints: ["Check the event transport logs and the underlying cause"],
+                cause: error,
+            }),
+        }
     }
 }
 
@@ -111,7 +168,8 @@ impl EventTransport {
         }
     }
 
-    async fn run(self, shutdown: Shutdown) {
+    async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
+        #[allow(unreachable_patterns)]
         match self {
             #[cfg(feature = "memory")]
             EventTransport::Memory(transport) => {
@@ -120,9 +178,13 @@ impl EventTransport {
 
             #[cfg(feature = "nats")]
             EventTransport::Nats(transport) => {
-                transport.run(shutdown).await;
+                transport.run(shutdown).await?;
             }
+
+            _ => {}
         }
+
+        Ok(())
     }
 }
 
@@ -142,7 +204,7 @@ struct EventSubscriptions {
 impl EventSubscriptions {
     /// Builds all the registered event controllers and its handlers,
     /// grouping them by their source kind
-    fn collect(state: &State, controllers: &ControllerRegistry) -> Self {
+    fn collect(state: &State, controllers: &ControllerRegistry) -> Result<Self, Error> {
         let mut events_by_source: HashMap<EventSource, Vec<HandlerEntry>> = HashMap::new();
 
         for type_id in controllers.get_by_kind(Controller::Events) {
@@ -151,7 +213,7 @@ impl EventSubscriptions {
                 continue;
             };
 
-            (controller.build)(state); // Build the controller and register into the state
+            (controller.build)(state)?; // Build the controller and register into the state
 
             // iterate over all the handlers registered for this controller type
 
@@ -161,7 +223,7 @@ impl EventSubscriptions {
                 let handler_entry = HandlerEntry {
                     key: handler.key,
                     group: handler.group,
-                    handler: (handler.handler_fn)(state),
+                    handler: (handler.handler_fn)(state)?,
                 };
 
                 events_by_source
@@ -171,9 +233,9 @@ impl EventSubscriptions {
             }
         }
 
-        Self {
+        Ok(Self {
             by_source: events_by_source,
-        }
+        })
     }
 
     /// Returns the map of event handlers for a specific source, removing it from the subscriptions.
@@ -186,12 +248,15 @@ fn controller_registrar(type_id: &TypeId) -> Option<&'static EventControllerRegi
     inventory::iter::<EventControllerRegistrar>().find(|controller| controller.ty == *type_id)
 }
 
-fn check_event_key_uniqueness() {
+fn check_event_key_uniqueness() -> Result<(), Error> {
     let mut keys = HashSet::new();
 
     for event in inventory::iter::<EventRegistrar>() {
         if !keys.insert(event.key) {
-            sword_error! {
+            return Err(sword_error! {
+                code: "sword.build.events",
+                phase: DiagnosticPhase::Build,
+                target: "event registry",
                 title: "Duplicate event key",
                 reason: format!(
                     "event key `{}` is registered more than once",
@@ -204,7 +269,9 @@ fn check_event_key_uniqueness() {
                 hints: [
                     "Each `#[event(key = ...)]` must use a unique key",
                 ],
-            }
+            });
         }
     }
+
+    Ok(())
 }

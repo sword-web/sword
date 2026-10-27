@@ -8,6 +8,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use sword_core::State;
+use sword_core::diagnostic::Error as DiagnosticError;
 
 pub type EventHandlerResult<T> = Result<T, Box<dyn Error + Send + Sync + 'static>>;
 type BoxedFuture<T> = Pin<Box<dyn Future<Output = EventHandlerResult<T>> + Send>>;
@@ -20,7 +21,7 @@ pub(crate) type EventKeyHandlerMap = HashMap<&'static str, Vec<EventHandlerFn>>;
 /// Builds an Events controller from DI state once
 pub struct EventControllerRegistrar {
     pub ty: TypeId,
-    pub build: fn(&State),
+    pub build: fn(&State) -> Result<(), DiagnosticError>,
 }
 
 /// Registers a single event handler for an Events controller.
@@ -39,7 +40,7 @@ pub struct EventHandlerRegistrar {
 
     /// The function that will be called to get the event handler function.
     /// This is used to get the handler function from the controller instance.
-    pub handler_fn: fn(&State) -> EventHandlerFn,
+    pub handler_fn: fn(&State) -> Result<EventHandlerFn, DiagnosticError>,
 }
 
 pub type EventDecoder = fn(&[u8]) -> Result<Box<dyn Event>, EventCodecError>;
