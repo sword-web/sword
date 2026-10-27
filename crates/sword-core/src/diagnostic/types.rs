@@ -3,8 +3,8 @@ use std::fmt::{Display, Formatter};
 
 /// A stable identifier for a diagnostic.
 ///
-/// Codes are documented in `DIAGNOSTICS.md` and kept stable so users can search
-/// for them, link to them, or match them in tests and alerts.
+/// Codes are kept stable so users can search for them, link to them, or match
+/// them in tests and alerts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DiagnosticCode(&'static str);
 
