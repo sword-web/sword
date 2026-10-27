@@ -176,7 +176,7 @@ impl Application {
             phase: DiagnosticPhase::Runtime,
             target: "Application::router",
             title: "Router API is only available for web based applications",
-            reason: "Application::router() is only valid for web/socketio applications",
+            reason: "The application has no web or Socket.IO engine",
             hints: ["Enable the web or socketio feature and call Application::router() there"],
         })
     }

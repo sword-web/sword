@@ -85,7 +85,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                         line: (#location).line(),
                         column: (#location).column(),
                         length: (#location).length(),
-                        message: format!("`{}` could not be built", stringify!(#self_ty)),
+                        message: format!("`{}`", stringify!(#self_ty)),
                     },
                     context: {
                         "controller" => #stringify!(#self_ty),
@@ -107,7 +107,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                         line: (#location).line(),
                         column: (#location).column(),
                         length: (#location).length(),
-                        message: format!("`{}` was not set up", stringify!(#self_ty)),
+                        message: format!("`{}`", stringify!(#self_ty)),
                     },
                     context: {
                         "controller" => #stringify!(#self_ty),
@@ -143,7 +143,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                                     line: (#location).line(),
                                     column: (#location).column(),
                                     length: (#location).length(),
-                                    message: format!("`{}` declares two connection handlers", stringify!(#self_ty)),
+                                    message: format!("`{}`", stringify!(#self_ty)),
                                 },
                                 context: {
                                     "controller" => #stringify!(#self_ty),

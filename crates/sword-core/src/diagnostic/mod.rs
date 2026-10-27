@@ -156,7 +156,7 @@ impl Diagnostic {
         let phase = self.phase().map(DiagnosticPhase::label).unwrap_or("none");
         let engine = self.engine().unwrap_or("none");
         let source = self.source().unwrap_or("none");
-        let reason = self.reason();
+        let reason = self.reason().replace('\n', "; ");
         let title = self.title();
 
         match self.severity() {
@@ -196,6 +196,14 @@ impl Diagnostic {
 
 impl Display for Diagnostic {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.title, self.reason)
+        if self.reason.is_empty() {
+            return write!(f, "{}", self.title);
+        }
+
+        if self.reason.contains('\n') {
+            write!(f, "{}:\n{}", self.title, self.reason)
+        } else {
+            write!(f, "{}: {}", self.title, self.reason)
+        }
     }
 }

@@ -271,6 +271,16 @@ impl ApplicationBuilder {
 
     fn build_dependency_container(&mut self) -> Result<(), Error> {
         self.container.build_all(&self.state).map_err(|err| {
+            let missing = err
+                .missing_dependency_path()
+                .and_then(|path| path.rsplit("::").next())
+                .unwrap_or("the missing dependency");
+
+            let component = err
+                .dependency_path()
+                .and_then(|path| path.rsplit("::").next())
+                .unwrap_or("the component");
+
             let mut diagnostic = Diagnostic::builder()
                 .code("sword.build.di")
                 .phase(DiagnosticPhase::Build)
@@ -278,24 +288,19 @@ impl ApplicationBuilder {
                 .title("Failed to build the dependency container")
                 .reason(err.to_string())
                 .source("ApplicationBuilder::build_dependency_container")
-                .hint("Check that all required components and providers are registered");
+                .hint(format!("Register `{missing}` as a provider or component"));
 
             for (key, value) in err.diagnostic_context() {
                 diagnostic = diagnostic.context(key, value);
             }
 
             if let Some(location) = err.source_location() {
-                let dependency = err
-                    .missing_dependency_path()
-                    .and_then(|path| path.rsplit("::").next())
-                    .unwrap_or("unknown dependency");
-
                 diagnostic = diagnostic.source_location(
                     location.file(),
                     location.line(),
                     location.column(),
                     location.length(),
-                    format!("missing dependency `{dependency}`"),
+                    format!("`{component}`"),
                 );
             }
 

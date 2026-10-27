@@ -80,6 +80,16 @@ impl DiagnosticBuilder {
         self
     }
 
+    /// Marks a span without label text.
+    ///
+    /// Use it when the message already explains the problem and the code frame
+    /// only needs to show where it is.
+    pub fn span(mut self, span: Range<usize>) -> Self {
+        self.labels
+            .push(LabeledSpan::new_with_span(None, (span.start, span.len())));
+        self
+    }
+
     /// Points the diagnostic at a source location captured by a macro.
     ///
     /// The file is read while the diagnostic is built. If it cannot be read, or

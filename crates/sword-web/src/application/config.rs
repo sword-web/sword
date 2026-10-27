@@ -71,7 +71,7 @@ impl ConfigItem for WebApplicationConfig {
 
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.get_or_default::<WebApplicationConfig>());
+        state.insert(config.try_get::<WebApplicationConfig>().ok().flatten().unwrap_or_default());
 
         Ok(())
     })
@@ -86,8 +86,8 @@ impl ValidateConfig for WebApplicationConfig {
 
         if self.host.trim().is_empty() {
             errors.push(
-                ConfigIssue::new("host", "host must not be empty", "must not be empty")
-                    .with_hint("Use a valid host such as 0.0.0.0 or 127.0.0.1"),
+                ConfigIssue::new("host", "host must not be empty")
+                    .with_hint("Use 0.0.0.0, 127.0.0.1, or a specific interface"),
             );
         }
 

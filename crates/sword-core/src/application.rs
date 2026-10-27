@@ -40,7 +40,7 @@ impl ConfigItem for ApplicationConfig {
 
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.get_or_default::<ApplicationConfig>());
+        state.insert(config.try_get::<ApplicationConfig>().ok().flatten().unwrap_or_default());
 
         Ok(())
     })

@@ -236,7 +236,7 @@ impl WebApplicationRouter {
                         .phase(DiagnosticPhase::Build)
                         .target(spec_path.clone())
                         .title("Unsupported OpenAPI spec file type")
-                        .reason("The OpenAPI spec file has an unsupported extension")
+                        .reason(format!("extension `{ext}` is not supported"))
                         .context("file_extension", ext.to_string())
                         .hint("Supported extensions are .yaml, .yml, and .json")
                         .build()

@@ -53,12 +53,12 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                                 line: (#location).line(),
                                 column: (#location).column(),
                                 length: (#location).length(),
-                                message: format!("`{}` could not be built", stringify!(#self_ty)),
+                                message: format!("`{}`", stringify!(#self_ty)),
                             },
                             context: {
                                 "controller_name" => stringify!(#self_ty),
                             },
-                            hints: ["Check the error message for details on what went wrong during construction"],
+                            hints: ["Register the missing dependencies as providers or components"],
                             cause: e,
                         }
                     })?;

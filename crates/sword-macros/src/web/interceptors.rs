@@ -65,12 +65,12 @@ fn generate_sword_traditional(path: &Path, mode: &RequestModeTokens) -> TokenStr
                         line: (#location).line(),
                         column: (#location).column(),
                         length: (#location).length(),
-                        message: format!("interceptor `{}` was not built", stringify!(#path)),
+                        message: format!("interceptor `{}`", stringify!(#path)),
                     },
                     context: {
                         "interceptor" => stringify!(#path),
                     },
-                    hints: ["Ensure the interceptor is registered and built before controller initialization"],
+                    hints: ["Register the interceptor in a module before building the app"],
                     cause: err,
                 }
             })?;
@@ -125,12 +125,12 @@ fn generate_sword_with_config(
                         line: (#location).line(),
                         column: (#location).column(),
                         length: (#location).length(),
-                        message: format!("interceptor `{}` was not built", stringify!(#interceptor_ty)),
+                        message: format!("interceptor `{}`", stringify!(#interceptor_ty)),
                     },
                     context: {
                         "interceptor" => stringify!(#interceptor_ty),
                     },
-                    hints: ["Ensure the interceptor is registered and built before controller initialization"],
+                    hints: ["Register the interceptor in a module before building the app"],
                     cause: err,
                 }
             })?;

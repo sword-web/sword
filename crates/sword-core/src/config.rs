@@ -18,31 +18,40 @@ pub struct ConfigIssue {
     section: Option<&'static str>,
     key: Option<&'static str>,
     reason: String,
-    label: String,
+    label: Option<String>,
     hint: Option<String>,
 }
 
 impl ConfigIssue {
     /// Creates an issue attached to a specific key.
-    pub fn new(key: &'static str, reason: impl Into<String>, label: impl Into<String>) -> Self {
+    ///
+    /// The reason is what the report shows as the problem; the span marks the
+    /// key. A label is only added when it says something the reason does not.
+    pub fn new(key: &'static str, reason: impl Into<String>) -> Self {
         Self {
             section: None,
             key: Some(key),
             reason: reason.into(),
-            label: label.into(),
+            label: None,
             hint: None,
         }
     }
 
     /// Creates an issue that belongs to the whole section.
-    pub fn for_section(reason: impl Into<String>, label: impl Into<String>) -> Self {
+    pub fn for_section(reason: impl Into<String>) -> Self {
         Self {
             section: None,
             key: None,
             reason: reason.into(),
-            label: label.into(),
+            label: None,
             hint: None,
         }
+    }
+
+    /// Adds text under the arrow. Keep it short and non-redundant.
+    pub fn with_label(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
     }
 
     /// Points the issue at a nested section, such as `events.memory`.
@@ -68,8 +77,8 @@ impl ConfigIssue {
         &self.reason
     }
 
-    pub fn label(&self) -> &str {
-        &self.label
+    pub fn label(&self) -> Option<&str> {
+        self.label.as_deref()
     }
 
     pub fn hint(&self) -> Option<&str> {
@@ -98,6 +107,32 @@ impl ConfigErrors {
 
     pub fn into_issues(self) -> Vec<ConfigIssue> {
         self.issues
+    }
+}
+
+/// Hints that appear more than once are only shown once.
+fn unique_hints(issues: &[ConfigIssue]) -> Vec<&str> {
+    issues
+        .iter()
+        .filter_map(ConfigIssue::hint)
+        .fold(Vec::new(), |mut hints, hint| {
+            if !hints.contains(&hint) {
+                hints.push(hint);
+            }
+
+            hints
+        })
+}
+
+/// One issue stays on the message line; several become a list.
+fn issues_reason(issues: &[ConfigIssue]) -> String {
+    match issues {
+        [issue] => issue.reason().to_string(),
+        _ => issues
+            .iter()
+            .map(|issue| format!("- {}", issue.reason()))
+            .collect::<Vec<_>>()
+            .join("\n"),
     }
 }
 
@@ -192,11 +227,7 @@ impl ConfigDocument {
         errors: ConfigErrors,
     ) -> Error {
         let issues = errors.into_issues();
-        let reason = issues
-            .iter()
-            .map(ConfigIssue::reason)
-            .collect::<Vec<_>>()
-            .join("; ");
+        let reason = issues_reason(&issues);
 
         let mut builder = Diagnostic::builder()
             .code(code)
@@ -215,7 +246,7 @@ impl ConfigDocument {
                     None => self.section_span(issue_section),
                 };
 
-                span.map(|span| (span, issue.label().to_string()))
+                span.map(|span| (span, issue.label().map(ToOwned::to_owned)))
             })
             .collect::<Vec<_>>();
 
@@ -223,22 +254,14 @@ impl ConfigDocument {
             builder = builder.source_code(self.path.display().to_string(), self.document.raw());
 
             for (span, label) in labels {
-                builder = builder.label(span, label);
+                builder = match label {
+                    Some(label) => builder.label(span, label),
+                    None => builder.span(span),
+                };
             }
         }
 
-        let hints = issues.iter().filter_map(ConfigIssue::hint).fold(
-            Vec::<&str>::new(),
-            |mut hints, hint| {
-                if !hints.contains(&hint) {
-                    hints.push(hint);
-                }
-
-                hints
-            },
-        );
-
-        for hint in hints {
+        for hint in unique_hints(&issues) {
             builder = builder.hint(hint);
         }
 
@@ -279,10 +302,13 @@ impl ConfigSection {
                     .join(" ");
 
                 let mut errors = ConfigErrors::new();
-                errors.push(ConfigIssue::for_section(
-                    format!("failed to deserialize `[{}]`: {reason}", T::SECTION),
-                    "invalid configuration",
-                ));
+                errors.push(
+                    ConfigIssue::for_section(format!(
+                        "failed to deserialize `[{}]`: {reason}",
+                        T::SECTION
+                    ))
+                    .with_hint("Check the types of the values in this section"),
+                );
 
                 Err(section_error(
                     document,
@@ -311,11 +337,7 @@ fn section_error(
         Some(document) => document.diagnostic(section, code, title, errors),
         None => {
             let issues = errors.into_issues();
-            let reason = issues
-                .iter()
-                .map(ConfigIssue::reason)
-                .collect::<Vec<_>>()
-                .join("; ");
+            let reason = issues_reason(&issues);
 
             let mut builder = Diagnostic::builder()
                 .code(code)
@@ -325,7 +347,7 @@ fn section_error(
                 .reason(reason)
                 .source("ConfigSection::load");
 
-            for hint in issues.iter().filter_map(ConfigIssue::hint) {
+            for hint in unique_hints(&issues) {
                 builder = builder.hint(hint);
             }
 

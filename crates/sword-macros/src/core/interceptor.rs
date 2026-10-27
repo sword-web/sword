@@ -47,7 +47,7 @@ pub fn expand_interceptor_derive(item: TokenStream) -> Result<TokenStream> {
                             line: (#location).line(),
                             column: (#location).column(),
                             length: (#location).length(),
-                            message: format!("`{}` could not be built", stringify!(#self_name)),
+                            message: format!("`{}`", stringify!(#self_name)),
                         },
                         hints: ["Ensure interceptor dependencies are registered in the DI container"],
                         cause: err,

@@ -60,7 +60,7 @@ pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
                                     line: (#location).line(),
                                     column: (#location).column(),
                                     length: (#location).length(),
-                                    message: format!("`{}` could not be built", stringify!(#controller_ty)),
+                                    message: format!("`{}`", stringify!(#controller_ty)),
                                 },
                                 context: {
                                     "controller" => #stringify!(#controller_ty),

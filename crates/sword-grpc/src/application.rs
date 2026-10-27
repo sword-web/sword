@@ -38,11 +38,11 @@ impl GrpcApplication {
                 phase: DiagnosticPhase::Runtime,
                 target: "gRPC controller registry",
                 title: "No gRPC controllers registered",
-                reason: "At least one gRPC controller must be registered before starting the server",
+                reason: "The server has nothing to serve",
                 context: {
                     "bind" => bind,
                 },
-                hints: ["Register a controller with `controllers.register::<MyGrpcController>()` in your module"],
+                hints: ["Register at least one controller with `controllers.register::<MyGrpcController>()`"],
             });
         }
 

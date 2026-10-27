@@ -121,11 +121,10 @@ impl ValidateConfig for TracingConfig {
         let mut errors = ConfigErrors::new();
 
         if let Err(err) = EnvFilter::try_new(&self.filter) {
-            errors.push(ConfigIssue::new(
-                "filter",
-                format!("invalid tracing filter: {err}"),
-                "could not parse this filter",
-            ));
+            errors.push(
+                ConfigIssue::new("filter", format!("invalid tracing filter: {err}"))
+                    .with_hint("Use EnvFilter directives such as `info` or `my_crate=debug`"),
+            );
         }
 
         errors

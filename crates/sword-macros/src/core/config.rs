@@ -81,12 +81,12 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
                                 line: (#location).line(),
                                 column: (#location).column(),
                                 length: (#location).length(),
-                                message: format!("config item `{}` was not found", #config_key),
+                                message: format!("`{}`", #config_key),
                             },
                             context: {
                                 "key" => #config_key,
                             },
-                            hints: ["Ensure the configuration file contains this section"],
+                            hints: [format!("Add a `[{}]` table to the configuration file", #config_key)],
                         });
                     };
 

@@ -256,9 +256,8 @@ impl ValidateConfig for SocketIoServerConfig {
                 ConfigIssue::new(
                     "max-buffer-size",
                     "`max-buffer-size` must be greater than 0",
-                    "must be greater than 0",
                 )
-                .with_hint("Set a positive buffer size in [socketio]"),
+                .with_hint("Remove the key to use its default, or set a positive number"),
             );
         }
 
@@ -267,9 +266,8 @@ impl ValidateConfig for SocketIoServerConfig {
                 ConfigIssue::new(
                     "ws-read-buffer-size",
                     "`ws-read-buffer-size` must be greater than 0",
-                    "must be greater than 0",
                 )
-                .with_hint("Set a positive read buffer size in [socketio]"),
+                .with_hint("Remove the key to use its default, or set a positive number"),
             );
         }
 
@@ -279,7 +277,7 @@ impl ValidateConfig for SocketIoServerConfig {
 
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.get_or_default::<SocketIoServerConfig>());
+        state.insert(config.try_get::<SocketIoServerConfig>().ok().flatten().unwrap_or_default());
 
         Ok(())
     })
