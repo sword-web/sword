@@ -5,7 +5,7 @@ use std::fmt::{self, Display, Formatter};
 /// The error type returned by fallible Sword APIs.
 ///
 /// It owns a [`Diagnostic`] and, when the failure came from something else, the
-/// original error. The diagnostic is what gets rendered; the original error is
+/// original error. The diagnostic is what gets rendered, the original error is
 /// exposed through [`std::error::Error::source`] so it can still be inspected.
 #[derive(Debug)]
 pub struct Error {
@@ -33,8 +33,7 @@ impl Error {
         &self.diagnostic
     }
 
-    /// Renders the diagnostic with the renderer configured for this process.
-    pub fn report(&self) {
+    pub fn report(self) {
         self.diagnostic.report();
     }
 }

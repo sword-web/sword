@@ -16,9 +16,8 @@
 /// });
 /// ```
 ///
-/// The fields keep a fixed order so the required ones (`code`, `title` and
-/// `reason`) are always present. Optional fields can be omitted, but they cannot
-/// be reordered.
+/// The fields keep a fixed order so the required ones (`code`, `title` and `reason`) are always present.
+/// Optional fields can be omitted, but they cannot be reordered.
 #[macro_export]
 macro_rules! sword_error {
     (

@@ -7,12 +7,13 @@ mod builder;
 mod error;
 mod miette;
 mod renderer;
-mod report;
 mod types;
 
 pub use builder::DiagnosticBuilder;
 pub use error::Error;
 pub use types::{DiagnosticCode, DiagnosticPhase, DiagnosticsMode, Severity};
+
+use crate::diagnostic::renderer::Renderer;
 
 /// A location in a Rust source file.
 ///
@@ -130,6 +131,66 @@ impl Diagnostic {
 
     pub(crate) fn labels(&self) -> &[LabeledSpan] {
         &self.labels
+    }
+
+    /// Reports this diagnostic with the renderer selected for the process.
+    ///
+    /// `[application] diagnostics` chooses between miette and tracing. When the
+    /// configured renderer is tracing but no subscriber is installed, we fall
+    /// back to miette instead of dropping the diagnostic.
+    pub fn report(self) {
+        match renderer::current() {
+            Renderer::Miette => self.report_miette(),
+            Renderer::Tracing if tracing::dispatcher::has_been_set() => self.report_tracing(),
+            Renderer::Tracing => self.report_miette(),
+        }
+    }
+
+    fn report_miette(self) {
+        let report = ::miette::Report::new(self);
+        eprint!("{report:?}");
+    }
+
+    fn report_tracing(&self) {
+        let code = self.code().as_str();
+        let phase = self.phase().map(DiagnosticPhase::label).unwrap_or("none");
+        let engine = self.engine().unwrap_or("none");
+        let source = self.source().unwrap_or("none");
+        let reason = self.reason();
+        let title = self.title();
+
+        match self.severity() {
+            Severity::Error => tracing::error!(
+                target: "sword.diagnostic",
+                code,
+                phase,
+                engine,
+                source,
+                reason = %reason,
+                "{}",
+                title
+            ),
+            Severity::Warning => tracing::warn!(
+                target: "sword.diagnostic",
+                code,
+                phase,
+                engine,
+                source,
+                reason = %reason,
+                "{}",
+                title
+            ),
+            Severity::Advice => tracing::info!(
+                target: "sword.diagnostic",
+                code,
+                phase,
+                engine,
+                source,
+                reason = %reason,
+                "{}",
+                title
+            ),
+        }
     }
 }
 

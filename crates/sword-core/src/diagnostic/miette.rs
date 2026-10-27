@@ -1,5 +1,6 @@
 use super::Diagnostic;
 use super::types::Severity;
+
 use ::miette::{LabeledSpan, SourceCode};
 use std::fmt::Display;
 
