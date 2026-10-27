@@ -4,6 +4,7 @@ use crate::core::{ControllerKind, ControllerStruct};
 use crate::shared::{
     Result,
     cmeta::CMetaStack,
+    location,
     paths::*,
     traits::{generate_build_impl, generate_clone_impl},
 };
@@ -18,6 +19,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     };
 
     let self_ty = &controller.ty();
+    let location = location::tokens(self_ty.span(), &self_ty.to_string());
     let fields = controller.fields();
 
     CMetaStack::push("job_controller", "controller_ty", &controller.name());
@@ -46,6 +48,13 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                             target: "job controller",
                             title: "Failed to build controller",
                             reason: format!("Failed to build job controller dependency graph: {e}"),
+                            source_location: {
+                                file: (#location).file(),
+                                line: (#location).line(),
+                                column: (#location).column(),
+                                length: (#location).length(),
+                                message: format!("`{}` could not be built", stringify!(#self_ty)),
+                            },
                             context: {
                                 "controller_name" => stringify!(#self_ty),
                             },

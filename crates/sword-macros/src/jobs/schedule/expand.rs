@@ -1,5 +1,5 @@
 use super::parsing::{ParsedScheduleHandler, Schedule};
-use crate::shared::{Result, paths::*};
+use crate::shared::{Result, location, paths::*};
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -11,6 +11,8 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
         controller_ty,
         schedule,
     } = schedule;
+
+    let location = location::tokens(fn_name.span(), &fn_name.to_string());
 
     let (job_constructor, schedule_arg) = match &schedule {
         Schedule::Cron(lit) => (quote!(#Job::new_async), quote!(#lit)),
@@ -41,6 +43,13 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                                 target: "job schedule",
                                 title: "Failed to retrieve job controller from state",
                                 reason: err,
+                                source_location: {
+                                    file: (#location).file(),
+                                    line: (#location).line(),
+                                    column: (#location).column(),
+                                    length: (#location).length(),
+                                    message: format!("job `{}`", stringify!(#fn_name)),
+                                },
                                 context: {
                                     "controller" => #stringify!(#controller_ty),
                                     "job" => stringify!(#fn_name),
@@ -66,6 +75,13 @@ pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenS
                                 target: "job schedule",
                                 title: "Failed to register job",
                                 reason: err,
+                                source_location: {
+                                    file: (#location).file(),
+                                    line: (#location).line(),
+                                    column: (#location).column(),
+                                    length: (#location).length(),
+                                    message: format!("job `{}`", stringify!(#fn_name)),
+                                },
                                 context: {
                                     "controller" => #stringify!(#controller_ty),
                                     "job" => stringify!(#fn_name),

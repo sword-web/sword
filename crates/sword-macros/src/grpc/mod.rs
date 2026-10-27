@@ -5,7 +5,7 @@ pub use errors::derive_grpc_error;
 use crate::{
     core::{ControllerKind, ControllerStruct, InterceptorArgs},
     shared::{
-        Result,
+        Result, location,
         paths::*,
         traits::{generate_build_impl, generate_clone_impl},
     },
@@ -21,6 +21,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     };
 
     let self_ty = controller.ty();
+    let location = location::tokens(self_ty.span(), &self_ty.to_string());
     let fields = controller.fields();
     let interceptors = &controller.interceptors;
 
@@ -126,6 +127,13 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                             target: "gRPC controller",
                             title: "Failed to build gRPC controller",
                             reason: format!("Failed to build the gRPC controller dependency graph: {e}"),
+                            source_location: {
+                                file: (#location).file(),
+                                line: (#location).line(),
+                                column: (#location).column(),
+                                length: (#location).length(),
+                                message: format!("`{}` could not be built", stringify!(#self_ty)),
+                            },
                             context: {
                                 "controller_name" => #stringify!(#self_ty),
                                 "service" => #stringify!(#service),

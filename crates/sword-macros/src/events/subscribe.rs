@@ -1,6 +1,6 @@
 use crate::{
     core::EventSourceKind,
-    shared::{Result, cmeta::CMetaStack, paths::*},
+    shared::{Result, cmeta::CMetaStack, location, paths::*},
 };
 
 use darling::{Error, FromMeta, ast::NestedMeta};
@@ -48,6 +48,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
 
     let controller_ty: syn::Ident = syn::parse_str(&controller_ty_str)?;
     let fn_name = &item_fn.sig.ident;
+    let location = location::tokens(fn_name.span(), &fn_name.to_string());
 
     let body = match event_param {
         EventParam::Typed(boxed) => {
@@ -100,6 +101,13 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
                             "Controller {} was not built for event handler: {err}",
                             #stringify!(#controller_ty),
                         ),
+                        source_location: {
+                            file: (#location).file(),
+                            line: (#location).line(),
+                            column: (#location).column(),
+                            length: (#location).length(),
+                            message: format!("handler for `{}`", #event_key),
+                        },
                         context: {
                             "controller" => #stringify!(#controller_ty),
                             "event_key" => #event_key,
