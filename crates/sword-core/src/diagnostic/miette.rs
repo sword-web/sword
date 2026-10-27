@@ -18,13 +18,13 @@ impl ::miette::Diagnostic for Diagnostic {
             None => severity.title().to_string(),
         };
 
-        let mut header = format!("{} — {category}", self.code());
+        let mut header = format!("{} · {category}", self.code());
 
         if self.source_code().is_none()
             && self.labels().is_empty()
             && let Some(target) = self.target().or_else(|| self.source())
         {
-            header.push_str(" — ");
+            header.push_str(" · ");
             header.push_str(target);
         }
 
