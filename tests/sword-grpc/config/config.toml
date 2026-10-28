@@ -1,6 +1,5 @@
 [application]
 name = "gRPC Test App"
-graceful-shutdown = false
 
 [grpc]
 host = "127.0.0.1"

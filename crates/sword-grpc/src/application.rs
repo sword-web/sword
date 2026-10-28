@@ -7,16 +7,13 @@ use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{
-    ApplicationConfig, ConfigSection, Controller, EngineBuildContext, Shutdown, State, sword_error,
-};
+use sword_core::{ConfigSection, Controller, EngineBuildContext, Shutdown, State, sword_error};
 
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
 
 pub struct GrpcApplication {
     pub state: State,
     pub config: GrpcApplicationConfig,
-    pub graceful_shutdown: bool,
     pub controller_ids: HashSet<TypeId>,
 }
 
@@ -27,7 +24,6 @@ impl GrpcApplication {
         tracing::info!(
             target: "sword.startup.grpc",
             bind,
-            graceful_shutdown = self.graceful_shutdown,
             "Starting gRPC application listener"
         );
 
@@ -167,30 +163,7 @@ impl GrpcApplication {
             router = router.add_service(self.build_reflection_service(reflection_descriptor_sets)?);
         }
 
-        // With graceful shutdown the server waits for a signal and drains connections.
-        if self.graceful_shutdown {
-            router
-                .serve_with_shutdown(bind_addr, shutdown.cancelled())
-                .await
-                .map_err(|err| {
-                    sword_error! {
-                        code: "sword.runtime.grpc",
-                        phase: DiagnosticPhase::Runtime,
-                        target: "GrpcApplication::run",
-                        title: "gRPC server stopped with an internal error",
-                        reason: err,
-                        context: {
-                            "mode" => "graceful_shutdown",
-                            "host" => self.config.host.clone(),
-                            "port" => self.config.port.to_string(),
-                        },
-                        hints: ["Check the gRPC server logs and listener configuration"],
-                    }
-                })?;
-
-            return Ok(());
-        }
-
+        // A signal stops the server and drops the connections.
         tokio::select! {
             res = router.serve(bind_addr) => {
                 res.map_err(|err| {
@@ -201,7 +174,6 @@ impl GrpcApplication {
                         title: "gRPC server stopped with an internal error",
                         reason: err,
                         context: {
-                            "mode" => "normal",
                             "host" => self.config.host.clone(),
                             "port" => self.config.port.to_string(),
                         },
@@ -258,7 +230,6 @@ impl TryFrom<EngineBuildContext> for GrpcApplication {
             ..
         } = ctx;
 
-        let app_config = config.get_or_default::<ApplicationConfig>();
         let grpc_config =
             ConfigSection::load::<GrpcApplicationConfig>(&config, config_document.as_deref())?
                 .unwrap_or_default();
@@ -268,7 +239,6 @@ impl TryFrom<EngineBuildContext> for GrpcApplication {
         Ok(GrpcApplication {
             state,
             config: grpc_config,
-            graceful_shutdown: app_config.graceful_shutdown,
             controller_ids: grpc_controllers_ids,
         })
     }

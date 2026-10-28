@@ -1,5 +1,4 @@
 [application]
-graceful-shutdown = false
 
 [web]
 host = "0.0.0.0"

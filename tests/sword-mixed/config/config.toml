@@ -1,6 +1,5 @@
 [application]
 name = "Mixed Test App"
-graceful-shutdown = false
 
 [web]
 host = "127.0.0.1"

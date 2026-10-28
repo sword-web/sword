@@ -12,6 +12,31 @@ use tokio::task::JoinSet;
 
 pub use publisher::NatsEventPublisher;
 
+fn consumer_stopped() -> Error {
+    sword_error! {
+        code: "sword.runtime.events.nats",
+        phase: DiagnosticPhase::Runtime,
+        target: "NATS transport",
+        title: "NATS consumer stopped before shutdown",
+        reason: "a subscription finished without a shutdown request",
+        source: "NatsTransport::run",
+        hints: ["Check the NATS connection and server logs"],
+    }
+}
+
+fn consumer_panicked(error: tokio::task::JoinError) -> Error {
+    sword_error! {
+        code: "sword.runtime.events.nats",
+        phase: DiagnosticPhase::Runtime,
+        target: "NATS transport",
+        title: "NATS consumer task panicked",
+        reason: error,
+        source: "NatsTransport::run",
+        hints: ["Check the panic message in the logs"],
+        cause: error,
+    }
+}
+
 /// A NATS subscription: `(subject, group)`. `None` means an individual
 /// subscription (fan-out); `Some` means a queue group (load balanced).
 type NatsEventKey = (&'static str, Option<&'static str>);
@@ -60,7 +85,7 @@ impl NatsTransport {
         self.client.connect().await.map_err(|error| {
             sword_error! {
                 code: "sword.runtime.events.nats",
-                phase: DiagnosticPhase::Runtime,
+                phase: DiagnosticPhase::Startup,
                 target: "NATS transport",
                 title: "Failed to connect to NATS",
                 reason: error,
@@ -79,7 +104,7 @@ impl NatsTransport {
         let client = self.client.get().cloned().ok_or_else(|| {
             sword_error! {
                 code: "sword.runtime.events.nats",
-                phase: DiagnosticPhase::Runtime,
+                phase: DiagnosticPhase::Startup,
                 target: "NATS transport",
                 title: "Failed to get NATS client",
                 reason: "Client is not connected",
@@ -133,12 +158,25 @@ impl NatsTransport {
             ));
         }
 
-        shutdown.cancelled().await;
+        if tasks.is_empty() {
+            shutdown.cancelled().await;
+            return Ok(());
+        }
 
-        let _ = client.drain().await;
+        let result = tokio::select! {
+            _ = shutdown.cancelled() => {
+                tasks.abort_all();
+                return Ok(());
+            }
+            result = tasks.join_next() => result,
+        };
 
-        while tasks.join_next().await.is_some() {}
+        tasks.abort_all();
 
-        Ok(())
+        match result {
+            Some(Ok(())) => Err(consumer_stopped()),
+            Some(Err(join_error)) => Err(consumer_panicked(join_error)),
+            None => Ok(()),
+        }
     }
 }

@@ -1,6 +1,5 @@
 [application]
 name = "NATS Events Example"
-graceful-shutdown = true
 
 [web]
 host = "127.0.0.1"

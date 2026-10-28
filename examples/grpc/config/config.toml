@@ -1,6 +1,5 @@
 [application]
 name = "gRPC Application Example"
-graceful-shutdown = true
 
 [grpc]
 host = "0.0.0.0"

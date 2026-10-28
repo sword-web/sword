@@ -9,8 +9,6 @@ pub async fn consume(
     handlers: Vec<EventHandlerFn>,
     events: Arc<HashMap<&'static str, &'static EventRegistrar>>,
 ) {
-
-
     while let Some(message) = subscription.next().await {
         let Some(registrar) = events.get(message.subject.as_str()) else {
             tracing::warn!(

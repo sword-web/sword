@@ -78,11 +78,11 @@ impl Application {
         ApplicationBuilder::from_config(config)
     }
 
-    /// Runs every configured engine until the application shuts down.
+    /// Runs every configured engine until the application stops.
     ///
-    /// All engines start together. The application stops when the OS shutdown
-    /// signal arrives or when any engine finishes on its own; then it cancels
-    /// the shared [`Shutdown`] and waits for every engine to drain.
+    /// All engines start together. A termination signal stops all of them
+    /// immediately. If an engine fails or panics, the remaining engines are
+    /// stopped immediately as well.
     pub async fn run(self) -> Result<(), Error> {
         let app_config = self.config.get_or_default::<ApplicationConfig>();
 
@@ -90,12 +90,10 @@ impl Application {
             target: "sword.startup.app",
             name = app_config.name.as_deref().unwrap_or("none"),
             environment = app_config.environment.as_deref().unwrap_or("none"),
-            graceful_shutdown = app_config.graceful_shutdown,
             "Starting Sword application"
         );
 
         let shutdown = Shutdown::new();
-
         let mut tasks = tokio::task::JoinSet::new();
 
         for engine in self.engines {
@@ -115,50 +113,23 @@ impl Application {
             return Ok(());
         }
 
-        let mut first_error = None;
-
-        tokio::select! {
-            _ = sword_core::shutdown_signal() => {}
-            result = tasks.join_next() => {
-                if let Some(result) = result {
-                    first_error = Self::task_error(result);
-                }
+        let result = tokio::select! {
+            _ = sword_core::shutdown_signal() => {
+                shutdown.cancel();
+                tasks.abort_all();
+                return Ok(());
             }
-        }
+            result = tasks.join_next() => result,
+        };
 
         shutdown.cancel();
+        tasks.abort_all();
 
-        while let Some(result) = tasks.join_next().await {
-            if first_error.is_none() {
-                first_error = Self::task_error(result);
-            }
-        }
-
-        match first_error {
-            Some(error) => Err(error),
-            None => Ok(()),
-        }
-    }
-
-    /// Turns the end of an engine task into a diagnostic when it failed.
-    ///
-    /// A `JoinError` means the task panicked. Tokio only surfaces it when the
-    /// task is joined, so without this the process could exit successfully
-    /// after a failed startup.
-    fn task_error(result: Result<Result<(), Error>, tokio::task::JoinError>) -> Option<Error> {
         match result {
-            Ok(Ok(())) => None,
-            Ok(Err(error)) => Some(error),
-            Err(error) => Some(sword_error! {
-                code: "sword.runtime.application",
-                phase: DiagnosticPhase::Runtime,
-                target: "Application::run",
-                title: "Engine task failed",
-                reason: error,
-                source: "Application::run",
-                hints: ["Check the engine logs and the underlying cause"],
-                cause: error,
-            }),
+            Some(Ok(Ok(()))) => Err(engine_stopped()),
+            Some(Ok(Err(error))) => Err(error),
+            Some(Err(join_error)) => Err(engine_panicked(join_error)),
+            None => Ok(()),
         }
     }
 
@@ -179,5 +150,30 @@ impl Application {
             reason: "The application has no web or Socket.IO engine",
             hints: ["Enable the web or socketio feature and call Application::router() there"],
         })
+    }
+}
+
+fn engine_stopped() -> Error {
+    sword_error! {
+        code: "sword.runtime.engine",
+        phase: DiagnosticPhase::Runtime,
+        target: "Application::run",
+        title: "Engine stopped before shutdown",
+        reason: "an engine finished without a shutdown request",
+        source: "Application::run",
+        hints: ["Check the engine logs for the reason it stopped"],
+    }
+}
+
+fn engine_panicked(error: tokio::task::JoinError) -> Error {
+    sword_error! {
+        code: "sword.runtime.panic",
+        phase: DiagnosticPhase::Runtime,
+        target: "Application::run",
+        title: "Engine task panicked",
+        reason: error,
+        source: "Application::run",
+        hints: ["Check the panic message in the logs"],
+        cause: error,
     }
 }

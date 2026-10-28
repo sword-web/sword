@@ -21,13 +21,6 @@ pub struct ApplicationConfig {
     /// This can be used to alter behavior based on the environment. Defaults `None`.
     pub environment: Option<String>,
 
-    /// Whether to enable graceful shutdown of the server.
-    /// If true, the server will finish processing ongoing requests
-    /// before shutting down when a termination signal is received.
-    /// Defaults `false`
-    #[serde(rename = "graceful-shutdown")]
-    pub graceful_shutdown: bool,
-
     /// Renderer used for process-level diagnostics. Defaults to `miette`.
     pub diagnostics: DiagnosticsMode,
 }
