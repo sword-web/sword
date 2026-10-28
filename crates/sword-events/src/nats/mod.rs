@@ -94,13 +94,43 @@ impl NatsTransport {
             "Connected to NATS"
         );
 
+        let mut consumers = Vec::new();
+
+        for ((subject, group), handlers) in self.subscriptions {
+            let subscriber = match group {
+                Some(group) => client.queue_subscribe(subject, group.into()).await,
+                None => client.subscribe(subject).await,
+            }
+            .map_err(|error| {
+                sword_error! {
+                    code: "sword.runtime.events.nats",
+                    phase: DiagnosticPhase::Startup,
+                    target: "NATS transport",
+                    title: "Failed to subscribe to NATS subject",
+                    reason: error,
+                    context: {
+                        "subject" => subject,
+                        "group" => group.unwrap_or("none"),
+                    },
+                    hints: [
+                        "Check that the subject and queue group are valid",
+                        "Check the NATS permissions for this client",
+                    ],
+                    cause: error,
+                }
+            })?;
+
+            consumers.push((subscriber, handlers));
+        }
+
         let mut tasks = JoinSet::new();
 
-        for (key_group, handlers) in self.subscriptions {
-            let client = client.clone();
-            let events = self.events.clone();
-
-            tasks.spawn(subscriber::consume(client, key_group, handlers, events));
+        for (subscriber, handlers) in consumers {
+            tasks.spawn(subscriber::consume(
+                subscriber,
+                handlers,
+                self.events.clone(),
+            ));
         }
 
         shutdown.cancelled().await;
