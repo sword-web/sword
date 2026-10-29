@@ -18,7 +18,6 @@ pub struct WebApplication {
     pub state: State,
     pub router: Router<State>,
     pub config: WebApplicationConfig,
-    pub graceful_shutdown: bool,
 }
 
 impl WebApplication {
@@ -69,7 +68,7 @@ impl WebApplication {
         let bind_addr: SocketAddr = bind.parse::<SocketAddr>().map_err(|err| {
             sword_error! {
                 code: "sword.runtime.web",
-                phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                phase: sword_core::diagnostic::DiagnosticPhase::Startup,
                 target: "WebApplication::run",
                 title: "Invalid web bind address",
                 reason: err,
@@ -83,7 +82,7 @@ impl WebApplication {
         let listener = TcpListener::bind(bind_addr).await.map_err(|err| {
             sword_error! {
                 code: "sword.runtime.web",
-                phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                phase: sword_core::diagnostic::DiagnosticPhase::Startup,
                 target: "WebApplication::run",
                 title: "Failed to bind HTTP listener",
                 reason: err,
@@ -95,30 +94,7 @@ impl WebApplication {
             }
         })?;
 
-        // Graceful shutdown waits for a signal and drains in-flight requests.
-        if self.graceful_shutdown {
-            axum::serve(listener, app)
-                .with_graceful_shutdown(shutdown.cancelled())
-                .await
-                .map_err(|err| {
-                    sword_error! {
-                        code: "sword.runtime.web",
-                        phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
-                        target: "WebApplication::run",
-                        title: "HTTP server stopped with an internal error",
-                        reason: err,
-                        context: {
-                            "mode" => "graceful_shutdown",
-                            "host" => self.config.host.clone(),
-                            "port" => self.config.port.to_string(),
-                        },
-                        hints: ["Check the web server logs and listener configuration"],
-                    }
-                })?;
-
-            return Ok(());
-        }
-
+        // A signal stops accepting new connections and drops the server.
         tokio::select! {
             res = axum::serve(listener, app) => {
                 res.map_err(|err| {
@@ -129,7 +105,6 @@ impl WebApplication {
                         title: "HTTP server stopped with an internal error",
                         reason: err,
                         context: {
-                            "mode" => "normal",
                             "host" => self.config.host.clone(),
                             "port" => self.config.port.to_string(),
                         },
@@ -164,10 +139,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
             ConfigSection::load::<WebApplicationConfig>(&config, config_document.as_deref())?
                 .unwrap_or_default();
 
-        let graceful_shutdown = config
-            .get_or_default::<ApplicationConfig>()
-            .graceful_shutdown;
-
         let mut router = WebApplicationRouter {
             state: state.clone(),
             config,
@@ -180,7 +151,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         Ok(Self {
             state,
             config: web_config,
-            graceful_shutdown,
             router: router.build()?,
         })
     }

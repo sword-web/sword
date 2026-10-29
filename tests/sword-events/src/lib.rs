@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serial_test::serial;
+use sword::diagnostic::DiagnosticPhase;
 use sword::events::{EventHandlerResult, EventPublish, MemoryEventPublisher, event, subscribe};
 use sword::prelude::*;
 use sword::web::*;
@@ -205,4 +206,30 @@ async fn multiple_events_accumulate_in_store() {
     );
 
     server.abort();
+}
+
+#[tokio::test]
+#[serial]
+async fn startup_bind_failure_stops_the_application() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:8083").expect("bind blocker");
+
+    let app = Application::from_config_path("Config.toml")
+        .expect("application builder")
+        .with_provider(EventStore::new())
+        .with_module::<TestModule>()
+        .build()
+        .expect("application");
+
+    let result = tokio::time::timeout(Duration::from_secs(1), app.run())
+        .await
+        .expect("startup failure must not hang")
+        .expect_err("binding a taken port must fail");
+
+    assert_eq!(
+        result.diagnostic().phase(),
+        Some(DiagnosticPhase::Startup),
+        "bind failures belong to startup: {result:?}"
+    );
+
+    drop(listener);
 }

@@ -1,6 +1,5 @@
 [application]
 name = "Web Application Example - PROD"
-graceful-shutdown = false
 environment = "prod"
 
 [web]

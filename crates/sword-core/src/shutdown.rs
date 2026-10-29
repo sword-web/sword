@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::watch;
 
-/// Waits for a shutdown signal (SIGINT or SIGTERM) and logs which signal was received.
+/// Waits for a shutdown signal (SIGINT or SIGTERM).
 ///
 /// This is a shared utility used by both web and gRPC application engines.
 /// On Unix systems, it listens for both `Ctrl+C` (SIGINT) and `SIGTERM`.
@@ -46,14 +46,14 @@ pub async fn shutdown_signal() {
             tracing::info!(
                 target: "sword.startup.signal",
                 signal = "SIGINT",
-                "Shutdown signal received, starting graceful shutdown"
+                "Shutdown signal received"
             );
         },
         _ = terminate => {
             tracing::info!(
                 target: "sword.startup.signal",
                 signal = "SIGTERM",
-                "Shutdown signal received, starting graceful shutdown"
+                "Shutdown signal received"
             );
         },
     }
@@ -85,7 +85,7 @@ impl Shutdown {
     /// already happened).
     ///
     /// The returned future is `'static` (it owns a clone of the sender), so it
-    /// can be handed to APIs like `axum::serve(...).with_graceful_shutdown(...)`.
+    /// can be used by long-lived server tasks.
     pub fn cancelled(&self) -> impl Future<Output = ()> + Send + 'static {
         let tx = self.tx.clone();
 

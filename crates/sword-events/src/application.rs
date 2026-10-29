@@ -93,47 +93,21 @@ impl EventApplication {
             return Ok(());
         }
 
-        let mut first_error = None;
-
-        tokio::select! {
-            _ = shutdown.cancelled() => {}
-            result = tasks.join_next() => {
-                if let Some(result) = result {
-                    first_error = Self::task_error(result);
-                }
-
-                shutdown.cancel();
+        let result = tokio::select! {
+            _ = shutdown.cancelled() => {
+                tasks.abort_all();
+                return Ok(());
             }
-        }
+            result = tasks.join_next() => result,
+        };
 
-        while let Some(result) = tasks.join_next().await {
-            if first_error.is_none() {
-                first_error = Self::task_error(result);
-            }
-        }
+        tasks.abort_all();
 
-        match first_error {
-            Some(error) => Err(error),
-            None => Ok(()),
-        }
-    }
-
-    /// A transport that panics reaches us as a `JoinError`. Without this it
-    /// would look like a clean stop.
-    fn task_error(result: Result<Result<(), Error>, tokio::task::JoinError>) -> Option<Error> {
         match result {
-            Ok(Ok(())) => None,
-            Ok(Err(error)) => Some(error),
-            Err(error) => Some(sword_error! {
-                code: "sword.runtime.events",
-                phase: DiagnosticPhase::Runtime,
-                target: "EventApplication::run",
-                title: "Event transport task failed",
-                reason: error,
-                source: "EventApplication::run",
-                hints: ["Check the event transport logs and the underlying cause"],
-                cause: error,
-            }),
+            Some(Ok(Ok(()))) => Err(transport_stopped()),
+            Some(Ok(Err(error))) => Err(error),
+            Some(Err(join_error)) => Err(transport_panicked(join_error)),
+            None => Ok(()),
         }
     }
 }
@@ -185,6 +159,31 @@ impl EventTransport {
         }
 
         Ok(())
+    }
+}
+
+fn transport_stopped() -> Error {
+    sword_error! {
+        code: "sword.runtime.events",
+        phase: DiagnosticPhase::Runtime,
+        target: "EventApplication::run",
+        title: "Event transport stopped before shutdown",
+        reason: "a transport finished without a shutdown request",
+        source: "EventApplication::run",
+        hints: ["Check the event transport logs"],
+    }
+}
+
+fn transport_panicked(error: tokio::task::JoinError) -> Error {
+    sword_error! {
+        code: "sword.runtime.events",
+        phase: DiagnosticPhase::Runtime,
+        target: "EventApplication::run",
+        title: "Event transport task panicked",
+        reason: error,
+        source: "EventApplication::run",
+        hints: ["Check the panic message in the logs"],
+        cause: error,
     }
 }
 
