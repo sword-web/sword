@@ -2,12 +2,12 @@ use socketioxide::{ParserError, SendError};
 use socketioxide_core::parser::ParseError;
 use thiserror::Error;
 
-#[cfg(feature = "validation-validator")]
+#[cfg(feature = "validator")]
 use validator::ValidationErrors;
 
 #[derive(Debug, Error)]
 pub enum SocketError {
-    #[cfg(feature = "validation-validator")]
+    #[cfg(feature = "validator")]
     #[error("Socket IO Validation Error: {0}")]
     Validation(#[from] ValidationErrors),
 

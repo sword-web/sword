@@ -20,7 +20,7 @@ pub mod prelude {
     pub use async_stream::{stream, try_stream};
     pub use axum::middleware::Next;
 
-    #[cfg(feature = "validation-validator")]
+    #[cfg(feature = "validator")]
     pub use crate::request::ValidatorRequestValidation;
 
     pub use sword_layers::cookies::{

@@ -16,7 +16,7 @@ pub enum RequestError {
         source: Box<dyn std::error::Error + Send + Sync>,
     },
 
-    #[cfg(feature = "validation-validator")]
+    #[cfg(feature = "validator")]
     #[error("Failed to validate request")]
     ValidatorError {
         message: &'static str,
@@ -73,7 +73,7 @@ impl RequestError {
         Self::parse_error("Failed to read request body", "Error reading body")
     }
 
-    #[cfg(feature = "validation-validator")]
+    #[cfg(feature = "validator")]
     pub fn validator_error(message: &'static str, details: serde_json::Value) -> Self {
         RequestError::ValidatorError { message, details }
     }

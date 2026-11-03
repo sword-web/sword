@@ -58,7 +58,7 @@ features = [
 default = []
 
 multipart = ["axum/multipart"]
-validation-validator = ["dep:validator"]
+validator = ["dep:validator"]
 swagger-ui = ["dep:utoipa-swagger-ui"]
 
 [dev-dependencies]

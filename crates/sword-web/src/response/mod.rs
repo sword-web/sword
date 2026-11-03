@@ -25,7 +25,7 @@ impl From<RequestError> for JsonResponse {
             RequestError::ParseError { message, details } => {
                 JsonResponse::BadRequest().message(message).error(details)
             }
-            #[cfg(feature = "validation-validator")]
+            #[cfg(feature = "validator")]
             RequestError::ValidatorError { message, details } => {
                 JsonResponse::BadRequest().message(message).errors(details)
             }
@@ -62,7 +62,7 @@ impl From<RequestError> for JsonResponse {
     }
 }
 
-#[cfg(feature = "validation-validator")]
+#[cfg(feature = "validator")]
 /// Structured JSON output for validation errors  from the `validator` crate.
 ///
 /// # Example

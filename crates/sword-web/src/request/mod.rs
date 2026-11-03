@@ -2,11 +2,12 @@ mod error;
 mod extract;
 mod parts;
 
-#[cfg(feature = "validation-validator")]
+#[cfg(feature = "validator")]
 mod validator;
 
 use super::response::JsonResponse;
 use crate::interceptor::WebInterceptorResult;
+
 use axum::{
     body::{Body as AxumBody, Bytes as BodyBytes},
     extract::RawPathParams,
@@ -23,7 +24,7 @@ pub use error::*;
 #[allow(unused_imports)]
 pub use extract::*;
 
-#[cfg(feature = "validation-validator")]
+#[cfg(feature = "validator")]
 pub use validator::ValidatorRequestValidation;
 
 /// Represents the incoming request in the Sword framework.

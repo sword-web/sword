@@ -43,8 +43,10 @@ default = []
 web = ["dep:sword-web"]
 web-multipart = ["web", "sword-web/multipart"]
 web-swagger-ui = ["web", "sword-web/swagger-ui"]
+web-validator = ["web", "sword-web/validator"]
 
 socketio = ["web", "dep:sword-socketio"]
+socketio-validator = ["socketio", "sword-socketio/validator"]
 
 grpc = ["dep:sword-grpc"]
 grpc-reflection = ["grpc", "sword-grpc/reflection"]
@@ -56,5 +58,4 @@ events-nats = ["events", "sword-events/nats"]
 
 jobs = ["dep:sword-jobs"]
 
-validation-validator = ["sword-web/validation-validator", "sword-socketio?/validation-validator"]
 hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]

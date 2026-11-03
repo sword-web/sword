@@ -25,7 +25,7 @@ impl ChatController {
 
     #[on("message")]
     async fn handle_message(&self, socket: SocketContext) {
-        let Ok(data) = socket.try_validated_data::<IncommingMessageDto>() else {
+        let Ok(data) = socket.try_data_validator::<IncommingMessageDto>() else {
             eprintln!("Failed to validate message data");
             return;
         };
