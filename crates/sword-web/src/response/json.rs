@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use axum::{
     Json as AxumJson,
     http::{HeaderName, HeaderValue, StatusCode},
@@ -8,7 +6,7 @@ use axum::{
 
 use chrono::{SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use serde_json::{Value, value::RawValue};
 
 /// A builder for creating standardized JSON HTTP responses.
 ///
@@ -30,13 +28,67 @@ use serde_json::{Map, Value};
 #[derive(Debug, Clone)]
 pub struct JsonResponse {
     code: StatusCode,
-    json: Box<Map<String, Value>>,
-    headers: Option<HashMap<HeaderName, HeaderValue>>,
+    message: Option<Box<str>>,
+    request_id: Option<Box<str>>,
+    payload: Option<Box<Payload>>,
+    headers: Option<Vec<(HeaderName, HeaderValue)>>,
 }
 
-impl Default for JsonResponse {
-    fn default() -> Self {
-        Self::Ok()
+#[derive(Debug, Clone, Default)]
+struct Payload {
+    pub data: Option<Box<RawValue>>,
+    pub error: Option<Box<RawValue>>,
+    pub errors: Option<Box<RawValue>>,
+}
+
+#[derive(Serialize)]
+struct Body<'a> {
+    code: u16,
+    success: bool,
+    message: &'a str,
+    timestamp: &'a str,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    request_id: Option<&'a str>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<&'a RawValue>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<&'a RawValue>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    errors: Option<&'a RawValue>,
+}
+
+impl IntoResponse for JsonResponse {
+    fn into_response(self) -> AxumResponse {
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+        let message = self
+            .message
+            .as_deref()
+            .unwrap_or_else(|| self.code.canonical_reason().unwrap_or("Unknown"));
+
+        let body = Body {
+            code: self.code.as_u16(),
+            success: self.code.is_success(),
+            message,
+            timestamp: &timestamp,
+            request_id: self.request_id.as_deref(),
+            data: self.payload.as_ref().and_then(|p| p.data.as_deref()),
+            error: self.payload.as_ref().and_then(|p| p.error.as_deref()),
+            errors: self.payload.as_ref().and_then(|p| p.errors.as_deref()),
+        };
+
+        let mut response = (self.code, AxumJson(body)).into_response();
+
+        if let Some(headers) = self.headers {
+            for (key, value) in headers {
+                response.headers_mut().insert(key, value.clone());
+            }
+        }
+
+        response
     }
 }
 
@@ -44,19 +96,9 @@ impl Default for JsonResponse {
 impl JsonResponse {
     /// Creates a new JSON response builder with the given status code.
     pub fn status(code: impl TryInto<StatusCode>) -> Self {
-        let code = code.try_into().unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-        let default_message = code.canonical_reason().unwrap_or("No Message");
-
-        let json = Map::from_iter([
-            ("success".into(), Value::Bool(code.is_success())),
-            ("code".into(), Value::Number(code.as_u16().into())),
-            ("message".into(), Value::String(default_message.into())),
-        ]);
-
         Self {
-            code,
-            json: Box::new(json),
-            headers: None,
+            code: code.try_into().unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+            ..Default::default()
         }
     }
 
@@ -64,60 +106,68 @@ impl JsonResponse {
 
     /// Sets the response message.
     pub fn message(mut self, message: impl Into<String>) -> Self {
-        self.json
-            .insert("message".into(), Value::String(message.into()));
-
+        self.message = Some(message.into().into_boxed_str());
         self
     }
 
     /// Sets optional Request ID for tracing purposes
     pub fn request_id(mut self, request_id: impl Into<String>) -> Self {
-        self.json
-            .insert("request_id".into(), Value::String(request_id.into()));
-
+        self.request_id = Some(request_id.into().into_boxed_str());
         self
     }
 
     /// Adds a header to the response.
     pub fn header(mut self, key: &str, value: &str) -> Self {
+        if self.headers.is_none() {
+            self.headers = Some(Vec::new());
+        }
+
         if let (Ok(header_name), Ok(header_value)) =
             (HeaderName::try_from(key), HeaderValue::try_from(value))
+            && let Some(headers) = &mut self.headers
         {
-            (*self.headers.get_or_insert_with(HashMap::new)).insert(header_name, header_value);
+            headers.push((header_name, header_value));
         }
+
         self
     }
 
     /// Adds `data` field to the response.
     pub fn data<T: Serialize>(mut self, data: T) -> Self {
-        let data = serde_json::to_value(data).unwrap_or_else(|err| {
+        let data = serde_json::value::to_raw_value(&data).unwrap_or_else(|err| {
             eprintln!("Warning: Failed to serialize response 'data' field: {err}");
-            Value::String("Serialization failed".into())
+            RawValue::from_string("\"Serialization failed\"".into()).unwrap_or_default()
         });
 
-        self.json.insert("data".into(), data);
+        let payload = self.payload.get_or_insert_with(Box::default);
+        payload.data = Some(data);
+
         self
     }
 
     /// Adds `error` field to the response.
     pub fn error<T: Serialize>(mut self, error: T) -> Self {
-        let error = serde_json::to_value(error).unwrap_or_else(|err| {
+        let error = serde_json::value::to_raw_value(&error).unwrap_or_else(|err| {
             eprintln!("Warning: Failed to serialize response 'error' field: {err}");
-            Value::String("Serialization failed".into())
+            RawValue::from_string("\"Serialization failed\"".into()).unwrap_or_default()
         });
 
-        self.json.insert("error".into(), error);
+        let payload = self.payload.get_or_insert_with(Box::default);
+        payload.error = Some(error);
+
         self
     }
 
     /// Adds `errors` field to the response.
     pub fn errors<T: Serialize>(mut self, errors: T) -> Self {
-        let errors = serde_json::to_value(errors).unwrap_or_else(|err| {
+        let errors = serde_json::value::to_raw_value(&errors).unwrap_or_else(|err| {
             eprintln!("Warning: Failed to serialize response 'errors' field: {err}");
-            Value::String("Serialization failed".into())
+            RawValue::from_string("\"Serialization failed\"".into()).unwrap_or_default()
         });
 
-        self.json.insert("errors".into(), errors);
+        let payload = self.payload.get_or_insert_with(Box::default);
+        payload.errors = Some(errors);
+
         self
     }
 
@@ -486,24 +536,6 @@ impl JsonResponse {
     }
 }
 
-impl IntoResponse for JsonResponse {
-    fn into_response(mut self) -> AxumResponse {
-        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-        self.json
-            .insert("timestamp".into(), Value::String(timestamp));
-
-        let mut response = (self.code, AxumJson(self.json)).into_response();
-
-        if let Some(headers) = self.headers {
-            for (key, value) in headers.iter() {
-                response.headers_mut().insert(key, value.clone());
-            }
-        }
-
-        response
-    }
-}
-
 /// Represents the JSON body structure of a response.
 /// Useful for testing and deserialization.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -516,4 +548,16 @@ pub struct JsonResponseBody {
     pub data: Option<Value>,
     pub error: Option<Value>,
     pub errors: Option<Value>,
+}
+
+impl Default for JsonResponse {
+    fn default() -> Self {
+        Self {
+            code: StatusCode::OK,
+            message: None,
+            request_id: None,
+            payload: None,
+            headers: None,
+        }
+    }
 }
