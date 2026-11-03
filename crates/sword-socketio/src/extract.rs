@@ -26,7 +26,7 @@ use sword_web::prelude::Cookies;
 
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
-#[cfg(feature = "validation-validator")]
+#[cfg(feature = "validator")]
 use validator::Validate;
 
 enum SocketKind {
@@ -64,8 +64,6 @@ where
     /// Deserialize the query parameters from the initial HTTP request to the specified type.
     ///
     /// Returns `Ok(None)` if no query string is present or if it is empty.
-    ///
-    /// # Errors
     /// Returns an error if the query string cannot be deserialized into the requested type.
     pub fn query<T: DeserializeOwned>(&self) -> Result<Option<T>, SocketError> {
         let Some(query_string) = self.socket.req_parts().uri.query() else {
@@ -110,13 +108,12 @@ where
         Ok(result)
     }
 
-    #[cfg(feature = "validation-validator")]
-    /// # Errors
+    #[cfg(feature = "validator")]
+    /// Same as `try_data`, but also validates the deserialized value using the `validator` crate.
     ///
     /// Returns an error if payload decoding fails, if the payload was already
-    /// consumed, or if the decoded value does not satisfy its `validator`
-    /// constraints.
-    pub fn try_validated_data<T>(&self) -> Result<T, SocketError>
+    /// consumed, or if the decoded value does not satisfy its `validator` constraints.
+    pub fn try_data_validator<T>(&self) -> Result<T, SocketError>
     where
         T: DeserializeOwned + Validate + std::fmt::Debug,
     {
@@ -134,8 +131,6 @@ where
     }
 
     /// Sends an acknowledgment response to the client.
-    ///
-    /// # Errors
     ///
     /// Returns an error if the current event does not support acknowledgments
     /// or if the underlying socket cannot send the acknowledgment payload.

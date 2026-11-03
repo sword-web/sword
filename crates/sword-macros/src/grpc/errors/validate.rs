@@ -47,6 +47,6 @@ pub fn validate_variant(
 const fn has_field_based_message(config: &GrpcErrorArgs) -> bool {
     matches!(
         config.message,
-        Some(MessageValue::Field(_)) | Some(MessageValue::Interpolated(_))
+        Some(MessageValue::Field(_) | MessageValue::Interpolated(_))
     )
 }

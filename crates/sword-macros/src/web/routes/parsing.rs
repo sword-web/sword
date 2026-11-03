@@ -70,7 +70,7 @@ pub enum ReturnKind {
 }
 
 /// How a route handler return its response
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RouteReturnInfo {
     pub is_result: bool,
     pub kind: ReturnKind,

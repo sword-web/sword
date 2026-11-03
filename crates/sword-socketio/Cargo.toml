@@ -42,7 +42,7 @@ validator = { workspace = true, optional = true }
 
 [features]
 default = []
-validation-validator = ["dep:validator"]
+validator = ["dep:validator"]
 
 [dev-dependencies]
 axum-test = { workspace = true }

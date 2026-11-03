@@ -34,4 +34,4 @@ pub trait HasDeps: Build {
 
 /// Pointer to dyn Any element. It retrieves dynamic capabilites
 /// to the dependency container. Basically represents Any element.
-pub(crate) type Injectable = Arc<dyn Any + Send + Sync>;
+pub type Injectable = Arc<dyn Any + Send + Sync>;

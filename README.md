@@ -78,8 +78,13 @@ Algo gives a set of sub-features for the top-level applications:
 
 **Web Features**:
 
+- `web-validation`: enables input validation for web controllers
 - `web-multipart`: enables `multipart/form-data` support in web controllers
 - `web-swagger-ui`: enables Swagger UI for OpenAPI specs
+
+**Socket.IO Features**:
+
+- `socketio-validation`: enables input validation for Socket.IO controllers
 
 **Grpc Features**:
 
@@ -93,7 +98,6 @@ Algo gives a set of sub-features for the top-level applications:
 
 **Cross type sub-features**:
 
-- `validation-validator`: enables input validation with the `validator` crate
 - `hot-reload`: enables hot reload during development
 
 ## Changelog

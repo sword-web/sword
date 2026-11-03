@@ -1,6 +1,6 @@
 use crate::request::{Request, RequestError};
 
-#[cfg(feature = "validation-validator")]
+#[cfg(feature = "validator")]
 use crate::response::format_validator_errors;
 
 use serde::de::DeserializeOwned;
@@ -8,9 +8,7 @@ use validator::Validate;
 
 pub trait ValidatorRequestValidation {
     fn body_validator<T: DeserializeOwned + Validate>(&self) -> Result<T, RequestError>;
-
     fn query_validator<T: DeserializeOwned + Validate>(&self) -> Result<Option<T>, RequestError>;
-
     fn params_validator<T: DeserializeOwned + Validate>(&self) -> Result<T, RequestError>;
 }
 
@@ -48,10 +46,10 @@ impl ValidatorRequestValidation for Request {
     /// struct CreateUserRequest {
     ///     #[validate(length(min = 1, max = 50))]
     ///     name: String,
-    ///     
+    ///
     ///     #[validate(email)]
     ///     email: String,
-    ///     
+    ///
     ///     #[validate(range(min = 13, max = 120))]
     ///     age: u32,
     /// }
@@ -61,7 +59,7 @@ impl ValidatorRequestValidation for Request {
     /// #[post("/users")]
     /// async fn create_user(&self, req: Request) -> WebResult {
     ///     let user_data: CreateUserRequest = req.body_validator()?;
-    ///     
+    ///
     ///     // now data is guaranteed to be valid
     ///
     ///     Ok(JsonResponse::Ok().data(user_data))
@@ -117,10 +115,10 @@ impl ValidatorRequestValidation for Request {
     /// struct SearchQuery {
     ///     #[validate(length(min = 1, max = 100))]
     ///     q: Option<String>,
-    ///     
+    ///
     ///     #[validate(range(min = 1, max = 1000))]
     ///     page: Option<u32>,
-    ///     
+    ///
     ///     #[validate(range(min = 1, max = 100))]
     ///     limit: Option<u32>,
     /// }
@@ -130,7 +128,7 @@ impl ValidatorRequestValidation for Request {
     /// #[get("/search")]
     /// async fn search(&self, req: Request) -> WebResult {
     ///     let query: SearchQuery = req.query_validator()?.unwrap_or_default();
-    ///     
+    ///
     ///     Ok(JsonResponse::Ok().data(query))
     /// }
     /// ```
