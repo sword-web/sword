@@ -106,7 +106,7 @@ impl ControllerRegistry {
             .read()
             .get(&kind)
             .cloned()
-            .unwrap_or(HashSet::new())
+            .unwrap_or_else(HashSet::new)
     }
 }
 

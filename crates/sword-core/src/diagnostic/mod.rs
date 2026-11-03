@@ -140,9 +140,8 @@ impl Diagnostic {
     /// back to miette instead of dropping the diagnostic.
     pub fn report(self) {
         match renderer::current() {
-            Renderer::Miette => self.report_miette(),
             Renderer::Tracing if tracing::dispatcher::has_been_set() => self.report_tracing(),
-            Renderer::Tracing => self.report_miette(),
+            Renderer::Tracing | Renderer::Miette => self.report_miette(),
         }
     }
 

@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 
 /// The renderer currently used for process-level diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Renderer {
+pub enum Renderer {
     Miette,
     Tracing,
 }
@@ -21,11 +21,11 @@ fn state() -> &'static RwLock<Renderer> {
     RENDERER.get_or_init(|| RwLock::new(Renderer::Miette))
 }
 
-pub(crate) fn set(renderer: Renderer) {
+pub fn set(renderer: Renderer) {
     *state().write() = renderer;
 }
 
-pub(crate) fn current() -> Renderer {
+pub fn current() -> Renderer {
     *state().read()
 }
 

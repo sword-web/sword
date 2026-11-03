@@ -69,7 +69,7 @@ pub fn validate_variant(
 const fn has_field_based_refs(config: &HttpErrorArgs) -> bool {
     matches!(
         config.message,
-        Some(MessageValue::Field(_)) | Some(MessageValue::Interpolated(_))
+        Some(MessageValue::Field(_) | MessageValue::Interpolated(_))
     ) || config.error.is_some()
         || config.errors.is_some()
 }
