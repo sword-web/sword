@@ -102,26 +102,14 @@ impl TryFrom<Request> for AxumReq {
     type Error = RequestError;
 
     fn try_from(req: Request) -> Result<Self, Self::Error> {
-        use axum::body::Body;
+        let mut out = AxumReq::new(axum::body::Body::from(req.body_bytes));
 
-        let mut builder = AxumReq::builder().method(req.method).uri(req.uri);
+        *out.method_mut() = req.method;
+        *out.uri_mut() = req.uri;
+        *out.headers_mut() = req.headers;
+        *out.extensions_mut() = req.extensions;
 
-        for (key, value) in &req.headers {
-            builder = builder.header(key, value);
-        }
-
-        let body = Body::from(req.body_bytes);
-
-        let mut request = builder.body(body).map_err(|_| {
-            RequestError::parse_error(
-                "Failed to build axum request",
-                "Error building request".to_string(),
-            )
-        })?;
-
-        *request.extensions_mut() = req.extensions;
-
-        Ok(request)
+        Ok(out)
     }
 }
 
@@ -129,22 +117,14 @@ impl TryFrom<StreamRequest> for AxumReq {
     type Error = RequestError;
 
     fn try_from(req: StreamRequest) -> Result<Self, Self::Error> {
-        let mut builder = AxumReq::builder().method(req.method).uri(req.uri);
+        let mut out = AxumReq::new(req.body);
 
-        for (key, value) in &req.headers {
-            builder = builder.header(key, value);
-        }
+        *out.method_mut() = req.method;
+        *out.uri_mut() = req.uri;
+        *out.headers_mut() = req.headers;
+        *out.extensions_mut() = req.extensions;
 
-        let mut request = builder.body(req.body).map_err(|_| {
-            RequestError::parse_error(
-                "Failed to build axum request",
-                "Error building request".to_string(),
-            )
-        })?;
-
-        *request.extensions_mut() = req.extensions;
-
-        Ok(request)
+        Ok(out)
     }
 }
 
