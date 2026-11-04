@@ -31,10 +31,10 @@ sword-web = { workspace = true }
 sword-macros = { workspace = true, features = ["socketio"] }
 sword-layers = { workspace = true }
 
-socketioxide = { version = "0.18.0", features = ["extensions", "msgpack"] }
-socketioxide-core = "0.19.0"
-socketioxide-parser-common = "0.17.1"
-socketioxide-parser-msgpack = "0.17.1"
+socketioxide = { version = "0.18.9", features = ["extensions", "msgpack"] }
+socketioxide-core = "0.20.0"
+socketioxide-parser-common = "0.17.3"
+socketioxide-parser-msgpack = "0.17.4"
 
 form_urlencoded = { workspace = true }
 serde_urlencoded = { workspace = true }
