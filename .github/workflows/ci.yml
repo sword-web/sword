@@ -68,6 +68,9 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  PROTOC_VERSION: "3.36.2"
+
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -207,7 +210,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install protoc
-        uses: arduino/setup-protoc@v3
+        uses: taiki-e/install-action@v2
+        with:
+          tool: protoc@${{ env.PROTOC_VERSION }}
 
       - name: Run clippy (sword-grpc)
         run: cargo clippy -p sword-grpc --all-targets --all-features -- -D warnings
@@ -350,7 +355,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install protoc
-        uses: arduino/setup-protoc@v3
+        uses: taiki-e/install-action@v2
+        with:
+          tool: protoc@${{ env.PROTOC_VERSION }}
 
       - name: Check workspace compiles
         run: cargo check --workspace --all-targets --all-features --locked
@@ -375,7 +382,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install protoc
-        uses: arduino/setup-protoc@v3
+        uses: taiki-e/install-action@v2
+        with:
+          tool: protoc@${{ env.PROTOC_VERSION }}
 
       - name: Run mixed app tests
         run: cargo test -p sword-mixed-tests -- --test-threads=1
@@ -395,7 +404,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install protoc
-        uses: arduino/setup-protoc@v3
+        uses: taiki-e/install-action@v2
+        with:
+          tool: protoc@${{ env.PROTOC_VERSION }}
 
       - name: Check examples compile
         run: cargo check --workspace --bins --locked
