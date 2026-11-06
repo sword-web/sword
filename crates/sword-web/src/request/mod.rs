@@ -1,6 +1,5 @@
 mod error;
 mod extract;
-mod parts;
 
 #[cfg(feature = "validator")]
 mod validator;
@@ -11,9 +10,10 @@ use crate::interceptor::WebInterceptorResult;
 use axum::{
     body::{Body as AxumBody, Bytes as BodyBytes},
     extract::RawPathParams,
-    http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Uri},
+    http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Version, request::Parts},
     middleware::Next,
 };
+
 use serde::de::DeserializeOwned;
 use std::{fmt::Display, str::FromStr};
 use sword_layers::cookies::Cookies;
@@ -33,46 +33,47 @@ pub use validator::ValidatorRequestValidation;
 /// It provides access to request parameters, body data, HTTP method, headers, URI,
 #[derive(Debug)]
 pub struct Request {
+    parts: Parts,
     params: RawPathParams,
     body_bytes: BodyBytes,
-    method: Method,
-    headers: HeaderMap,
-    uri: Uri,
     next: Option<Next>,
-    /// Axum extensions for additional request metadata.
-    pub extensions: Extensions,
 }
 
 /// Streaming variant of request extractor that keeps the HTTP body unbuffered.
 #[derive(Debug)]
 pub struct StreamRequest {
+    parts: Parts,
     params: RawPathParams,
     body: AxumBody,
-    method: Method,
-    headers: HeaderMap,
-    uri: Uri,
     next: Option<Next>,
     body_limit: usize,
-    /// Axum extensions for additional request metadata.
-    pub extensions: Extensions,
 }
 
 macro_rules! impl_request_accessors {
     ($next_error:expr) => {
         pub fn uri(&self) -> String {
-            self.uri.to_string()
+            self.parts.uri.to_string()
         }
 
+        /// Returns a reference to the HTTP method of the request.
         pub const fn method(&self) -> &Method {
-            &self.method
+            &self.parts.method
         }
 
+        /// Returns a reference to the HTTP headers of the request.
         pub const fn headers(&self) -> &HeaderMap {
-            &self.headers
+            &self.parts.headers
         }
 
+        /// Retrieves the value of a specific header from the request.
+        ///
+        /// Returns `Some(&str)` if the header is present and can be converted to a string,
+        /// or `None` if the header is not present or cannot be converted to a string.
         pub fn header(&self, key: &str) -> Option<&str> {
-            self.headers.get(key).and_then(|value| value.to_str().ok())
+            self.parts
+                .headers
+                .get(key)
+                .and_then(|value| value.to_str().ok())
         }
 
         /// Retrieves and parses a route parameter by name.
@@ -103,34 +104,78 @@ macro_rules! impl_request_accessors {
             ))
         }
 
+        /// Retrieves the value of the "Authorization" header from the request.
+        ///
+        /// Returns `Some(&str)` if the header is present and can be converted to a string,
+        /// or `None` if the header is not present or cannot be converted to a string.
         pub fn authorization(&self) -> Option<&str> {
             self.header("Authorization")
         }
 
+        /// Retrieves the value of the "User-Agent" header from the request.
+        ///
+        /// Returns `Some(&str)` if the header is present and can be converted to a string,
+        /// or `None` if the header is not present or cannot be converted to a string.
         pub fn user_agent(&self) -> Option<&str> {
             self.header("User-Agent")
         }
 
+        /// Retrieves the value of the "X-Forwarded-For" header from the request.
+        ///
+        /// Returns `Some(&str)` if the header is present and can be converted to a string,
+        /// or `None` if the header is not present or cannot be converted to a string.
         pub fn ip(&self) -> Option<&str> {
             self.header("X-Forwarded-For")
         }
 
+        /// Retrieves the list of IP addresses from the "X-Forwarded-For" header.
+        ///
+        /// Returns `Some(Vec<&str>)` if the header is present and can be converted to a string,
+        /// or `None` if the header is not present or cannot be converted to a string.
         pub fn ips(&self) -> Option<Vec<&str>> {
             self.header("X-Forwarded-For")
                 .map(|ips| ips.split(',').map(|s| s.trim()).collect())
         }
 
+        /// Retrieves the protocol (scheme) used for the request, based on the "X-Forwarded-Proto" header.
+        ///
+        /// Returns "http" if the header is not present, indicating that the request was made over HTTP.
         pub fn protocol(&self) -> &str {
             self.header("X-Forwarded-Proto").unwrap_or("http")
         }
 
+        /// Retrieves the content length of the request body, if present.
+        ///
+        /// Returns `Some(u64)` if the "Content-Length" header is present and can be parsed as a u64,
+        /// or `None` if the header is not present or cannot be parsed.
         pub fn content_length(&self) -> Option<u64> {
             self.header("Content-Length")
                 .and_then(|value| value.parse::<u64>().ok())
         }
 
+        /// Retrieves the content type of the request body, if present.
+        ///
+        /// Returns `Some(&str)` if the "Content-Type" header is present and can be converted to a string,
+        /// or `None` if the header is not present or cannot be converted to a string.
         pub fn content_type(&self) -> Option<&str> {
             self.header("Content-Type")
+        }
+
+        /// Retrieves the HTTP version of the request.
+        pub fn version(&self) -> Version {
+            self.parts.version
+        }
+
+        /// Returns a reference to the request's extensions, which can be used to store
+        /// and retrieve arbitrary data associated with the request.
+        pub fn extensions(&self) -> &Extensions {
+            &self.parts.extensions
+        }
+
+        /// Returns a mutable reference to the request's extensions, allowing for modification
+        /// of the data associated with the request.
+        pub fn extensions_mut(&mut self) -> &mut Extensions {
+            &mut self.parts.extensions
         }
 
         #[doc(hidden)]
@@ -162,7 +207,7 @@ impl Request {
     );
 
     pub fn headers_mut(&mut self) -> &mut HeaderMap {
-        &mut self.headers
+        &mut self.parts.headers
     }
 
     /// Sets or updates the value of a header in the request.
@@ -193,7 +238,7 @@ impl Request {
         let header_value = HeaderValue::from_str(&header_value_raw)
             .map_err(|_| RequestError::invalid_header_value(header_name_raw.clone()))?;
 
-        self.headers.insert(header_name, header_value);
+        self.parts.headers.insert(header_name, header_value);
 
         Ok(())
     }
@@ -326,7 +371,7 @@ impl Request {
     /// }
     /// ```
     pub fn query<T: DeserializeOwned>(&self) -> Result<Option<T>, RequestError> {
-        let Some(query_string) = self.uri.query() else {
+        let Some(query_string) = self.parts.uri.query() else {
             return Ok(None);
         };
 
@@ -381,7 +426,7 @@ impl Request {
     /// }
     /// ```
     pub fn cookies(&self) -> Result<&Cookies, JsonResponse> {
-        self.extensions.get::<Cookies>().ok_or_else(|| {
+        self.parts.extensions.get::<Cookies>().ok_or_else(|| {
             JsonResponse::InternalServerError()
                 .message("Can't extract cookies. Is `CookieManagerLayer` enabled?")
         })
@@ -393,7 +438,7 @@ impl Request {
     /// `RequestId` is added automatically by the `RequestIdLayer` middleware.
     /// If "unknown" is returned, it indicates that the middleware was not applied.
     pub fn id(&self) -> String {
-        if let Some(id) = self.extensions.get::<RequestId>() {
+        if let Some(id) = self.parts.extensions.get::<RequestId>() {
             return id.header_value().to_str().unwrap_or_default().to_string();
         }
 

@@ -10,7 +10,7 @@ struct ExtensionsTestMiddleware;
 
 impl OnRequest for ExtensionsTestMiddleware {
     async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
-        req.extensions
+        req.extensions_mut()
             .insert::<String>("test_extension".to_string());
 
         req.next().await
@@ -22,7 +22,7 @@ struct MwWithState;
 
 impl OnRequest for MwWithState {
     async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert::<u16>(8080);
+        req.extensions_mut().insert::<u16>(8080);
         req.next().await
     }
 }
@@ -32,8 +32,10 @@ struct EnsureControllerInterceptorRunsFirst;
 
 impl OnRequest for EnsureControllerInterceptorRunsFirst {
     async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
-        let has_controller_extension = req.extensions.get::<String>().is_some();
-        req.extensions.insert::<bool>(has_controller_extension);
+        let has_controller_extension = req.extensions().get::<String>().is_some();
+
+        req.extensions_mut()
+            .insert::<bool>(has_controller_extension);
 
         req.next().await
     }
@@ -46,7 +48,7 @@ struct TestController {}
 impl TestController {
     #[get("/extensions-test")]
     async fn extensions_test(&self, req: Request) -> JsonResponse {
-        let extension_value = req.extensions.get::<String>();
+        let extension_value = req.extensions().get::<String>();
 
         JsonResponse::Ok()
             .message("Test controller response with extensions")
@@ -58,8 +60,12 @@ impl TestController {
     #[get("/middleware-state")]
     #[interceptor(MwWithState)]
     async fn middleware_state(&self, req: Request) -> WebResult {
-        let port = req.extensions.get::<u16>().cloned().unwrap_or(0);
-        let message = req.extensions.get::<String>().cloned().unwrap_or_default();
+        let port = req.extensions().get::<u16>().cloned().unwrap_or(0);
+        let message = req
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
 
         let json = json!({
             "port": port,
@@ -74,7 +80,7 @@ impl TestController {
     #[get("/controller-before-handler-order")]
     #[interceptor(EnsureControllerInterceptorRunsFirst)]
     async fn controller_before_handler_order(&self, req: Request) -> JsonResponse {
-        let saw_controller_extension = req.extensions.get::<bool>().cloned().unwrap_or(false);
+        let saw_controller_extension = req.extensions().get::<bool>().cloned().unwrap_or(false);
 
         JsonResponse::Ok().data(json!({
             "saw_controller_extension": saw_controller_extension,

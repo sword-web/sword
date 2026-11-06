@@ -6,9 +6,8 @@ use axum::{Router, extract::Request, middleware::Next};
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
-#[cfg(feature = "swagger-ui")]
-use sword_core::diagnostic::{Diagnostic, Severity};
-use sword_core::diagnostic::{DiagnosticPhase, Error};
+
+use sword_core::diagnostic::*;
 use sword_core::sword_error;
 
 use sword_core::*;

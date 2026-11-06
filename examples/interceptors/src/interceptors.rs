@@ -7,15 +7,15 @@ pub struct LoggingInterceptor;
 
 impl OnRequest for LoggingInterceptor {
     async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
+        let id = req.id();
+
         println!(
-            "[REST] - Incoming request: ID: {} - [{}] {}",
-            req.id(),
+            "[REST] - Incoming request: ID: {id} - [{}] {}",
             req.method(),
-            req.uri()
+            req.uri(),
         );
 
-        req.extensions.insert(format!("Request-{}", req.id()));
-
+        req.extensions_mut().insert(format!("Request-{id}"));
         req.next().await
     }
 }
@@ -31,7 +31,7 @@ impl OnRequest for AnotherInterceptor {
         println!("[AnotherInterceptor] - Processing request ID: {}", req.id());
 
         let request_id = req
-            .extensions
+            .extensions()
             .get::<String>()
             .cloned()
             .unwrap_or_else(|| "Unknown".to_string());

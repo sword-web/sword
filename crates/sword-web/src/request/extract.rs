@@ -1,16 +1,16 @@
-use super::{
-    JsonResponse, Request, RequestError, StreamRequest,
-    parts::{AxumRequestPreparationExt, PreparedRequestParts},
-};
-use bytes::Bytes;
-use sword_core::State;
+use super::{JsonResponse, Request, RequestError, StreamRequest};
 
 use axum::{
-    body::to_bytes,
-    extract::{FromRef, FromRequest as AxumFromRequest, Request as AxumReq},
+    RequestPartsExt,
+    body::{Body as AxumBody, to_bytes},
+    extract::{FromRef, FromRequest as AxumFromRequest, RawPathParams, Request as AxumRequest},
     http::{Method, request::Parts},
     response::IntoResponse,
 };
+
+use bytes::Bytes;
+use sword_core::State;
+use sword_layers::body_limit::BodyLimitValue;
 
 /// Fixed-state version of `axum::extract::FromRequest` using sword's State.
 ///
@@ -20,7 +20,7 @@ pub trait FromRequest: Sized {
     type Rejection: IntoResponse;
 
     fn from_request(
-        req: AxumReq,
+        req: AxumRequest,
         state: &State,
     ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send;
 }
@@ -40,16 +40,23 @@ pub trait FromRequestParts: Sized {
 impl FromRequest for Request {
     type Rejection = JsonResponse;
 
-    async fn from_request(req: AxumReq, _: &State) -> Result<Self, Self::Rejection> {
-        let PreparedRequestParts {
-            params,
-            parts,
-            body,
-            body_limit,
-        } = req.prepare().await?;
+    async fn from_request(req: AxumRequest, _: &State) -> Result<Self, Self::Rejection> {
+        let (mut parts, body) = req.into_parts();
+
+        let params = parts
+            .extract::<RawPathParams>()
+            .await
+            .map_err(|e| JsonResponse::status(e.status()).message(e.body_text()))?;
 
         let body_bytes = match parts.method {
             Method::POST | Method::PUT | Method::PATCH => {
+                let body_limit = parts
+                    .extensions
+                    .get::<BodyLimitValue>()
+                    .cloned()
+                    .unwrap_or_default()
+                    .0;
+
                 to_bytes(body, body_limit).await.map_err(|err| {
                     let inner = err.into_inner();
                     RequestError::from_body_read_error(inner.as_ref())
@@ -59,12 +66,9 @@ impl FromRequest for Request {
         };
 
         Ok(Self {
+            parts,
             params,
             body_bytes,
-            method: parts.method,
-            headers: parts.headers,
-            uri: parts.uri,
-            extensions: parts.extensions,
             next: None,
         })
     }
@@ -73,21 +77,25 @@ impl FromRequest for Request {
 impl FromRequest for StreamRequest {
     type Rejection = JsonResponse;
 
-    async fn from_request(req: AxumReq, _: &State) -> Result<Self, Self::Rejection> {
-        let PreparedRequestParts {
-            params,
-            parts,
-            body,
-            body_limit,
-        } = req.prepare().await?;
+    async fn from_request(req: AxumRequest, _: &State) -> Result<Self, Self::Rejection> {
+        let (mut parts, body) = req.into_parts();
+
+        let params = parts
+            .extract::<RawPathParams>()
+            .await
+            .map_err(|e| JsonResponse::status(e.status()).message(e.body_text()))?;
+
+        let body_limit = parts
+            .extensions
+            .get::<BodyLimitValue>()
+            .cloned()
+            .unwrap_or_default()
+            .0;
 
         Ok(Self {
+            parts,
             params,
             body,
-            method: parts.method,
-            headers: parts.headers,
-            uri: parts.uri,
-            extensions: parts.extensions,
             next: None,
             body_limit,
         })
@@ -98,33 +106,22 @@ impl FromRequest for StreamRequest {
 ///
 /// Allows converting a `sword::web::Request` back to an Axum request,
 /// preserving headers, method, URI, body, and extensions.
-impl TryFrom<Request> for AxumReq {
+impl TryFrom<Request> for AxumRequest {
     type Error = RequestError;
 
     fn try_from(req: Request) -> Result<Self, Self::Error> {
-        let mut out = AxumReq::new(axum::body::Body::from(req.body_bytes));
-
-        *out.method_mut() = req.method;
-        *out.uri_mut() = req.uri;
-        *out.headers_mut() = req.headers;
-        *out.extensions_mut() = req.extensions;
-
-        Ok(out)
+        Ok(AxumRequest::from_parts(
+            req.parts,
+            AxumBody::from(req.body_bytes),
+        ))
     }
 }
 
-impl TryFrom<StreamRequest> for AxumReq {
+impl TryFrom<StreamRequest> for AxumRequest {
     type Error = RequestError;
 
     fn try_from(req: StreamRequest) -> Result<Self, Self::Error> {
-        let mut out = AxumReq::new(req.body);
-
-        *out.method_mut() = req.method;
-        *out.uri_mut() = req.uri;
-        *out.headers_mut() = req.headers;
-        *out.extensions_mut() = req.extensions;
-
-        Ok(out)
+        Ok(AxumRequest::from_parts(req.parts, req.body))
     }
 }
 
@@ -136,7 +133,7 @@ where
 {
     type Rejection = JsonResponse;
 
-    async fn from_request(req: AxumReq, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: AxumRequest, state: &S) -> Result<Self, Self::Rejection> {
         let state = State::from_ref(state);
         <Self as FromRequest>::from_request(req, &state).await
     }
@@ -149,7 +146,7 @@ where
 {
     type Rejection = JsonResponse;
 
-    async fn from_request(req: AxumReq, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: AxumRequest, state: &S) -> Result<Self, Self::Rejection> {
         let state = State::from_ref(state);
         <Self as FromRequest>::from_request(req, &state).await
     }

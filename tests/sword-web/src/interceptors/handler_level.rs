@@ -38,7 +38,7 @@ impl OnRequestWithConfig<(&'static str, &'static str)> for FileValidationMiddlew
         config: (&'static str, &'static str),
         mut req: Request,
     ) -> WebInterceptorResult {
-        req.extensions
+        req.extensions_mut()
             .insert((config.0.to_string(), config.1.to_string()));
 
         req.next().await
@@ -50,7 +50,7 @@ struct ExtensionsTestMiddleware;
 
 impl OnRequest for ExtensionsTestMiddleware {
     async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
-        req.extensions
+        req.extensions_mut()
             .insert::<String>("test_extension".to_string());
 
         req.next().await
@@ -62,7 +62,7 @@ struct MwWithState;
 
 impl OnRequest for MwWithState {
     async fn on_request(&self, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert::<u16>(8080);
+        req.extensions_mut().insert::<u16>(8080);
         req.next().await
     }
 }
@@ -73,8 +73,8 @@ struct RoleMiddleware;
 impl OnRequestWithConfig<Vec<&'static str>> for RoleMiddleware {
     async fn on_request(&self, roles: Vec<&'static str>, mut req: Request) -> WebInterceptorResult {
         let roles_owned: Vec<String> = roles.iter().map(|s| s.to_string()).collect();
-        req.extensions.insert(roles_owned);
 
+        req.extensions_mut().insert(roles_owned);
         req.next().await
     }
 }
@@ -88,8 +88,9 @@ impl OnRequestWithConfig<(&'static str, &'static str)> for TupleConfigMiddleware
         config: (&'static str, &'static str),
         mut req: Request,
     ) -> WebInterceptorResult {
-        req.extensions
+        req.extensions_mut()
             .insert((config.0.to_string(), config.1.to_string()));
+
         req.next().await
     }
 }
@@ -99,8 +100,7 @@ struct ArrayConfigMiddleware;
 
 impl OnRequestWithConfig<[i32; 3]> for ArrayConfigMiddleware {
     async fn on_request(&self, config: [i32; 3], mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -110,8 +110,7 @@ struct StringConfigMiddleware;
 
 impl OnRequestWithConfig<String> for StringConfigMiddleware {
     async fn on_request(&self, config: String, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -121,8 +120,7 @@ struct StrConfigMiddleware;
 
 impl OnRequestWithConfig<&'static str> for StrConfigMiddleware {
     async fn on_request(&self, config: &'static str, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config.to_string());
-
+        req.extensions_mut().insert(config.to_string());
         req.next().await
     }
 }
@@ -132,8 +130,7 @@ struct NumberConfigMiddleware;
 
 impl OnRequestWithConfig<i32> for NumberConfigMiddleware {
     async fn on_request(&self, config: i32, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -143,8 +140,7 @@ struct BoolConfigMiddleware;
 
 impl OnRequestWithConfig<bool> for BoolConfigMiddleware {
     async fn on_request(&self, config: bool, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -168,8 +164,7 @@ impl OnRequestWithConfig<(Vec<&'static str>, i32, bool)> for ComplexConfigMiddle
             config.2,
         );
 
-        req.extensions.insert(owned_config);
-
+        req.extensions_mut().insert(owned_config);
         req.next().await
     }
 }
@@ -179,8 +174,7 @@ struct FunctionConfigMiddleware;
 
 impl OnRequestWithConfig<Vec<String>> for FunctionConfigMiddleware {
     async fn on_request(&self, config: Vec<String>, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -190,8 +184,7 @@ struct MathConfigMiddleware;
 
 impl OnRequestWithConfig<i32> for MathConfigMiddleware {
     async fn on_request(&self, config: i32, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -201,8 +194,7 @@ struct ConstConfigMiddleware;
 
 impl OnRequestWithConfig<&'static str> for ConstConfigMiddleware {
     async fn on_request(&self, config: &'static str, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config.to_string());
-
+        req.extensions_mut().insert(config.to_string());
         req.next().await
     }
 }
@@ -212,8 +204,7 @@ struct LogMiddleware;
 
 impl OnRequestWithConfig<LogLevel> for LogMiddleware {
     async fn on_request(&self, config: LogLevel, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -223,8 +214,7 @@ struct DatabaseMiddleware;
 
 impl OnRequestWithConfig<DatabaseConfig> for DatabaseMiddleware {
     async fn on_request(&self, config: DatabaseConfig, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -234,8 +224,7 @@ struct AuthMiddleware;
 
 impl OnRequestWithConfig<AuthMethod> for AuthMiddleware {
     async fn on_request(&self, config: AuthMethod, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -245,8 +234,7 @@ struct EnumOptionMiddleware;
 
 impl OnRequestWithConfig<Option<LogLevel>> for EnumOptionMiddleware {
     async fn on_request(&self, config: Option<LogLevel>, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -256,8 +244,7 @@ struct EnumVecMiddleware;
 
 impl OnRequestWithConfig<Vec<LogLevel>> for EnumVecMiddleware {
     async fn on_request(&self, config: Vec<LogLevel>, mut req: Request) -> WebInterceptorResult {
-        req.extensions.insert(config);
-
+        req.extensions_mut().insert(config);
         req.next().await
     }
 }
@@ -269,7 +256,7 @@ impl TestController {
     #[get("/extensions-test")]
     #[interceptor(ExtensionsTestMiddleware)]
     async fn extensions_test(&self, req: Request) -> JsonResponse {
-        let extension_value = req.extensions.get::<String>();
+        let extension_value = req.extensions().get::<String>();
 
         JsonResponse::Ok()
             .message("Test controller response with extensions")
@@ -282,8 +269,12 @@ impl TestController {
     #[interceptor(ExtensionsTestMiddleware)]
     #[interceptor(MwWithState)]
     async fn middleware_state(&self, req: Request) -> WebResult {
-        let port = req.extensions.get::<u16>().cloned().unwrap_or(0);
-        let message = req.extensions.get::<String>().cloned().unwrap_or_default();
+        let port = req.extensions().get::<u16>().cloned().unwrap_or(0);
+        let message = req
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
 
         let json = json!({
             "port": port,
@@ -299,7 +290,7 @@ impl TestController {
     #[interceptor(RoleMiddleware, config = vec!["admin", "user"])]
     async fn role_test(&self, req: Request) -> JsonResponse {
         let config = req
-            .extensions
+            .extensions()
             .get::<Vec<String>>()
             .cloned()
             .unwrap_or_default();
@@ -313,7 +304,7 @@ impl TestController {
     #[interceptor(FileValidationMiddleware, config = ("jpg", "png"))]
     async fn error_test(&self, req: Request) -> JsonResponse {
         let config = req
-            .extensions
+            .extensions()
             .get::<(String, String)>()
             .cloned()
             .unwrap_or(("".to_string(), "".to_string()));
@@ -335,7 +326,7 @@ impl TestController {
     #[interceptor(TupleConfigMiddleware, config = ("jpg", "png"))]
     async fn tuple_config_test(&self, req: Request) -> JsonResponse {
         let config = req
-            .extensions
+            .extensions()
             .get::<(String, String)>()
             .cloned()
             .unwrap_or(("".to_string(), "".to_string()));
@@ -350,7 +341,7 @@ impl TestController {
     #[interceptor(ArrayConfigMiddleware, config = [1, 2, 3])]
     async fn array_config_test(&self, req: Request) -> JsonResponse {
         let config = req
-            .extensions
+            .extensions()
             .get::<[i32; 3]>()
             .cloned()
             .unwrap_or([0, 0, 0]);
@@ -364,7 +355,11 @@ impl TestController {
     #[get("/string-config-test")]
     #[interceptor(StringConfigMiddleware, config = "test string".to_string())]
     async fn string_config_test(&self, req: Request) -> JsonResponse {
-        let config = req.extensions.get::<String>().cloned().unwrap_or_default();
+        let config = req
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
 
         JsonResponse::Ok()
             .message("String config test")
@@ -377,7 +372,11 @@ impl TestController {
     #[get("/str-config-test")]
     #[interceptor(StrConfigMiddleware, config = "test str")]
     async fn str_config_test(&self, req: Request) -> JsonResponse {
-        let config = req.extensions.get::<String>().cloned().unwrap_or_default();
+        let config = req
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
 
         JsonResponse::Ok().message("Str config test").data(json!({
             "config_type": "str",
@@ -388,7 +387,7 @@ impl TestController {
     #[get("/number-config-test")]
     #[interceptor(NumberConfigMiddleware, config = 42)]
     async fn number_config_test(&self, req: Request) -> JsonResponse {
-        let config = req.extensions.get::<i32>().cloned().unwrap_or(0);
+        let config = req.extensions().get::<i32>().cloned().unwrap_or(0);
 
         JsonResponse::Ok()
             .message("Number config test")
@@ -401,7 +400,7 @@ impl TestController {
     #[get("/bool-config-test")]
     #[interceptor(BoolConfigMiddleware, config = true)]
     async fn bool_config_test(&self, req: Request) -> JsonResponse {
-        let config = req.extensions.get::<bool>().cloned().unwrap_or(false);
+        let config = req.extensions().get::<bool>().cloned().unwrap_or(false);
 
         JsonResponse::Ok().message("Bool config test").data(json!({
             "config_type": "bool",

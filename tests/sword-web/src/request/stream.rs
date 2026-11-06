@@ -11,7 +11,7 @@ struct StreamTagInterceptor;
 
 impl OnRequestStream for StreamTagInterceptor {
     async fn on_request(&self, mut req: StreamRequest) -> WebInterceptorResult {
-        req.extensions.insert("stream-ok".to_string());
+        req.extensions_mut().insert("stream-ok".to_string());
         req.next().await
     }
 }
@@ -25,7 +25,7 @@ impl OnRequestStreamWithConfig<&'static str> for StreamConfigInterceptor {
         config: &'static str,
         mut req: StreamRequest,
     ) -> WebInterceptorResult {
-        req.extensions.insert(config.to_string());
+        req.extensions_mut().insert(config.to_string());
         req.next().await
     }
 }
@@ -37,7 +37,12 @@ impl StreamController {
     #[post("/echo")]
     #[interceptor(StreamTagInterceptor)]
     async fn echo(&self, req: StreamRequest) -> WebResult {
-        let tag = req.extensions.get::<String>().cloned().unwrap_or_default();
+        let tag = req
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
+
         let body_limit = req.body_limit();
 
         let body = to_bytes(req.into_body(), body_limit).await.map_err(|_| {
@@ -53,7 +58,12 @@ impl StreamController {
     #[post("/echo-with-config")]
     #[interceptor(StreamConfigInterceptor, config = "stream-config")]
     async fn echo_with_config(&self, req: StreamRequest) -> WebResult {
-        let tag = req.extensions.get::<String>().cloned().unwrap_or_default();
+        let tag = req
+            .extensions()
+            .get::<String>()
+            .cloned()
+            .unwrap_or_default();
+
         let body_limit = req.body_limit();
 
         let body = to_bytes(req.into_body(), body_limit).await.map_err(|_| {
