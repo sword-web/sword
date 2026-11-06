@@ -4,8 +4,9 @@ use axum::{
     response::Response,
 };
 
+use duration_str::HumanFormat;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tracing::Level;
 
 const REQUEST_ID_LENGTH: usize = 8;
@@ -42,23 +43,22 @@ pub(crate) async fn web_logger_mw(
     req: Request,
     next: Next,
 ) -> Response {
-    let path = req.uri().path().to_owned();
-    let method = req.method().to_owned();
-    let query = req.uri().query().map(|q| q.to_string());
-    let started = Instant::now();
-
-    let response = next.run(req).await;
-
     if logger_config
         .skip_paths
         .iter()
-        .any(|p| path == *p || path.starts_with(p))
+        .any(|p| req.uri().path() == p || req.uri().path().starts_with(p))
     {
-        return response;
+        return next.run(req).await;
     }
 
-    let elapsed = started.elapsed();
+    let uri = req.uri().clone();
+    let method = req.method().clone();
+    let started = Instant::now();
+
+    let response = next.run(req).await;
     let status = response.status();
+    let elapsed = started.elapsed();
+    let latency = elapsed.human_format();
 
     let request_id = response
         .headers()
@@ -67,13 +67,10 @@ pub(crate) async fn web_logger_mw(
         .map(|id| id.chars().take(REQUEST_ID_LENGTH).collect::<String>())
         .unwrap_or_else(|| "-".to_string());
 
-    let uri = if logger_config.log_query {
-        match &query {
-            Some(q) => format!("{path}?{q}"),
-            None => path,
-        }
+    let uri_for_log = if logger_config.log_query {
+        uri.path_and_query().map_or("", |pq| pq.as_str())
     } else {
-        path
+        uri.path()
     };
 
     let event_level = match logger_config.level {
@@ -87,43 +84,30 @@ pub(crate) async fn web_logger_mw(
         Level::ERROR => tracing::error!(
             target: "sword.web.logger",
             status = status.as_u16(),
-            latency = %format_latency(elapsed),
+            latency = latency,
             request_id = %request_id,
-            "{} {uri}",
+            "{} {uri_for_log}",
             method,
         ),
         Level::WARN => tracing::warn!(
             target: "sword.web.logger",
             status = status.as_u16(),
-            latency = %format_latency(elapsed),
+            latency = latency,
             request_id = %request_id,
-            "{} {uri}",
+            "{} {uri_for_log}",
             method,
         ),
         _ => tracing::info!(
             target: "sword.web.logger",
             status = status.as_u16(),
-            latency = %format_latency(elapsed),
+            latency = latency,
             request_id = %request_id,
-            "{} {uri}",
+            "{} {uri_for_log}",
             method,
         ),
     }
 
     response
-}
-
-/// Formats a latency with a human-friendly unit: `ms`, `s`, then `m` for long requests.
-fn format_latency(elapsed: Duration) -> String {
-    if elapsed >= Duration::from_secs(60) {
-        let mins = elapsed.as_secs() / 60;
-        let secs = elapsed.as_secs() % 60;
-        format!("{mins}m {secs}s")
-    } else if elapsed >= Duration::from_secs(1) {
-        format!("{:.1}s", elapsed.as_secs_f64())
-    } else {
-        format!("{}ms", elapsed.as_millis())
-    }
 }
 
 impl Default for WebLoggerConfig {

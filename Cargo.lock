@@ -1176,6 +1176,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "duration-str"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "027cd1402a609c71a9ac333c7e3d90ee042e7a131da1a83da8c60df323f12f61"
+dependencies = [
+ "chrono",
+ "rust_decimal",
+ "serde",
+ "thiserror",
+ "time",
+ "winnow 0.7.15",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4210,6 +4224,7 @@ dependencies = [
  "axum-test",
  "bytes",
  "chrono",
+ "duration-str 0.21.0",
  "form_urlencoded",
  "http-body-util",
  "inventory",
@@ -4372,7 +4387,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87115d2ccd23c6018d9b1ade00ffc73db30fff557c4149ddaa119a20178b3619"
 dependencies = [
  "byte-unit",
- "duration-str",
+ "duration-str 0.20.0",
  "regex-lite",
  "serde",
  "thisconfig-macros",

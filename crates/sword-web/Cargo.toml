@@ -42,6 +42,7 @@ inventory = { workspace = true }
 utoipa-swagger-ui = { version = "10.0.1", features = ["axum"], optional = true }
 tower = { workspace = true }
 async-stream = { workspace = true }
+duration-str = "0.21.0"
 
 [dependencies.sword-layers]
 workspace = true
