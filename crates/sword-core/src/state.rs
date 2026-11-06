@@ -4,8 +4,9 @@ use std::{
     sync::Arc,
 };
 
-use crate::DependencyInjectionError;
 use parking_lot::RwLock;
+
+use crate::DependencyInjectionError;
 
 /// Application state container for type-safe dependency injection and data sharing.
 ///
@@ -60,16 +61,15 @@ impl State {
         T: Send + Sync + 'static,
     {
         let map = self.inner.read();
-        let type_name = type_name::<T>().to_string();
 
         let state_ref = map
             .get(&TypeId::of::<T>())
-            .ok_or_else(|| DependencyInjectionError::dependency_not_found(type_name.clone()))?;
+            .ok_or_else(|| DependencyInjectionError::dependency_not_found(type_name::<T>()))?;
 
         state_ref
             .clone()
             .downcast::<T>()
-            .map_err(|_| DependencyInjectionError::dependency_not_found(type_name))
+            .map_err(|_| DependencyInjectionError::dependency_not_found(type_name::<T>()))
     }
 
     pub fn insert<T: Send + Sync + 'static>(&self, state: T) {
