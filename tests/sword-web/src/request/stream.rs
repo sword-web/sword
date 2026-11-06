@@ -52,6 +52,7 @@ impl StreamController {
         Ok(JsonResponse::Ok().data(json!({
             "len": body.len(),
             "tag": tag,
+            "body_limit": body_limit,
         })))
     }
 
@@ -73,6 +74,7 @@ impl StreamController {
         Ok(JsonResponse::Ok().data(json!({
             "len": body.len(),
             "tag": tag,
+            "body_limit": body_limit,
         })))
     }
 }
@@ -99,6 +101,8 @@ async fn stream_route_with_interceptor_works() {
     assert_eq!(response.status_code().as_u16(), 200);
     assert_eq!(body.data.as_ref().unwrap()["len"], 12);
     assert_eq!(body.data.as_ref().unwrap()["tag"], "stream-ok");
+    // `body_limit` comes from the `body-limit = "1MB"` config through State.
+    assert_eq!(body.data.as_ref().unwrap()["body_limit"], 1_000_000_u64);
 }
 
 #[tokio::test]
@@ -119,4 +123,5 @@ async fn stream_route_with_config_interceptor_works() {
     assert_eq!(response.status_code().as_u16(), 200);
     assert_eq!(body.data.as_ref().unwrap()["len"], 17);
     assert_eq!(body.data.as_ref().unwrap()["tag"], "stream-config");
+    assert_eq!(body.data.as_ref().unwrap()["body_limit"], 1_000_000_u64);
 }

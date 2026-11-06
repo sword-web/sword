@@ -84,7 +84,7 @@ impl IntoResponse for JsonResponse {
 
         if let Some(headers) = self.headers {
             for (key, value) in headers {
-                response.headers_mut().insert(key, value.clone());
+                response.headers_mut().insert(key, value);
             }
         }
 

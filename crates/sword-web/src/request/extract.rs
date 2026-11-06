@@ -40,7 +40,7 @@ pub trait FromRequestParts: Sized {
 impl FromRequest for Request {
     type Rejection = JsonResponse;
 
-    async fn from_request(req: AxumRequest, _: &State) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: AxumRequest, state: &State) -> Result<Self, Self::Rejection> {
         let (mut parts, body) = req.into_parts();
 
         let params = parts
@@ -50,12 +50,9 @@ impl FromRequest for Request {
 
         let body_bytes = match parts.method {
             Method::POST | Method::PUT | Method::PATCH => {
-                let body_limit = parts
-                    .extensions
-                    .get::<BodyLimitValue>()
-                    .cloned()
-                    .unwrap_or_default()
-                    .0;
+                let body_limit = state
+                    .borrow::<BodyLimitValue>()
+                    .map_or_else(|_| BodyLimitValue::default().0, |value| value.0);
 
                 to_bytes(body, body_limit).await.map_err(|err| {
                     let inner = err.into_inner();
@@ -77,7 +74,7 @@ impl FromRequest for Request {
 impl FromRequest for StreamRequest {
     type Rejection = JsonResponse;
 
-    async fn from_request(req: AxumRequest, _: &State) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: AxumRequest, state: &State) -> Result<Self, Self::Rejection> {
         let (mut parts, body) = req.into_parts();
 
         let params = parts
@@ -85,12 +82,9 @@ impl FromRequest for StreamRequest {
             .await
             .map_err(|e| JsonResponse::status(e.status()).message(e.body_text()))?;
 
-        let body_limit = parts
-            .extensions
-            .get::<BodyLimitValue>()
-            .cloned()
-            .unwrap_or_default()
-            .0;
+        let body_limit = state
+            .borrow::<BodyLimitValue>()
+            .map_or_else(|_| BodyLimitValue::default().0, |value| value.0);
 
         Ok(Self {
             parts,

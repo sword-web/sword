@@ -9,6 +9,7 @@ use std::net::SocketAddr;
 use sword_core::diagnostic::Error;
 use sword_core::sword_error;
 use sword_core::*;
+use sword_layers::body_limit::BodyLimitValue;
 use tokio::net::TcpListener;
 
 pub use config::WebApplicationConfig;
@@ -138,6 +139,10 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let web_config =
             ConfigSection::load::<WebApplicationConfig>(&config, config_document.as_deref())?
                 .unwrap_or_default();
+
+        // The extractor reads the limit from State so it always matches the value
+        // enforced by BodyLimitLayer.
+        state.insert(BodyLimitValue::from(web_config.body_limit.clone()));
 
         let mut router = WebApplicationRouter {
             state: state.clone(),

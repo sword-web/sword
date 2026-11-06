@@ -2,7 +2,7 @@ use crate::application::*;
 use crate::controller::{RouteRegistrar, WebControllerRegistrar};
 use crate::response::JsonResponse;
 
-use axum::{Router, extract::Request, middleware::Next};
+use axum::Router;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -173,9 +173,7 @@ impl WebApplicationRouter {
     /// These are applied BEFORE the SocketIO layer, so SocketIO traffic bypasses
     /// HTTP controller timeout semantics.
     fn apply_web_layers(&self, mut router: Router<State>) -> Router<State> {
-        let body_limit_config = self.web_config.body_limit.clone();
-
-        router = router.layer(BodyLimitLayer::new(&body_limit_config));
+        router = router.layer(BodyLimitLayer::new(&self.web_config.body_limit));
 
         // Timeout wraps the whole chain; the response layer turns a timeout into a reply instead
         // of dropping the connection.
@@ -183,16 +181,6 @@ impl WebApplicationRouter {
             router = router.layer(TimeoutLayer::from(self.web_config.request_timeout.clone()));
             router = router.layer(RequestTimeoutResponseLayer::new());
         }
-
-        // Re-expose the parsed body limit per request so handlers can read it from extensions.
-        router = router.layer(axum::middleware::from_fn(
-            move |mut req: Request, next: Next| async move {
-                req.extensions_mut()
-                    .insert(BodyLimitValue(body_limit_config.max_size.parsed));
-
-                next.run(req).await
-            },
-        ));
 
         // Request id is inserted before the logger runs so log lines can reference it.
         router = router.layer(RequestIdLayer::new());
