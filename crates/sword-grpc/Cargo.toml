@@ -29,7 +29,8 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 
 http = { workspace = true }
-tower = { workspace = true }
+futures-util = { workspace = true }
+tower = { workspace = true, features = ["util"] }
 
 sword-core = { workspace = true }
 sword-layers = { workspace = true, features = ["tracing", "body-limit", "request-id"] }

@@ -6,13 +6,12 @@ use std::{
     time::{Duration, Instant},
 };
 
+use futures_util::future::Either;
 use http::{Request as HttpRequest, Response as HttpResponse};
 use serde::{Deserialize, Serialize};
 use tonic::Code;
 use tower::{Layer, Service};
 use tracing::Level;
-
-const REQUEST_ID_LENGTH: usize = 8;
 
 /// Configuration for the gRPC access logger, nested under `[grpc.logger]`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,7 +59,6 @@ impl GrpcLoggerConfig {
 /// A `tower::Layer` that wraps tonic services with request logging.
 #[derive(Clone, Debug)]
 pub struct GrpcLoggerLayer {
-    enabled: bool,
     skip_paths: Arc<Vec<String>>,
     level: GrpcLoggerLevel,
 }
@@ -68,7 +66,6 @@ pub struct GrpcLoggerLayer {
 impl GrpcLoggerLayer {
     pub fn new(config: &GrpcLoggerConfig) -> Self {
         Self {
-            enabled: config.enabled,
             skip_paths: Arc::new(config.skip_paths.clone()),
             level: config.level,
         }
@@ -81,18 +78,18 @@ impl<S> Layer<S> for GrpcLoggerLayer {
     fn layer(&self, inner: S) -> Self::Service {
         GrpcLogger {
             inner,
-            enabled: self.enabled,
             skip_paths: self.skip_paths.clone(),
             level: self.level,
         }
     }
 }
 
+type BoxedFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+
 /// Wraps a tonic service and logs one access line per completed request.
 #[derive(Clone)]
 pub struct GrpcLogger<S> {
     inner: S,
-    enabled: bool,
     skip_paths: Arc<Vec<String>>,
     level: GrpcLoggerLevel,
 }
@@ -109,55 +106,57 @@ where
 {
     type Response = HttpResponse<ResBody>;
     type Error = S::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future = Either<S::Future, BoxedFuture<Result<Self::Response, Self::Error>>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, request: HttpRequest<tonic::body::Body>) -> Self::Future {
-        let path = request.uri().path().to_string();
-        let request_id = request
-            .headers()
-            .get("x-request-id")
-            .and_then(|value| value.to_str().ok())
-            .map(|id| id.chars().take(REQUEST_ID_LENGTH).collect::<String>())
-            .unwrap_or_else(|| "-".to_string());
-
-        let started = Instant::now();
-
-        let enabled = self.enabled;
-        let skip_paths = self.skip_paths.clone();
-        let level = self.level;
         let mut inner = self.inner.clone();
 
-        Box::pin(async move {
+        // The check borrows the path, so it neither allocates nor keeps the request borrowed.
+        let path = request.uri().path();
+        if self
+            .skip_paths
+            .iter()
+            .any(|p| path == p.as_str() || path.starts_with(p.as_str()))
+        {
+            // Skipped: return the inner future as-is, without strings, timing or boxing.
+            return Either::Left(inner.call(request));
+        }
+
+        let uri = request.uri().clone();
+        let started = Instant::now();
+        let level = self.level;
+
+        Either::Right(Box::pin(async move {
             let response = inner.call(request).await?;
-
-            if enabled && !skip_paths.iter().any(|p| path == *p || path.starts_with(p)) {
-                log_grpc_request(level, &path, &request_id, &response, started.elapsed());
-            }
-
+            log_grpc_request(level, &uri, &response, started.elapsed());
             Ok(response)
-        })
+        }))
     }
 }
 
 fn log_grpc_request<ResBody>(
     level: GrpcLoggerLevel,
-    path: &str,
-    request_id: &str,
+    uri: &http::Uri,
     response: &HttpResponse<ResBody>,
     latency: Duration,
 ) {
+    // `x-request-id` is propagated to the response by `RequestIdLayer`.
+    let request_id = response
+        .headers()
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("-");
+
     let code = response
         .headers()
         .get("grpc-status")
         .and_then(|value| value.to_str().ok())
         .map(|value| Code::from_bytes(value.as_bytes()))
         .unwrap_or(Code::Ok);
-
-    let code_name = code_name(code);
 
     let event_level = match level {
         GrpcLoggerLevel::Auto => match code {
@@ -179,59 +178,27 @@ fn log_grpc_request<ResBody>(
     match event_level {
         Level::ERROR => tracing::error!(
             target: "sword.grpc.logger",
-            status = %code_name,
-            latency = %format_latency(latency),
+            status = ?code,
+            latency = ?latency,
             request_id = %request_id,
-            "gRPC {path}",
+            rpc = %uri.path(),
+            "gRPC request completed",
         ),
         Level::WARN => tracing::warn!(
             target: "sword.grpc.logger",
-            status = %code_name,
-            latency = %format_latency(latency),
+            status = ?code,
+            latency = ?latency,
             request_id = %request_id,
-            "gRPC {path}",
+            rpc = %uri.path(),
+            "gRPC request completed",
         ),
         _ => tracing::info!(
             target: "sword.grpc.logger",
-            status = %code_name,
-            latency = %format_latency(latency),
+            status = ?code,
+            latency = ?latency,
             request_id = %request_id,
-            "gRPC {path}"
+            rpc = %uri.path(),
+            "gRPC request completed",
         ),
-    }
-}
-
-fn code_name(code: Code) -> &'static str {
-    match code {
-        Code::Ok => "ok",
-        Code::Cancelled => "cancelled",
-        Code::Unknown => "unknown",
-        Code::InvalidArgument => "invalid_argument",
-        Code::DeadlineExceeded => "deadline_exceeded",
-        Code::NotFound => "not_found",
-        Code::AlreadyExists => "already_exists",
-        Code::PermissionDenied => "permission_denied",
-        Code::ResourceExhausted => "resource_exhausted",
-        Code::FailedPrecondition => "failed_precondition",
-        Code::Aborted => "aborted",
-        Code::OutOfRange => "out_of_range",
-        Code::Unimplemented => "unimplemented",
-        Code::Internal => "internal",
-        Code::Unavailable => "unavailable",
-        Code::DataLoss => "data_loss",
-        Code::Unauthenticated => "unauthenticated",
-    }
-}
-
-/// Formats a latency with a human-friendly unit: `ms`, `s`, then `m` for long requests.
-fn format_latency(elapsed: Duration) -> String {
-    if elapsed >= Duration::from_secs(60) {
-        let mins = elapsed.as_secs() / 60;
-        let secs = elapsed.as_secs() % 60;
-        format!("{mins}m {secs}s")
-    } else if elapsed >= Duration::from_secs(1) {
-        format!("{:.1}s", elapsed.as_secs_f64())
-    } else {
-        format!("{}ms", elapsed.as_millis())
     }
 }

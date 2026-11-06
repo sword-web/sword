@@ -10,6 +10,7 @@ use sword_core::diagnostic::{DiagnosticPhase, Error};
 use sword_core::{ConfigSection, Controller, EngineBuildContext, Shutdown, State, sword_error};
 
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
+use tower::util::option_layer;
 
 pub struct GrpcApplication {
     pub state: State,
@@ -149,10 +150,14 @@ impl GrpcApplication {
             None => GrpcLoggerConfig::disabled(),
         };
 
-        // Request-id runs first so the logger (outer layer) can pick it up from the request.
+        let logger_layer = logger_config
+            .enabled
+            .then(|| GrpcLoggerLayer::new(&logger_config));
+
+        // Request-id is propagated to the response, where the logger reads it from.
         let server = tonic::transport::Server::builder()
             .layer(RequestIdLayer::new())
-            .layer(GrpcLoggerLayer::new(&logger_config))
+            .layer(option_layer(logger_layer))
             .add_routes(routes);
 
         #[allow(unused_mut)]

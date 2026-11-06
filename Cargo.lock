@@ -4035,6 +4035,7 @@ dependencies = [
 name = "sword-grpc"
 version = "0.5.0"
 dependencies = [
+ "futures-util",
  "http",
  "inventory",
  "serde",
