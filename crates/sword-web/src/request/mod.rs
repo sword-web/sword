@@ -10,7 +10,7 @@ use crate::interceptor::WebInterceptorResult;
 use axum::{
     body::{Body as AxumBody, Bytes as BodyBytes},
     extract::RawPathParams,
-    http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Version, request::Parts},
+    http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, request::Parts},
     middleware::Next,
 };
 
@@ -51,8 +51,9 @@ pub struct StreamRequest {
 
 macro_rules! impl_request_accessors {
     ($next_error:expr) => {
-        pub fn uri(&self) -> String {
-            self.parts.uri.to_string()
+        /// Returns a reference to the incoming Request Uri.
+        pub fn uri(&self) -> &Uri {
+            &self.parts.uri
         }
 
         /// Returns a reference to the HTTP method of the request.
