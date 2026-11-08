@@ -5,44 +5,38 @@ mod request;
 mod response;
 
 #[cfg(feature = "swagger-ui")]
-pub use application::OpenApiConfig;
-pub use application::{
+pub use self::application::OpenApiConfig;
+pub use self::application::{
     WebApplication, WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
     WebLoggerConfig, WebLoggerLevel,
 };
-pub use controller::{
+pub use self::controller::{
     WebController, connect, controller, delete, get, head, options, patch, post, put, sse, trace,
 };
-pub use interceptor::{
+pub use self::interceptor::{
     OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
     WebInterceptorResult,
 };
 #[cfg(feature = "validator")]
-pub use request::ValidatorRequestValidation;
-pub use request::{Request, RequestError, StreamRequest};
-pub use response::{
+pub use self::request::ValidatorRequestValidation;
+pub use self::request::{Request, RequestError, StreamRequest};
+pub use self::response::{
     ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
     KeepAlive, Redirect, Sse, WebResult,
 };
 
 pub mod prelude {
-    pub use crate::controller::{
-        WebController, connect, delete, get, head, options, patch, post, put, sse, trace,
-    };
-    pub use crate::interceptor::{
-        OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
-        WebInterceptorResult,
-    };
-    pub use crate::request::{Request, RequestError, StreamRequest};
-    pub use crate::response::{
-        ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
-        KeepAlive, Redirect, Sse, WebResult,
-    };
     pub use async_stream::{stream, try_stream};
+    pub use axum::body::Bytes as BodyBytes;
+    pub use axum::extract::RawPathParams;
+    #[cfg(feature = "multipart")]
+    pub use axum::extract::multipart::{
+        Field, InvalidBoundary, Multipart, MultipartError, MultipartRejection,
+    };
+    pub use axum::http::{HeaderMap as Headers, Method, Uri};
     pub use axum::middleware::Next;
-
-    #[cfg(feature = "validator")]
-    pub use crate::request::ValidatorRequestValidation;
+    #[cfg(feature = "multipart")]
+    pub use bytes::*;
 
     pub use sword_layers::cookies::{
         Cookies, Key as CookiesKey, PrivateCookies, SignedCookies,
@@ -52,17 +46,20 @@ pub mod prelude {
         },
     };
 
-    #[cfg(feature = "multipart")]
-    pub use axum::extract::multipart::{
-        Field, InvalidBoundary, Multipart, MultipartError, MultipartRejection,
+    pub use crate::controller::{
+        WebController, connect, delete, get, head, options, patch, post, put, sse, trace,
     };
-
-    #[cfg(feature = "multipart")]
-    pub use bytes::*;
-
-    pub use axum::body::Bytes as BodyBytes;
-    pub use axum::extract::RawPathParams;
-    pub use axum::http::{HeaderMap as Headers, Method, Uri};
+    pub use crate::interceptor::{
+        OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
+        WebInterceptorResult,
+    };
+    #[cfg(feature = "validator")]
+    pub use crate::request::ValidatorRequestValidation;
+    pub use crate::request::{Request, RequestError, StreamRequest};
+    pub use crate::response::{
+        ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
+        KeepAlive, Redirect, Sse, WebResult,
+    };
 }
 
 /// Items required by generated code.

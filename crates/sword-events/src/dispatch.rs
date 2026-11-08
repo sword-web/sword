@@ -1,7 +1,7 @@
+use std::{sync::Arc, time::Duration};
+
 use crate::Event;
 use crate::registrar::EventHandlerFn;
-
-use std::{sync::Arc, time::Duration};
 
 /// Dispatches an event to every handler that belongs to a subscription.
 ///

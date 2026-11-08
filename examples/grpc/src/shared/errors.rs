@@ -1,5 +1,6 @@
-use sword::grpc::*;
 use thiserror::Error;
+
+use sword::grpc::*;
 
 pub type AppResult<T> = Result<T, AppError>;
 

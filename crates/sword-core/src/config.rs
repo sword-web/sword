@@ -1,10 +1,12 @@
-use crate::State;
-use crate::diagnostic::{Diagnostic, DiagnosticPhase, Error};
-use serde::de::DeserializeOwned;
 use std::ops::Range;
 use std::path::PathBuf;
+
+use serde::de::DeserializeOwned;
 use thisconfig::ConfigError;
 use toml_edit::{Document, Item};
+
+use crate::State;
+use crate::diagnostic::{Diagnostic, DiagnosticPhase, Error};
 
 pub use thisconfig::{ByteConfig, Config, ConfigItem, ConfigSourceInfo, TimeConfig};
 

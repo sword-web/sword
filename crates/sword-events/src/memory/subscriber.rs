@@ -1,8 +1,9 @@
+use std::sync::Arc;
+
+use tokio::sync::mpsc::Receiver;
+
 use crate::registrar::EventKeyHandlerMap;
 use crate::{Event, InMemoryEventsConfig};
-
-use std::sync::Arc;
-use tokio::sync::mpsc::Receiver;
 
 /// Consumer of the in-memory event channel.
 ///

@@ -4,11 +4,11 @@ mod controllers {
     pub mod web;
 }
 
-use controllers::socketio::EventsController;
-use controllers::web::ExampleRestController;
-
 use sword::prelude::*;
 use sword_layers::cors::*;
+
+use self::controllers::socketio::EventsController;
+use self::controllers::web::ExampleRestController;
 
 pub struct ExampleModule;
 

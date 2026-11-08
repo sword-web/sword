@@ -1,8 +1,9 @@
 mod event;
 mod subscribe;
 
-pub use event::expand_event_struct;
-pub use subscribe::expand_subscribe;
+use darling::Error;
+use proc_macro2::TokenStream;
+use quote::quote;
 
 use crate::core::{ControllerKind, ControllerStruct, EventSourceKind};
 use crate::shared::{
@@ -13,9 +14,8 @@ use crate::shared::{
     traits::{generate_build_impl, generate_clone_impl},
 };
 
-use darling::Error;
-use proc_macro2::TokenStream;
-use quote::quote;
+pub use self::event::expand_event_struct;
+pub use self::subscribe::expand_subscribe;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::Events { source } = &controller.kind else {

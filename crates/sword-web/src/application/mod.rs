@@ -4,19 +4,20 @@ mod logger;
 mod router;
 
 use std::net::SocketAddr;
-use tokio::net::TcpListener;
 
 use axum::Router;
-use router::WebApplicationRouter;
+use tokio::net::TcpListener;
 
 use sword_core::*;
 use sword_layers::body_limit::BodyLimitValue;
 
+use self::router::WebApplicationRouter;
+
 #[cfg(feature = "swagger-ui")]
-pub use config::OpenApiConfig;
-pub use config::WebApplicationConfig;
-pub use extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
-pub use logger::{WebLoggerConfig, WebLoggerLevel};
+pub use self::config::OpenApiConfig;
+pub use self::config::WebApplicationConfig;
+pub use self::extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
+pub use self::logger::{WebLoggerConfig, WebLoggerLevel};
 
 pub struct WebApplication {
     state: State,

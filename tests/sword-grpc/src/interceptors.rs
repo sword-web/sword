@@ -1,16 +1,17 @@
 use serial_test::serial;
+use tokio::time::{Duration, sleep};
+use tonic::{Request, Status};
+
 use sword::grpc::*;
 use sword::prelude::*;
 use sword_grpc::prelude::{GrpcResponse, GrpcResult};
-use tokio::time::{Duration, sleep};
-use tonic::{Request, Status};
 
 pub mod proto {
     tonic::include_proto!("secure");
 }
 
-use proto::secure_service_server::{SecureService, SecureServiceServer};
-use proto::{PingReply, PingRequest};
+use self::proto::secure_service_server::{SecureService, SecureServiceServer};
+use self::proto::{PingReply, PingRequest};
 
 const AUTH_METADATA_KEY: &str = "authorization";
 const TOKEN: &str = "Bearer test-token";

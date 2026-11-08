@@ -1,15 +1,15 @@
+use darling::{Error, FromDeriveInput, FromMeta, ast::NestedMeta, util::Flag};
+use proc_macro::TokenStream;
+use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
+use syn::DeriveInput;
+
 use crate::shared::{
     Result, location,
     paths::*,
     structs::Struct,
     traits::{generate_build_impl, generate_clone_impl, generate_has_deps_impl},
 };
-
-use darling::{Error, FromDeriveInput, FromMeta, ast::NestedMeta, util::Flag};
-use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
-use syn::DeriveInput;
 
 // `#[injectable] args section ================================================================
 

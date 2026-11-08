@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serial_test::serial;
+
 use sword::events::{EventHandlerResult, EventPublish, MemoryEventPublisher, event, subscribe};
 use sword::prelude::*;
 use sword::web::*;

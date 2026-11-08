@@ -2,11 +2,11 @@ mod events;
 mod handler;
 mod sender;
 
-pub use events::UserCreatedEvent;
-pub use handler::MailHandler;
-pub use sender::Mailer;
-
 use sword::prelude::*;
+
+pub use self::events::UserCreatedEvent;
+pub use self::handler::MailHandler;
+pub use self::sender::Mailer;
 
 pub struct MailerModule;
 

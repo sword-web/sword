@@ -1,5 +1,6 @@
-use ::miette::{LabeledSpan, NamedSource};
 use std::ops::Range;
+
+use ::miette::{LabeledSpan, NamedSource};
 
 use super::Diagnostic;
 use super::types::{DiagnosticCode, DiagnosticPhase, Severity};

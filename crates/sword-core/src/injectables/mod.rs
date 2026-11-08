@@ -3,17 +3,17 @@ mod container;
 mod error;
 mod providers;
 
-use crate::State;
-
 use std::{
     any::{Any, TypeId},
     sync::Arc,
 };
 
-pub use components::{Component, ComponentRegistry};
-pub use container::DependencyContainer;
-pub use error::DependencyInjectionError;
-pub use providers::{Provider, ProviderRegistry};
+use crate::State;
+
+pub use self::components::{Component, ComponentRegistry};
+pub use self::container::DependencyContainer;
+pub use self::error::DependencyInjectionError;
+pub use self::providers::{Provider, ProviderRegistry};
 
 /// Base trait for any component that can be constructed from the application State.
 pub trait Build: Clone + Send + Sync + 'static {

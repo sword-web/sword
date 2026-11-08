@@ -1,9 +1,10 @@
 use serial_test::serial;
-use sword::grpc::*;
-use sword::prelude::*;
 use thiserror::Error;
 use tokio::time::{Duration, sleep};
 use tonic::{Code, Request, transport::Channel};
+
+use sword::grpc::*;
+use sword::prelude::*;
 
 pub mod proto {
     tonic::include_proto!("users");

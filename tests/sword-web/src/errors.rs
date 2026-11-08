@@ -1,7 +1,8 @@
 use serde_json::{Value, json};
+use thiserror::Error;
+
 use sword::prelude::*;
 use sword::web::*;
-use thiserror::Error;
 
 use crate::application_builder;
 use crate::test_server;

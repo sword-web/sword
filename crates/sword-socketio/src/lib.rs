@@ -7,15 +7,15 @@ mod extract;
 mod integration;
 mod interceptor;
 
-pub use config::{SocketIoParser, SocketIoServerConfig};
-pub use controller::{
+pub use self::config::{SocketIoParser, SocketIoServerConfig};
+pub use self::controller::{
     AckSender, AckStream, BroadcastOperators, ConfOperators, Data, DisconnectReason, Event,
     Extension, HttpExtension, LocalAdapter, MaybeExtension, MaybeHttpExtension, ProtocolVersion,
     Room, RoomParam, SendError, SocketIo, SocketRef, TransportType, TryData, on,
 };
-pub use error::SocketError;
-pub use extract::SocketContext;
-pub use interceptor::OnConnect;
+pub use self::error::SocketError;
+pub use self::extract::SocketContext;
+pub use self::interceptor::OnConnect;
 
 pub mod prelude {
     pub use crate::config::{SocketIoParser, SocketIoServerConfig};
@@ -35,8 +35,9 @@ pub mod prelude {
 /// user's crate, but it is not part of the stable API.
 #[doc(hidden)]
 pub mod internal {
+    pub use socketioxide::handler::ConnectHandler;
+
     pub use crate::controller::{
         HandlerRegistrar, SocketEventKind, SocketIoController, SocketIoHandlerRegistrar,
     };
-    pub use socketioxide::handler::ConnectHandler;
 }

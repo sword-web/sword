@@ -1,9 +1,9 @@
-use crate::shared::{Result, location, paths::*};
-
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::DeriveInput;
+
+use crate::shared::{Result, location, paths::*};
 
 // `#[config(key = "literal_str")]` macro Args
 #[derive(FromMeta)]

@@ -4,23 +4,22 @@
 //! `tower_http::timeout::TimeoutLayer`, and a response mapper that rewrites
 //! timeout responses into Sword's standardized JSON format.
 
-use crate::{MapResponseLayer, ResponseFnMapper};
+use std::time::Duration;
 
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-
 use axum_responses::JsonResponse;
+use serde::{Deserialize, Serialize};
+use thisconfig::TimeConfig;
 use tower::ServiceBuilder;
-pub use tower_http::timeout::TimeoutLayer;
 use tower_layer::{Identity, Stack};
 
 use crate::DisplayConfig;
+use crate::{MapResponseLayer, ResponseFnMapper};
 
-use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use thisconfig::TimeConfig;
+pub use tower_http::timeout::TimeoutLayer;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

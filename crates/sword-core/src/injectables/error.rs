@@ -1,5 +1,6 @@
-use crate::diagnostic::SourceLocation;
 use std::fmt::{self, Display, Formatter};
+
+use crate::diagnostic::SourceLocation;
 
 #[derive(Debug)]
 pub enum DependencyInjectionError {

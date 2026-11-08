@@ -1,7 +1,9 @@
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use sword_core::TimeConfig;
+
+use serde::{Deserialize, Serialize};
 use tonic::transport::Channel;
+
+use sword_core::TimeConfig;
 
 /// Default per-request timeout applied when a client does not declare one.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);

@@ -1,8 +1,8 @@
-use super::parsing::{ParsedScheduleHandler, Schedule};
-use crate::shared::{Result, location, paths::*};
-
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+
+use super::parsing::{ParsedScheduleHandler, Schedule};
+use crate::shared::{Result, location, paths::*};
 
 pub fn expand_schedule_handler(schedule: ParsedScheduleHandler) -> Result<TokenStream> {
     let ParsedScheduleHandler {

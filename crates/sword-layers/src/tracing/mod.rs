@@ -2,15 +2,17 @@ mod config;
 mod dev;
 mod time;
 
-use dev::DevFormatter;
 use std::{io, sync::OnceLock};
-use time::TimestampFormatter;
+
 use tracing_subscriber::{
     EnvFilter, Registry,
     layer::{Layer, SubscriberExt},
 };
 
-pub use config::*;
+use self::dev::DevFormatter;
+use self::time::TimestampFormatter;
+
+pub use self::config::*;
 
 type BoxLayer = Box<dyn Layer<Registry> + Send + Sync + 'static>;
 static TRACING_INIT: OnceLock<()> = OnceLock::new();

@@ -15,22 +15,18 @@ mod nats;
 
 pub mod prelude;
 
-pub use application::EventApplication;
-pub use config::EventApplicationConfig;
-pub use event::{Event, EventCodecError, EventPublish, EventPublishError, EventSource};
-pub use registrar::EventHandlerResult;
-
+pub use self::application::EventApplication;
+pub use self::config::EventApplicationConfig;
 #[cfg(feature = "memory")]
-pub use config::InMemoryEventsConfig;
-
+pub use self::config::InMemoryEventsConfig;
 #[cfg(feature = "nats")]
-pub use config::NatsEventsConfig;
-
+pub use self::config::NatsEventsConfig;
+pub use self::event::{Event, EventCodecError, EventPublish, EventPublishError, EventSource};
 #[cfg(feature = "memory")]
-pub use memory::MemoryEventPublisher;
-
+pub use self::memory::MemoryEventPublisher;
 #[cfg(feature = "nats")]
-pub use nats::NatsEventPublisher;
+pub use self::nats::NatsEventPublisher;
+pub use self::registrar::EventHandlerResult;
 
 /// Items required by generated code.
 ///
@@ -38,10 +34,10 @@ pub use nats::NatsEventPublisher;
 /// user's crate, but it is not part of the stable API.
 #[doc(hidden)]
 pub mod internal {
+    pub use serde_json;
+
     pub use crate::registrar::{
         EventControllerRegistrar, EventDecoder, EventHandlerFn, EventHandlerRegistrar,
         EventRegistrar,
     };
-
-    pub use serde_json;
 }

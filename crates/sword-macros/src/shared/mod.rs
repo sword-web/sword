@@ -5,8 +5,9 @@ pub mod paths;
 pub mod structs;
 pub mod traits;
 
-pub use darling::Error;
 use syn::{FnArg, Type};
+
+pub use darling::Error;
 
 pub type Result<T> = std::result::Result<T, darling::Error>;
 

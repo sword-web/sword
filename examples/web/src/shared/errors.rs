@@ -1,5 +1,6 @@
-use sword::web::*;
 use thiserror::Error as ThisError;
+
+use sword::web::*;
 
 pub type AppResult<T> = Result<T, AppError>;
 

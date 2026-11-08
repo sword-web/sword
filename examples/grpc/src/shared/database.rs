@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use sword::prelude::*;
 use tokio::sync::RwLock;
+
+use sword::prelude::*;
 
 use crate::users::User;
 

@@ -1,22 +1,17 @@
 use std::any::Any;
+#[cfg(any(feature = "web", feature = "socketio"))]
+use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
 
-#[cfg(any(feature = "web", feature = "socketio"))]
-use std::convert::Infallible;
-
 use sword_core::*;
-use sword_layers::tracing::{TracingConfig, TracingSubscriber};
-
 #[cfg(any(feature = "events-memory", feature = "events-nats"))]
 use sword_events::EventApplication;
-
 #[cfg(feature = "grpc")]
 use sword_grpc::GrpcApplication;
-
 #[cfg(feature = "jobs")]
 use sword_jobs::JobSchedulerRuntime;
-
+use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 #[cfg(any(feature = "web", feature = "socketio"))]
 use sword_web::{WebApplication, internal::*};
 

@@ -2,6 +2,7 @@ use tokio_stream::Stream;
 use tonic::Status;
 
 use crate::controller::GrpcStream;
+
 pub use sword_macros::GrpcError;
 
 pub struct GrpcResponse;
@@ -22,6 +23,7 @@ impl GrpcResponse {
 #[cfg(feature = "error-details")]
 mod grpc_status {
     use std::collections::HashMap;
+
     use tonic::Code;
     use tonic_types::{ErrorDetails, StatusExt};
 

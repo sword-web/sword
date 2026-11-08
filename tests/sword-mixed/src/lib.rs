@@ -6,6 +6,7 @@ mod tests {
     use std::time::Duration;
 
     use serial_test::serial;
+
     use sword::grpc::{GrpcResponse, GrpcResult, Request, async_trait};
     use sword::prelude::*;
     use sword::web::get;
@@ -14,8 +15,8 @@ mod tests {
         tonic::include_proto!("ping");
     }
 
-    use proto::ping_service_server::{PingService, PingServiceServer};
-    use proto::{PingReply, PingRequest};
+    use self::proto::ping_service_server::{PingService, PingServiceServer};
+    use self::proto::{PingReply, PingRequest};
 
     // ---- gRPC controller ----------------------------------------------------
 

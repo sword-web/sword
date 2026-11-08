@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::routing::Router;
+
 use sword_core::{Config, ConfigDocument, ControllerMap, Error, State};
 
 #[derive(Clone)]

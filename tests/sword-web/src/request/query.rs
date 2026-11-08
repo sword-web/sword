@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
+use validator::Validate;
+
 use sword::prelude::*;
 use sword::web::*;
-use validator::Validate;
 
 use crate::application_builder;
 use crate::test_server;

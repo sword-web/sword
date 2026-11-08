@@ -1,5 +1,3 @@
-use super::{JsonResponse, Request, RequestError, StreamRequest};
-
 use axum::{
     RequestPartsExt,
     body::{Body as AxumBody, to_bytes},
@@ -7,10 +5,12 @@ use axum::{
     http::Method,
     response::IntoResponse,
 };
-
 use bytes::Bytes;
+
 use sword_core::State;
 use sword_layers::body_limit::BodyLimitValue;
+
+use super::{JsonResponse, Request, RequestError, StreamRequest};
 
 /// Fixed-state version of `axum::extract::FromRequest` using sword's State.
 ///

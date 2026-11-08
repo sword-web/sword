@@ -1,11 +1,11 @@
-use super::{TimeStyle, TracingConfig};
-
 use std::fmt;
 
 use tracing_subscriber::fmt::{
     format::Writer,
     time::{ChronoLocal, ChronoUtc, FormatTime, SystemTime, Uptime},
 };
+
+use super::{TimeStyle, TracingConfig};
 
 const DEFAULT_LOCAL_TIME_PATTERN: &str = "%Y-%m-%d %H:%M:%S";
 const DEFAULT_UTC_TIME_PATTERN: &str = "%Y-%m-%dT%H:%M:%SZ";

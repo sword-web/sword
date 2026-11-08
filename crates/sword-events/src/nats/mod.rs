@@ -3,16 +3,17 @@ mod publisher;
 mod subscriber;
 
 use std::{collections::HashMap, sync::Arc};
+
 use tokio::task::JoinSet;
 
-use client::NatsClient;
 use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
 
+use self::client::NatsClient;
 use crate::application::HandlerEntry;
 use crate::config::EventApplicationConfig;
 use crate::registrar::{EventHandlerFn, EventRegistrar};
 
-pub use publisher::NatsEventPublisher;
+pub use self::publisher::NatsEventPublisher;
 
 fn consumer_stopped() -> Error {
     sword_error! {

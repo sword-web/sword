@@ -1,11 +1,12 @@
 mod expand;
 mod parsing;
 
-use crate::shared::Result;
-use parsing::ParsedScheduleHandler;
-pub use parsing::ScheduleKind;
-
 use proc_macro::TokenStream;
+
+use self::parsing::ParsedScheduleHandler;
+use crate::shared::Result;
+
+pub use self::parsing::ScheduleKind;
 
 pub fn expand_job_task(
     kind: ScheduleKind,

@@ -1,6 +1,8 @@
 mod errors;
 
-pub use errors::derive_grpc_error;
+use darling::Error;
+use proc_macro2::TokenStream;
+use quote::quote;
 
 use crate::{
     core::{ControllerKind, ControllerStruct, InterceptorArgs},
@@ -11,9 +13,7 @@ use crate::{
     },
 };
 
-use darling::Error;
-use proc_macro2::TokenStream;
-use quote::quote;
+pub use self::errors::derive_grpc_error;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::Grpc { service } = &controller.kind else {

@@ -1,11 +1,13 @@
+use std::collections::HashSet;
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 use socketioxide::{ParserConfig, SocketIo, TransportType, layer::SocketIoLayer};
 use socketioxide_core::Value;
 use socketioxide_core::parser::{Parse, ParserError};
 use socketioxide_parser_common::CommonParser;
 use socketioxide_parser_msgpack::MsgPackParser;
-use std::collections::HashSet;
-use std::str::FromStr;
+
 use sword_core::{
     ByteConfig, ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, TimeConfig, ValidateConfig,
     inventory_submit,

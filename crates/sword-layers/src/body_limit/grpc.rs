@@ -4,12 +4,13 @@
 //! mapped to tonic's per-service `max_decoding_message_size` and
 //! `max_encoding_message_size` settings.
 
-use crate::DisplayConfig;
+use std::str::FromStr;
 
 use byte_unit::Byte;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use thisconfig::ByteConfig;
+
+use crate::DisplayConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

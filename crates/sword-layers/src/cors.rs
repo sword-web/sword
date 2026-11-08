@@ -3,13 +3,13 @@
 //! This module defines CORS configuration and conversion into
 //! `tower_http::cors::CorsLayer` for controlling cross-origin policies.
 
-use crate::{DisplayConfig, SwordLayerRegistrar};
-
 use axum::http::{HeaderName, HeaderValue, Method};
 use serde::{Deserialize, Serialize};
 use thisconfig::Config;
 use thisconfig::{ConfigItem, TimeConfig};
 use tower_http::cors::Any;
+
+use crate::{DisplayConfig, SwordLayerRegistrar};
 
 pub use tower_http::cors::CorsLayer;
 

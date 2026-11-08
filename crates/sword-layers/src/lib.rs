@@ -1,6 +1,7 @@
 #![allow(clippy::new_ret_no_self)]
 
 use std::any::Any;
+
 use thisconfig::Config;
 
 #[cfg(feature = "body-limit")]
@@ -8,8 +9,8 @@ pub mod body_limit {
     mod grpc;
     mod web;
 
-    pub use grpc::*;
-    pub use web::*;
+    pub use self::grpc::*;
+    pub use self::web::*;
 }
 
 #[cfg(feature = "compression")]

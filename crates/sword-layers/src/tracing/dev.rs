@@ -1,9 +1,9 @@
 use std::fmt;
+
 use tracing::{
     Event, Level, Subscriber,
     field::{Field, Visit},
 };
-
 use tracing_subscriber::{
     fmt::{FmtContext, FormatEvent, FormatFields, format::Writer, time::FormatTime},
     registry::LookupSpan,

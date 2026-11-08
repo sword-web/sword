@@ -1,7 +1,6 @@
+use std::future::Future;
 #[cfg(not(unix))]
 use std::future::pending;
-
-use std::future::Future;
 use std::sync::Arc;
 
 use tokio::signal;

@@ -1,8 +1,8 @@
 mod controller;
 
-use controller::SseController;
-
 use sword::prelude::*;
+
+use self::controller::SseController;
 
 pub struct SseModule;
 

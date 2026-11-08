@@ -3,12 +3,12 @@ pub mod errors;
 pub mod hasher;
 pub mod interceptor;
 
-pub use database::*;
-pub use errors::*;
-pub use hasher::*;
-pub use interceptor::*;
-
 use sword::prelude::*;
+
+pub use self::database::*;
+pub use self::errors::*;
+pub use self::hasher::*;
+pub use self::interceptor::*;
 
 pub struct SharedModule;
 

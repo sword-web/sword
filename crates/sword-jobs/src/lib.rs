@@ -3,9 +3,10 @@ mod runtime;
 pub use runtime::JobSchedulerRuntime;
 
 pub mod prelude {
-    pub use sword_macros::{cron, once, repeated};
     pub use tokio_cron_scheduler::{Job, JobScheduler};
     pub use uuid::Uuid;
+
+    pub use sword_macros::{cron, once, repeated};
 }
 
 /// Items required by generated code.
@@ -14,8 +15,9 @@ pub mod prelude {
 /// user's crate, but it is not part of the stable API.
 #[doc(hidden)]
 pub mod internal {
+    pub use tokio_cron_scheduler::Job;
+
     pub use crate::runtime::{
         JobControllerRegistrar, JobFunctionRegistrar, JobHandlerFn, JobSchedulerRuntime,
     };
-    pub use tokio_cron_scheduler::Job;
 }

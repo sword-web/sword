@@ -1,9 +1,10 @@
 use std::any::TypeId;
 use std::pin::Pin;
 
-use sword_core::{ControllerSpec, Error, State};
 use tokio_stream::Stream;
 use tonic::{Response, Status};
+
+use sword_core::{ControllerSpec, Error, State};
 
 use crate::registry::GrpcServiceRegistry;
 

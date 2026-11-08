@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+
 use sword_core::{
     ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
 };

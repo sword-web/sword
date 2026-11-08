@@ -1,11 +1,13 @@
-use crate::{client::GrpcClientConfig, logger::GrpcLoggerConfig};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
 use sword_core::{
     ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
 };
 use sword_layers::body_limit::GrpcBodyLimitConfig;
+
+use crate::{client::GrpcClientConfig, logger::GrpcLoggerConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

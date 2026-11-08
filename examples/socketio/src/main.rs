@@ -1,8 +1,9 @@
 pub mod chat;
 pub mod database;
 
-use crate::{chat::ChatModule, database::Database};
 use sword::prelude::*;
+
+use crate::{chat::ChatModule, database::Database};
 
 #[sword::main]
 async fn main() -> Result<(), Error> {

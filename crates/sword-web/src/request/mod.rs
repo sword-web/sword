@@ -4,8 +4,7 @@ mod extract;
 #[cfg(feature = "validator")]
 mod validator;
 
-use super::response::JsonResponse;
-use crate::interceptor::WebInterceptorResult;
+use std::{fmt::Display, str::FromStr};
 
 use axum::{
     body::{Body as AxumBody, Bytes as BodyBytes},
@@ -13,16 +12,17 @@ use axum::{
     http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, request::Parts},
     middleware::Next,
 };
-
 use serde::de::DeserializeOwned;
-use std::{fmt::Display, str::FromStr};
+
 use sword_layers::cookies::Cookies;
 use sword_layers::request_id::RequestId;
 
-pub use error::RequestError;
+use super::response::JsonResponse;
+use crate::interceptor::WebInterceptorResult;
 
+pub use self::error::RequestError;
 #[cfg(feature = "validator")]
-pub use validator::ValidatorRequestValidation;
+pub use self::validator::ValidatorRequestValidation;
 
 /// Represents the incoming request in the Sword framework.
 ///

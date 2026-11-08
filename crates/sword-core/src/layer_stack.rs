@@ -1,6 +1,7 @@
-use axum::{Router, extract::Request, response::IntoResponse, routing::Route};
 use std::convert::Infallible;
 use std::sync::Arc;
+
+use axum::{Router, extract::Request, response::IntoResponse, routing::Route};
 use tower::{Layer, Service};
 
 type LayerFn<S> = Arc<dyn Fn(Router<S>) -> Router<S> + Send + Sync>;

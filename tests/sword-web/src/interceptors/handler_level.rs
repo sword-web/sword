@@ -1,9 +1,10 @@
 #![allow(unused)]
 
 use serde_json::json;
+use tower_http::cors::CorsLayer;
+
 use sword::prelude::*;
 use sword::web::*;
-use tower_http::cors::CorsLayer;
 
 use crate::application_builder;
 use crate::test_server;

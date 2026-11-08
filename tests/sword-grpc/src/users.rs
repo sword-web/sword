@@ -1,15 +1,16 @@
 use serial_test::serial;
+use tokio::time::{Duration, sleep};
+
 use sword::grpc::*;
 use sword::prelude::*;
 use sword_grpc::prelude::{GrpcResponse, GrpcResult, GrpcStream};
-use tokio::time::{Duration, sleep};
 
 pub mod proto {
     tonic::include_proto!("users");
 }
 
-use proto::user_service_server::{UserService, UserServiceServer};
-use proto::{
+use self::proto::user_service_server::{UserService, UserServiceServer};
+use self::proto::{
     GetUserRequest, ListUsersReply, ListUsersRequest, StreamUsersRequest, UserItem, UserReply,
 };
 

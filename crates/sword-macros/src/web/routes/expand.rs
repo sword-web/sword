@@ -1,11 +1,10 @@
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+
+use super::parsing::ReturnKind;
 use crate::shared::{location, paths::*};
 use crate::web::interceptors::expand_sword_interceptor;
 use crate::web::routes::ParsedRouteAttribute;
-
-use super::parsing::ReturnKind;
-
-use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
 
 pub fn expand_web_attribute(route: &ParsedRouteAttribute) -> TokenStream {
     let original_function = &route.function;

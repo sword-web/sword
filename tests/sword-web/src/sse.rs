@@ -1,6 +1,7 @@
+use tokio_stream::StreamExt;
+
 use sword::prelude::*;
 use sword::web::*;
-use tokio_stream::StreamExt;
 
 use crate::application_builder;
 use crate::test_server;

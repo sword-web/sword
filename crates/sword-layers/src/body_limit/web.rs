@@ -3,12 +3,13 @@
 //! This module provides a layer that enforces a maximum request body size
 //! and maps oversized payload responses into Sword's standardized JSON shape.
 
-use crate::DisplayConfig;
+use std::str::FromStr;
 
 use byte_unit::Byte;
 use serde::{self, Deserialize, Deserializer, Serialize};
-use std::str::FromStr;
 use thisconfig::ByteConfig;
+
+use crate::DisplayConfig;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(default)]
@@ -30,8 +31,6 @@ impl<'de> Deserialize<'de> for BodyLimitConfig {
     }
 }
 
-use crate::{MapResponseLayer, ResponseFnMapper, ServiceLayer};
-
 use axum::{
     body::Body,
     response::{IntoResponse, Response},
@@ -39,6 +38,8 @@ use axum::{
 use axum_responses::JsonResponse;
 use tower::ServiceBuilder;
 use tower_http::limit::RequestBodyLimitLayer;
+
+use crate::{MapResponseLayer, ResponseFnMapper, ServiceLayer};
 
 pub struct BodyLimitLayer;
 

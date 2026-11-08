@@ -1,4 +1,5 @@
 use std::{any::Any, fmt::Debug};
+
 use thiserror::Error;
 
 /// Event source enum used by `#[controller(kind = Controller::EventHandler, ...)]`

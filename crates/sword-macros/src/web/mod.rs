@@ -2,8 +2,9 @@ mod errors;
 mod interceptors;
 mod routes;
 
-pub use errors::derive_http_error;
-pub use routes::expand_route;
+use darling::Error;
+use proc_macro2::TokenStream;
+use quote::quote;
 
 use crate::{
     core::{ControllerKind, ControllerStruct},
@@ -16,9 +17,8 @@ use crate::{
     },
 };
 
-use darling::Error;
-use proc_macro2::TokenStream;
-use quote::quote;
+pub use self::errors::derive_http_error;
+pub use self::routes::expand_route;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::Web { path } = &controller.kind else {

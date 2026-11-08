@@ -1,10 +1,9 @@
-use crate::request::{Request, RequestError};
-
-#[cfg(feature = "validator")]
-use crate::response::format_validator_errors;
-
 use serde::de::DeserializeOwned;
 use validator::Validate;
+
+use crate::request::{Request, RequestError};
+#[cfg(feature = "validator")]
+use crate::response::format_validator_errors;
 
 pub trait ValidatorRequestValidation {
     fn body_validator<T: DeserializeOwned + Validate>(&self) -> Result<T, RequestError>;

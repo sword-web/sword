@@ -9,28 +9,24 @@ mod module;
 mod shutdown;
 mod state;
 
-pub use application::{ApplicationConfig, EngineBuildContext};
-
-pub use config::{
+pub use self::application::{ApplicationConfig, EngineBuildContext};
+pub use self::config::{
     ByteConfig, Config, ConfigDocument, ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar,
     ConfigSection, ConfigSourceInfo, TimeConfig, ValidateConfig,
 };
-
-pub use controllers::{
+pub use self::controllers::{
     Controller, ControllerIds, ControllerMap, ControllerRegistry, ControllerSpec,
 };
-
-pub use diagnostic::*;
-pub use injectables::{
+pub use self::diagnostic::*;
+pub use self::injectables::{
     Build, Component, ComponentRegistry, DependencyContainer, DependencyInjectionError, HasDeps,
     Provider, ProviderRegistry,
 };
-
-pub use interceptor::{Interceptor, InterceptorRegistrar};
-pub use layer_stack::LayerStack;
-pub use module::Module;
-pub use shutdown::{Shutdown, shutdown_signal};
-pub use state::State;
+pub use self::interceptor::{Interceptor, InterceptorRegistrar};
+pub use self::layer_stack::LayerStack;
+pub use self::module::Module;
+pub use self::shutdown::{Shutdown, shutdown_signal};
+pub use self::state::State;
 
 pub(crate) type RwMap<K, V> = parking_lot::RwLock<std::collections::HashMap<K, V>>;
 

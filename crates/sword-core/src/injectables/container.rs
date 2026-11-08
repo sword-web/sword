@@ -1,8 +1,8 @@
 #![allow(clippy::type_complexity)]
 
-use crate::{ComponentRegistry, DependencyInjectionError as DIError, ProviderRegistry, State};
-
 use std::{any::TypeId, collections::HashSet, sync::Arc};
+
+use crate::{ComponentRegistry, DependencyInjectionError as DIError, ProviderRegistry, State};
 
 /// A container for managing dependencies and their builders.
 ///

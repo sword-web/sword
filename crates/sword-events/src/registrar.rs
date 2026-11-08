@@ -1,11 +1,11 @@
 use std::any::TypeId;
+#[cfg(feature = "memory")]
+use std::collections::HashMap;
 use std::error::Error;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-#[cfg(feature = "memory")]
-use std::collections::HashMap;
 use sword_core::{Error as DiagnosticError, State};
 
 use crate::{Event, EventCodecError, EventSource};

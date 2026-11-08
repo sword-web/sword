@@ -2,9 +2,10 @@ use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 
+use tower::util::option_layer;
+
 use sword_core::*;
 use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
-use tower::util::option_layer;
 
 use crate::config::GrpcApplicationConfig;
 use crate::controller::GrpcControllerRegistrar;

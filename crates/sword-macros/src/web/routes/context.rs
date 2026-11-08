@@ -1,5 +1,6 @@
-use crate::{core::InterceptorArgs, shared::cmeta::CMetaStack};
 use proc_macro2::Span;
+
+use crate::{core::InterceptorArgs, shared::cmeta::CMetaStack};
 
 pub struct WebRouteContext {
     pub controller_name: String,

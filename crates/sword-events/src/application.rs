@@ -1,17 +1,16 @@
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 
-use sword_core::*;
 use tokio::task::JoinSet;
 
-#[cfg(feature = "memory")]
-use crate::memory::MemoryTransport;
-
-#[cfg(feature = "nats")]
-use crate::nats::NatsTransport;
+use sword_core::*;
 
 use crate::EventSource;
 use crate::config::EventApplicationConfig;
+#[cfg(feature = "memory")]
+use crate::memory::MemoryTransport;
+#[cfg(feature = "nats")]
+use crate::nats::NatsTransport;
 use crate::registrar::{
     EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar, EventRegistrar,
 };

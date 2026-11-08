@@ -1,11 +1,11 @@
+use std::time::Instant;
+
 use axum::{
     extract::{Request, State},
     middleware::Next,
     response::Response,
 };
-
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 use tracing::Level;
 
 const REQUEST_ID_LENGTH: usize = 8;

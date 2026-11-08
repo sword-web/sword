@@ -1,6 +1,7 @@
 use std::any::TypeId;
 
 use axum::routing::MethodRouter;
+
 use sword_core::{ControllerSpec, Error, State};
 
 pub use sword_macros::{

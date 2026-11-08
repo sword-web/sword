@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sword_core::{ConfigErrors, ConfigIssue, ValidateConfig};
 use thisconfig::ConfigItem;
 use tracing_subscriber::EnvFilter;
+
+use sword_core::{ConfigErrors, ConfigIssue, ValidateConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

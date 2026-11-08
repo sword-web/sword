@@ -3,6 +3,10 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+use sword_core::{ControllerSpec, Error, State};
+
+use crate::extract::SocketContext;
+
 pub use socketioxide::{
     ProtocolVersion, SendError, SocketIo, TransportType,
     ack::AckStream,
@@ -16,9 +20,6 @@ pub use socketioxide::{
 };
 pub use socketioxide_core::adapter::{Room, RoomParam};
 
-use sword_core::{ControllerSpec, Error, State};
-
-use crate::extract::SocketContext;
 pub use sword_macros::on;
 
 /// Trait for providing Socket.IO controller functionality.

@@ -2,10 +2,10 @@ pub mod database;
 pub mod errors;
 pub mod hasher;
 
-pub use database::*;
-pub use hasher::*;
-
 use sword::prelude::*;
+
+pub use self::database::*;
+pub use self::hasher::*;
 
 pub struct SharedModule;
 

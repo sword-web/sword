@@ -4,12 +4,14 @@ mod env;
 
 use std::path::Path;
 
-use engine::Engine;
 use sword_core::*;
 
-pub use builder::ApplicationBuilder;
-pub use env::Environment;
+use self::engine::Engine;
+
 pub use sword_core::ApplicationConfig;
+
+pub use self::builder::ApplicationBuilder;
+pub use self::env::Environment;
 
 /// The main application struct that holds the configured engines and the
 /// application configuration.
