@@ -2,7 +2,6 @@ use crate::request::{Request, StreamRequest};
 use crate::response::JsonResponse;
 use sword_core::Interceptor;
 
-pub use axum::middleware::Next;
 use axum::response::Response as AxumResponse;
 use std::future::Future;
 

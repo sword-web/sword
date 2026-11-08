@@ -19,10 +19,7 @@ use std::{fmt::Display, str::FromStr};
 use sword_layers::cookies::Cookies;
 use sword_layers::request_id::RequestId;
 
-pub use error::*;
-
-#[allow(unused_imports)]
-pub use extract::*;
+pub use error::RequestError;
 
 #[cfg(feature = "validator")]
 pub use validator::ValidatorRequestValidation;

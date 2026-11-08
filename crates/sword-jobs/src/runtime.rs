@@ -1,9 +1,25 @@
-use crate::{JobControllerRegistrar, JobFunctionRegistrar};
-
 use std::{any::TypeId, collections::HashSet};
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Controller, EngineBuildContext, Shutdown, State, sword_error};
-use tokio_cron_scheduler::JobScheduler;
+use tokio_cron_scheduler::{Job, JobScheduler};
+
+use sword_core::*;
+
+/// Builds the `Job` for a single handler method.
+pub type JobHandlerFn = fn(&State) -> Result<Job, Error>;
+
+/// Builds a job controller into the `State`.
+pub struct JobControllerRegistrar {
+    pub type_id: TypeId,
+    pub build_fn: fn(&State) -> Result<(), Error>,
+}
+
+/// Registers a single job belonging to a controller.
+pub struct JobFunctionRegistrar {
+    pub handler: JobHandlerFn,
+    pub controller_type_id: TypeId,
+}
+
+inventory::collect!(JobControllerRegistrar);
+inventory::collect!(JobFunctionRegistrar);
 
 /// Runtime that builds job controllers, registers their jobs and keeps the
 /// scheduler alive.

@@ -67,7 +67,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 controller_id: #TypeId::of::<#self_ty>(),
                 controller_path: #path,
                 build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
-                    let controller = #self_ty::build(state).map_err(|e| {
+                    let controller = <#self_ty as #Build>::build(state).map_err(|e| {
                         #sword_error! {
                             code: "sword.build.web",
                             phase: #DiagnosticPhase::Build,

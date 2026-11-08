@@ -41,7 +41,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
             #JobControllerRegistrar {
                 type_id: #TypeId::of::<#self_ty>(),
                 build_fn: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
-                    let controller = #self_ty::build(state).map_err(|e| {
+                    let controller = <#self_ty as #Build>::build(state).map_err(|e| {
                         #sword_error! {
                             code: "sword.build.jobs",
                             phase: #DiagnosticPhase::Build,

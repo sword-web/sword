@@ -37,7 +37,7 @@ macro_rules! sword_error {
         $(, cause: $cause:expr)?
         $(,)?
     ) => {{
-        let mut builder = $crate::diagnostic::Diagnostic::builder()
+        let mut builder = $crate::Diagnostic::builder()
             .code($code)
             .title(($title).to_string())
             .reason(($reason).to_string());
@@ -100,7 +100,7 @@ macro_rules! sword_error {
             )*
         )?
 
-        let error = $crate::diagnostic::Error::new(builder.build());
+        let error = $crate::Error::new(builder.build());
 
         $(
             let error = error.with_source($cause);

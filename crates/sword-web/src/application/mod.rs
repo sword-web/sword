@@ -3,22 +3,25 @@ mod extensions;
 mod logger;
 mod router;
 
-use axum::Router;
-use router::WebApplicationRouter;
 use std::net::SocketAddr;
-use sword_core::diagnostic::Error;
-use sword_core::sword_error;
-use sword_core::*;
-use sword_layers::body_limit::BodyLimitValue;
 use tokio::net::TcpListener;
 
+use axum::Router;
+use router::WebApplicationRouter;
+
+use sword_core::*;
+use sword_layers::body_limit::BodyLimitValue;
+
+#[cfg(feature = "swagger-ui")]
+pub use config::OpenApiConfig;
 pub use config::WebApplicationConfig;
 pub use extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
+pub use logger::{WebLoggerConfig, WebLoggerLevel};
 
 pub struct WebApplication {
-    pub state: State,
-    pub router: Router<State>,
-    pub config: WebApplicationConfig,
+    state: State,
+    router: Router<State>,
+    config: WebApplicationConfig,
 }
 
 impl WebApplication {
@@ -69,7 +72,7 @@ impl WebApplication {
         let bind_addr: SocketAddr = bind.parse::<SocketAddr>().map_err(|err| {
             sword_error! {
                 code: "sword.runtime.web",
-                phase: sword_core::diagnostic::DiagnosticPhase::Startup,
+                phase: DiagnosticPhase::Startup,
                 target: "WebApplication::run",
                 title: "Invalid web bind address",
                 reason: err,
@@ -83,7 +86,7 @@ impl WebApplication {
         let listener = TcpListener::bind(bind_addr).await.map_err(|err| {
             sword_error! {
                 code: "sword.runtime.web",
-                phase: sword_core::diagnostic::DiagnosticPhase::Startup,
+                phase: DiagnosticPhase::Startup,
                 target: "WebApplication::run",
                 title: "Failed to bind HTTP listener",
                 reason: err,
@@ -101,7 +104,7 @@ impl WebApplication {
                 res.map_err(|err| {
                     sword_error! {
                         code: "sword.runtime.web",
-                        phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                        phase: DiagnosticPhase::Runtime,
                         target: "WebApplication::run",
                         title: "HTTP server stopped with an internal error",
                         reason: err,

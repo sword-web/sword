@@ -49,16 +49,16 @@ path!(StreamRequest => ::sword::web::StreamRequest);
 path!(OnRequestStream => ::sword::web::OnRequestStream);
 path!(OnRequestStreamWithConfig => ::sword::web::OnRequestStreamWithConfig);
 
-path!(Event => ::sword::internal::events::Event);
+path!(Event => ::sword::events::Event);
 path!(EventRegistrar => ::sword::internal::events::EventRegistrar);
 path!(EventControllerRegistrar => ::sword::internal::events::EventControllerRegistrar);
 path!(EventHandlerRegistrar => ::sword::internal::events::EventHandlerRegistrar);
 path!(EventHandlerFn => ::sword::internal::events::EventHandlerFn);
-path!(EventHandlerResult => ::sword::internal::events::EventHandlerResult);
+path!(EventHandlerResult => ::sword::events::EventHandlerResult);
 path!(EventSource => ::sword::events::EventSource);
-path!(EventsBoxedFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::sword::internal::events::EventHandlerResult<()>> + ::std::marker::Send>>);
+path!(EventsBoxedFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::sword::events::EventHandlerResult<()>> + ::std::marker::Send>>);
 path!(events_serde_json => ::sword::internal::events::serde_json);
-path!(EventCodecError => ::sword::internal::events::EventCodecError);
+path!(EventCodecError => ::sword::events::EventCodecError);
 
 path!(Interceptor => ::sword::internal::core::Interceptor);
 path!(InterceptorRegistrar => ::sword::internal::core::InterceptorRegistrar);
@@ -74,10 +74,10 @@ path!(DependencyInjectionError => ::sword::internal::core::DependencyInjectionEr
 
 path!(inventory => ::sword::internal::inventory);
 path!(sword_error => ::sword::internal::core::sword_error);
-path!(DiagnosticPhase => ::sword::internal::core::diagnostic::DiagnosticPhase);
-path!(DiagnosticError => ::sword::internal::core::diagnostic::Error);
-path!(DiagnosticSourceLocation => ::sword::internal::core::diagnostic::SourceLocation);
-path!(SocketResultFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::std::result::Result<(), ::sword::internal::core::diagnostic::Error>> + ::std::marker::Send>>);
+path!(DiagnosticPhase => ::sword::internal::core::DiagnosticPhase);
+path!(DiagnosticError => ::sword::internal::core::Error);
+path!(DiagnosticSourceLocation => ::sword::internal::core::SourceLocation);
+path!(SocketResultFuture => ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = ::std::result::Result<(), ::sword::internal::core::Error>> + ::std::marker::Send>>);
 path!(tracing => ::sword::internal::tracing);
 
 path!(Job => ::sword::internal::jobs::Job);

@@ -1,4 +1,7 @@
-use sword_core::ControllerSpec;
+use std::any::TypeId;
+
+use axum::routing::MethodRouter;
+use sword_core::{ControllerSpec, Error, State};
 
 pub use sword_macros::{
     connect, controller, delete, get, head, options, patch, post, put, sse, trace,
@@ -34,11 +37,6 @@ pub use sword_macros::{
 pub trait WebController: ControllerSpec {
     fn base_path() -> &'static str;
 }
-
-use axum::routing::MethodRouter;
-use std::any::TypeId;
-use sword_core::State;
-use sword_core::diagnostic::Error;
 
 #[derive(Clone)]
 pub struct WebControllerRegistrar {

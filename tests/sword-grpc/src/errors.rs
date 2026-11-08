@@ -89,7 +89,7 @@ impl Module for ErrorModule {
     }
 }
 
-async fn start_error_server() -> tokio::task::JoinHandle<Result<(), sword::diagnostic::Error>> {
+async fn start_error_server() -> tokio::task::JoinHandle<Result<(), sword::Error>> {
     let config_path = format!("{}/config/config.toml", env!("CARGO_MANIFEST_DIR"));
     let app = Application::from_config_path(&config_path)
         .expect("application builder")

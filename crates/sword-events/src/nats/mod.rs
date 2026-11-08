@@ -2,13 +2,15 @@ mod client;
 mod publisher;
 mod subscriber;
 
-use crate::{EventApplicationConfig, EventHandlerFn, EventRegistrar, application::HandlerEntry};
+use std::{collections::HashMap, sync::Arc};
+use tokio::task::JoinSet;
 
 use client::NatsClient;
-use std::{collections::HashMap, sync::Arc};
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Shutdown, sword_error};
-use tokio::task::JoinSet;
+use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
+
+use crate::application::HandlerEntry;
+use crate::config::EventApplicationConfig;
+use crate::registrar::{EventHandlerFn, EventRegistrar};
 
 pub use publisher::NatsEventPublisher;
 

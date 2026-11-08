@@ -1,31 +1,42 @@
 #![allow(rustdoc::broken_intra_doc_links)]
 
-pub mod config;
-pub mod controller;
-pub mod error;
-pub mod extract;
+mod config;
+mod controller;
+mod error;
+mod extract;
 mod integration;
-pub mod interceptor;
+mod interceptor;
+
+pub use config::{SocketIoParser, SocketIoServerConfig};
+pub use controller::{
+    AckSender, AckStream, BroadcastOperators, ConfOperators, Data, DisconnectReason, Event,
+    Extension, HttpExtension, LocalAdapter, MaybeExtension, MaybeHttpExtension, ProtocolVersion,
+    Room, RoomParam, SendError, SocketIo, SocketRef, TransportType, TryData, on,
+};
+pub use error::SocketError;
+pub use extract::SocketContext;
+pub use interceptor::OnConnect;
 
 pub mod prelude {
-    pub use crate::config::{SocketIoParser, SocketIoServerConfig, SocketIoServerLayer};
+    pub use crate::config::{SocketIoParser, SocketIoServerConfig};
     pub use crate::controller::{
-        AckSender, Data, DisconnectReason, Event, Extension, HandlerRegistrar, HttpExtension,
-        LocalAdapter, MaybeExtension, MaybeHttpExtension, ProtocolVersion, SocketEventKind,
-        SocketIo, SocketIoController, SocketIoHandlerRegistrar, SocketRef, TransportType, TryData,
-        on,
+        AckSender, Data, DisconnectReason, Event, Extension, HttpExtension, LocalAdapter,
+        MaybeExtension, MaybeHttpExtension, ProtocolVersion, SocketIo, SocketRef, TransportType,
+        TryData, on,
     };
     pub use crate::error::SocketError;
     pub use crate::extract::SocketContext;
     pub use crate::interceptor::OnConnect;
 }
 
+/// Items required by generated code.
+///
+/// This module is public so procedural macros can name these items from the
+/// user's crate, but it is not part of the stable API.
 #[doc(hidden)]
 pub mod internal {
     pub use crate::controller::{
         HandlerRegistrar, SocketEventKind, SocketIoController, SocketIoHandlerRegistrar,
     };
-    pub use socketioxide::SocketError;
     pub use socketioxide::handler::ConnectHandler;
-    pub use socketioxide::handler::connect::FromConnectParts;
 }

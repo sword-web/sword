@@ -1,14 +1,14 @@
-use crate::{Event, EventCodecError, EventSource};
-
 use std::any::TypeId;
-#[cfg(feature = "memory")]
-use std::collections::HashMap;
 use std::error::Error;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use sword_core::State;
-use sword_core::diagnostic::Error as DiagnosticError;
+
+#[cfg(feature = "memory")]
+use std::collections::HashMap;
+use sword_core::{Error as DiagnosticError, State};
+
+use crate::{Event, EventCodecError, EventSource};
 
 pub type EventHandlerResult<T> = Result<T, Box<dyn Error + Send + Sync + 'static>>;
 type BoxedFuture<T> = Pin<Box<dyn Future<Output = EventHandlerResult<T>> + Send>>;

@@ -30,7 +30,6 @@
 use std::convert::Infallible;
 use tokio_stream::Stream;
 
-pub use async_stream::{stream, try_stream};
 pub use axum::response::sse::{Event, KeepAlive, Sse};
 
 /// A stream of Server-Sent Events.

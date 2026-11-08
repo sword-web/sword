@@ -19,8 +19,7 @@ pub use sword_socketio::prelude as socketio;
 pub use sword_grpc::prelude as grpc;
 
 pub use application::*;
-pub use sword_core::Module;
-pub use sword_core::diagnostic;
+pub use sword_core::{Diagnostic, Error, Module};
 pub use sword_macros::main;
 
 #[doc(hidden)]
@@ -34,9 +33,7 @@ pub mod internal {
     #[cfg(feature = "grpc")]
     pub use sword_grpc::internal as grpc;
 
-    pub mod core {
-        pub use sword_core::*;
-    }
+    pub use sword_core as core;
 
     #[cfg(feature = "events")]
     pub use sword_events::internal as events;

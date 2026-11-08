@@ -1,4 +1,5 @@
-use crate::{Event, EventHandlerFn};
+use crate::Event;
+use crate::registrar::EventHandlerFn;
 
 use std::{sync::Arc, time::Duration};
 

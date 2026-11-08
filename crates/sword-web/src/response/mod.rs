@@ -5,10 +5,10 @@ mod sse;
 
 use crate::request::RequestError;
 
-pub use file::*;
+pub use file::{ContentDisposition, File};
 pub use json::{JsonResponse, JsonResponseBody};
 pub use redirect::Redirect;
-pub use sse::*;
+pub use sse::{Event, EventStream, KeepAlive, Sse};
 pub use sword_macros::HttpError;
 
 pub type WebResult<T = JsonResponse, E = JsonResponse> = Result<T, E>;

@@ -1,8 +1,29 @@
-pub mod application;
-pub mod controller;
-pub mod interceptor;
-pub mod request;
-pub mod response;
+mod application;
+mod controller;
+mod interceptor;
+mod request;
+mod response;
+
+#[cfg(feature = "swagger-ui")]
+pub use application::OpenApiConfig;
+pub use application::{
+    WebApplication, WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
+    WebLoggerConfig, WebLoggerLevel,
+};
+pub use controller::{
+    WebController, connect, controller, delete, get, head, options, patch, post, put, sse, trace,
+};
+pub use interceptor::{
+    OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
+    WebInterceptorResult,
+};
+#[cfg(feature = "validator")]
+pub use request::ValidatorRequestValidation;
+pub use request::{Request, RequestError, StreamRequest};
+pub use response::{
+    ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
+    KeepAlive, Redirect, Sse, WebResult,
+};
 
 pub mod prelude {
     pub use crate::controller::{
@@ -44,20 +65,16 @@ pub mod prelude {
     pub use axum::http::{HeaderMap as Headers, Method, Uri};
 }
 
+/// Items required by generated code.
+///
+/// This module is public so procedural macros can name these items from the
+/// user's crate, but it is not part of the stable API.
 #[doc(hidden)]
 pub mod internal {
-    pub use axum::body::{Body as AxumBody, HttpBody as AxumHttpBody};
-    pub use axum::extract::{FromRequest, FromRequestParts, Request as AxumRequest};
-    pub use axum::middleware::{Next as AxumNext, from_fn_with_state as mw_with_state};
+    pub use axum::extract::Request as AxumRequest;
+    pub use axum::middleware::from_fn_with_state as mw_with_state;
     pub use axum::response::{IntoResponse, Response as AxumResponse};
-    pub use axum::routing;
-    pub use axum::routing::{
-        MethodRouter, Router as AxumRouter, connect, connect as connect_fn, delete,
-        delete as delete_fn, get, get as get_fn, head, head as head_fn, options,
-        options as options_fn, patch, patch as patch_fn, post, post as post_fn, put, put as put_fn,
-        trace, trace as trace_fn,
-    };
-
+    pub use axum::routing::{self, MethodRouter, Router as AxumRouter};
     pub use tower::{Layer as TowerLayer, Service as TowerService};
 
     pub use crate::controller::{RouteRegistrar, WebController, WebControllerRegistrar};

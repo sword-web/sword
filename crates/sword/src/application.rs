@@ -3,14 +3,13 @@ mod engine;
 mod env;
 
 use std::path::Path;
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Config, Shutdown, sword_error};
+
+use engine::Engine;
+use sword_core::*;
 
 pub use builder::ApplicationBuilder;
 pub use env::Environment;
 pub use sword_core::ApplicationConfig;
-
-pub(crate) use engine::Engine;
 
 /// The main application struct that holds the configured engines and the
 /// application configuration.
@@ -18,7 +17,6 @@ pub(crate) use engine::Engine;
 /// `Application` runs every engine together and stops them all on shutdown.
 pub struct Application {
     engines: Vec<Engine>,
-
     pub config: Config,
 }
 

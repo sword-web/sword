@@ -120,7 +120,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 controller_id: #TypeId::of::<#self_ty>(),
                 reflection_descriptor_set: #reflection_descriptor_set,
                 build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
-                    let controller = #self_ty::build(state).map_err(|e| {
+                    let controller = <#self_ty as #Build>::build(state).map_err(|e| {
                         #sword_error! {
                             code: "sword.build.grpc",
                             phase: #DiagnosticPhase::Build,

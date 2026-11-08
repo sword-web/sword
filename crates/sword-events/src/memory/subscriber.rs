@@ -1,4 +1,5 @@
-use crate::{Event, EventKeyHandlerMap, InMemoryEventsConfig};
+use crate::registrar::EventKeyHandlerMap;
+use crate::{Event, InMemoryEventsConfig};
 
 use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;

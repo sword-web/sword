@@ -4,7 +4,7 @@ use axum::{
     RequestPartsExt,
     body::{Body as AxumBody, to_bytes},
     extract::{FromRef, FromRequest as AxumFromRequest, RawPathParams, Request as AxumRequest},
-    http::{Method, request::Parts},
+    http::Method,
     response::IntoResponse,
 };
 
@@ -21,16 +21,6 @@ pub trait FromRequest: Sized {
 
     fn from_request(
         req: AxumRequest,
-        state: &State,
-    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send;
-}
-
-/// Fixed-state version of `axum::extract::FromRequestParts` using sword's State.
-pub trait FromRequestParts: Sized {
-    type Rejection: IntoResponse;
-
-    fn from_request_parts(
-        parts: &mut Parts,
         state: &State,
     ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send;
 }

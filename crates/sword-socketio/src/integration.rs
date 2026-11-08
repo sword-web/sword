@@ -1,19 +1,16 @@
-use crate::prelude::{
-    HandlerRegistrar, SocketIoHandlerRegistrar, SocketIoParser, SocketIoServerConfig,
-    SocketIoServerLayer,
-};
+use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
 
 use axum::{Router, extract::Request, middleware::Next};
 use socketioxide::SocketIo;
 use socketioxide::layer::SocketIoLayer;
-use std::any::TypeId;
-use std::collections::{HashMap, HashSet};
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Config, ConfigSection, Controller, ControllerMap, State, sword_error};
+
+use sword_core::*;
 use sword_layers::DisplayConfig;
-use sword_web::application::{
-    WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
-};
+use sword_web::{WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar};
+
+use crate::config::{SocketIoParser, SocketIoServerConfig, SocketIoServerLayer};
+use crate::controller::{HandlerRegistrar, SocketIoHandlerRegistrar};
 
 struct SocketIoWebExtension;
 

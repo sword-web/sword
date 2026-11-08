@@ -1,5 +1,6 @@
+use super::Injectable;
 use crate::diagnostic::SourceLocation;
-use crate::{DependencyInjectionError, HasDeps, Injectable, RwMap, State};
+use crate::{DependencyInjectionError, HasDeps, RwMap, State};
 use std::{
     any::{TypeId, type_name},
     collections::HashMap,

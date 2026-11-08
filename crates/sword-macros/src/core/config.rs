@@ -37,7 +37,7 @@ pub fn expand_config_struct(args: TokenStream, item: TokenStream) -> Result<Toke
                     .map_err(|_| #DependencyInjectionError::dependency_not_found("Config"))?;
 
                 config.get::<Self>()
-                    .ok_or_else(|| #DependencyInjectionError::dependency_not_found(format!("Config item '{}'", Self::key())))
+                    .ok_or_else(|| #DependencyInjectionError::dependency_not_found(format!("Config item '{}'", <Self as #ConfigItem>::key())))
             }
         }
 

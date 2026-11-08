@@ -1,29 +1,26 @@
-use crate::application::{Application, Engine, Environment};
+use std::any::Any;
+use std::path::Path;
+use std::sync::Arc;
+
+#[cfg(any(feature = "web", feature = "socketio"))]
+use std::convert::Infallible;
+
+use sword_core::*;
+use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
 #[cfg(any(feature = "events-memory", feature = "events-nats"))]
 use sword_events::EventApplication;
 
 #[cfg(feature = "grpc")]
-use sword_grpc::application::GrpcApplication;
+use sword_grpc::GrpcApplication;
 
 #[cfg(feature = "jobs")]
 use sword_jobs::JobSchedulerRuntime;
 
 #[cfg(any(feature = "web", feature = "socketio"))]
-use sword_web::{
-    application::WebApplication,
-    internal::{
-        AxumRequest, IntoResponse, TowerLayer as Layer, TowerService as Service, routing::Route,
-    },
-};
+use sword_web::{WebApplication, internal::*};
 
-use std::any::Any;
-use std::path::Path;
-use std::sync::Arc;
-use sword_core::diagnostic::{Diagnostic, DiagnosticPhase, Error};
-use sword_core::sword_error;
-use sword_core::*;
-use sword_layers::tracing::{TracingConfig, TracingSubscriber};
+use crate::application::{Application, Engine, Environment};
 
 /// Builder pattern of a sword application.
 /// It's in charge of assembling the pieces needed to build the application.
@@ -31,11 +28,11 @@ use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 /// `Config` -> `State` <- `DependencyContainer`
 /// `State` -> `Controllers` / `Interceptors` / `Layers`
 pub struct ApplicationBuilder {
+    pub config: Config,
     state: State,
     container: DependencyContainer,
     controller_registry: ControllerRegistry,
     layer_stack: LayerStack<State>,
-    pub config: Config,
     config_document: Option<Arc<ConfigDocument>>,
 }
 
@@ -170,11 +167,11 @@ impl ApplicationBuilder {
     /// This means custom layers execute first on incoming requests and last on outgoing responses.
     pub fn with_layer<L>(mut self, layer: L) -> Self
     where
-        L: Layer<Route> + Clone + Send + Sync + 'static,
-        L::Service: Service<AxumRequest> + Clone + Send + Sync + 'static,
-        <L::Service as Service<AxumRequest>>::Response: IntoResponse + 'static,
-        <L::Service as Service<AxumRequest>>::Error: Into<std::convert::Infallible> + 'static,
-        <L::Service as Service<AxumRequest>>::Future: Send + 'static,
+        L: TowerLayer<routing::Route> + Clone + Send + Sync + 'static,
+        L::Service: TowerService<AxumRequest> + Clone + Send + Sync + 'static,
+        <L::Service as TowerService<AxumRequest>>::Response: IntoResponse + 'static,
+        <L::Service as TowerService<AxumRequest>>::Error: Into<Infallible> + 'static,
+        <L::Service as TowerService<AxumRequest>>::Future: Send + 'static,
     {
         self.layer_stack.push(layer);
         self

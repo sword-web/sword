@@ -1,19 +1,16 @@
-use crate::application::*;
-use crate::controller::{RouteRegistrar, WebControllerRegistrar};
-use crate::response::JsonResponse;
-
-use axum::Router;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use sword_core::diagnostic::*;
-use sword_core::sword_error;
-
+use axum::Router;
 use sword_core::*;
 use sword_layers::prelude::*;
 
-pub(crate) struct WebApplicationRouter {
+use crate::application::*;
+use crate::controller::{RouteRegistrar, WebControllerRegistrar};
+use crate::response::JsonResponse;
+
+pub struct WebApplicationRouter {
     pub state: State,
     pub config: Config,
     pub layer_stack: LayerStack<State>,

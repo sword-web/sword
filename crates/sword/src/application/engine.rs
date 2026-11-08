@@ -1,13 +1,12 @@
-use sword_core::Shutdown;
-use sword_core::diagnostic::Error;
+use sword_core::{Error, Shutdown};
 
 /// One runnable piece of the application.
-pub(crate) enum Engine {
+pub enum Engine {
     #[cfg(any(feature = "web", feature = "socketio"))]
-    Web(sword_web::application::WebApplication),
+    Web(sword_web::WebApplication),
 
     #[cfg(feature = "grpc")]
-    Grpc(sword_grpc::application::GrpcApplication),
+    Grpc(sword_grpc::GrpcApplication),
 
     #[cfg(any(feature = "events-memory", feature = "events-nats"))]
     Events(sword_events::EventApplication),
@@ -17,7 +16,7 @@ pub(crate) enum Engine {
 }
 
 impl Engine {
-    pub(crate) fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         #[allow(unreachable_patterns)]
         match self {
             #[cfg(any(feature = "web", feature = "socketio"))]
@@ -38,7 +37,7 @@ impl Engine {
 
     /// Runs the engine until `shutdown` is cancelled.
     #[allow(unused_variables)]
-    pub(crate) async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
+    pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
         #[allow(unreachable_patterns)]
         match self {
             #[cfg(any(feature = "web", feature = "socketio"))]

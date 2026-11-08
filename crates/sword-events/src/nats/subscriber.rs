@@ -1,4 +1,5 @@
-use crate::{EventHandlerFn, EventRegistrar, dispatch::dispatch};
+use crate::dispatch::dispatch;
+use crate::registrar::{EventHandlerFn, EventRegistrar};
 
 use async_nats::Subscriber;
 use futures_lite::StreamExt;

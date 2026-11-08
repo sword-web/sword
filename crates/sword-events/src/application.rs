@@ -1,26 +1,20 @@
+use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
+
+use sword_core::*;
+use tokio::task::JoinSet;
+
 #[cfg(feature = "memory")]
 use crate::memory::MemoryTransport;
 
 #[cfg(feature = "nats")]
 use crate::nats::NatsTransport;
 
-use crate::{
-    EventApplicationConfig, EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar,
-    EventRegistrar, EventSource,
+use crate::EventSource;
+use crate::config::EventApplicationConfig;
+use crate::registrar::{
+    EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar, EventRegistrar,
 };
-
-use std::{
-    any::TypeId,
-    collections::{HashMap, HashSet},
-};
-
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{
-    Config, ConfigDocument, ConfigSection, Controller, ControllerRegistry, ProviderRegistry,
-    Shutdown, State, sword_error,
-};
-
-use tokio::task::JoinSet;
 
 /// Background engine that consumes published events and dispatches them to the
 /// registered handlers.

@@ -26,5 +26,3 @@ pub use crate::servedir::*;
 
 #[cfg(feature = "req-timeout")]
 pub use crate::timeout::*;
-
-pub use crate::DisplayConfig;
