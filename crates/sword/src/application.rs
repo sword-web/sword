@@ -126,9 +126,26 @@ impl Application {
         tasks.abort_all();
 
         match result {
-            Some(Ok(Ok(()))) => Err(engine_stopped()),
+            Some(Ok(Ok(()))) => Err(sword_error! {
+                code: "sword.runtime.engine",
+                phase: DiagnosticPhase::Runtime,
+                target: "Application::run",
+                title: "Engine stopped before shutdown",
+                reason: "an engine finished without a shutdown request",
+                source: "Application::run",
+                hints: ["Check the engine logs for the reason it stopped"],
+            }),
             Some(Ok(Err(error))) => Err(error),
-            Some(Err(join_error)) => Err(engine_panicked(join_error)),
+            Some(Err(join_error)) => Err(sword_error! {
+                code: "sword.runtime.panic",
+                phase: DiagnosticPhase::Runtime,
+                target: "Application::run",
+                title: "Engine task panicked",
+                reason: join_error,
+                source: "Application::run",
+                hints: ["Check the panic message in the logs"],
+                cause: join_error,
+            }),
             None => Ok(()),
         }
     }
@@ -150,30 +167,5 @@ impl Application {
             reason: "The application has no web or Socket.IO engine",
             hints: ["Enable the web or socketio feature and call Application::router() there"],
         })
-    }
-}
-
-fn engine_stopped() -> Error {
-    sword_error! {
-        code: "sword.runtime.engine",
-        phase: DiagnosticPhase::Runtime,
-        target: "Application::run",
-        title: "Engine stopped before shutdown",
-        reason: "an engine finished without a shutdown request",
-        source: "Application::run",
-        hints: ["Check the engine logs for the reason it stopped"],
-    }
-}
-
-fn engine_panicked(error: tokio::task::JoinError) -> Error {
-    sword_error! {
-        code: "sword.runtime.panic",
-        phase: DiagnosticPhase::Runtime,
-        target: "Application::run",
-        title: "Engine task panicked",
-        reason: error,
-        source: "Application::run",
-        hints: ["Check the panic message in the logs"],
-        cause: error,
     }
 }

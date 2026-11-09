@@ -94,9 +94,26 @@ impl EventApplication {
         tasks.abort_all();
 
         match result {
-            Some(Ok(Ok(()))) => Err(transport_stopped()),
+            Some(Ok(Ok(()))) => Err(sword_error! {
+                code: "sword.runtime.events",
+                phase: DiagnosticPhase::Runtime,
+                target: "EventApplication::run",
+                title: "Event transport stopped before shutdown",
+                reason: "a transport finished without a shutdown request",
+                source: "EventApplication::run",
+                hints: ["Check the event transport logs"],
+            }),
             Some(Ok(Err(error))) => Err(error),
-            Some(Err(join_error)) => Err(transport_panicked(join_error)),
+            Some(Err(join_error)) => Err(sword_error! {
+                code: "sword.runtime.events",
+                phase: DiagnosticPhase::Runtime,
+                target: "EventApplication::run",
+                title: "Event transport task panicked",
+                reason: join_error,
+                source: "EventApplication::run",
+                hints: ["Check the panic message in the logs"],
+                cause: join_error,
+            }),
             None => Ok(()),
         }
     }
@@ -149,31 +166,6 @@ impl EventTransport {
         }
 
         Ok(())
-    }
-}
-
-fn transport_stopped() -> Error {
-    sword_error! {
-        code: "sword.runtime.events",
-        phase: DiagnosticPhase::Runtime,
-        target: "EventApplication::run",
-        title: "Event transport stopped before shutdown",
-        reason: "a transport finished without a shutdown request",
-        source: "EventApplication::run",
-        hints: ["Check the event transport logs"],
-    }
-}
-
-fn transport_panicked(error: tokio::task::JoinError) -> Error {
-    sword_error! {
-        code: "sword.runtime.events",
-        phase: DiagnosticPhase::Runtime,
-        target: "EventApplication::run",
-        title: "Event transport task panicked",
-        reason: error,
-        source: "EventApplication::run",
-        hints: ["Check the panic message in the logs"],
-        cause: error,
     }
 }
 

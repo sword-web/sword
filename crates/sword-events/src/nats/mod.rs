@@ -15,31 +15,6 @@ use crate::registrar::{EventHandlerFn, EventRegistrar};
 
 pub use self::publisher::NatsEventPublisher;
 
-fn consumer_stopped() -> Error {
-    sword_error! {
-        code: "sword.runtime.events.nats",
-        phase: DiagnosticPhase::Runtime,
-        target: "NATS transport",
-        title: "NATS consumer stopped before shutdown",
-        reason: "a subscription finished without a shutdown request",
-        source: "NatsTransport::run",
-        hints: ["Check the NATS connection and server logs"],
-    }
-}
-
-fn consumer_panicked(error: tokio::task::JoinError) -> Error {
-    sword_error! {
-        code: "sword.runtime.events.nats",
-        phase: DiagnosticPhase::Runtime,
-        target: "NATS transport",
-        title: "NATS consumer task panicked",
-        reason: error,
-        source: "NatsTransport::run",
-        hints: ["Check the panic message in the logs"],
-        cause: error,
-    }
-}
-
 /// A NATS subscription: `(subject, group)`. `None` means an individual
 /// subscription (fan-out); `Some` means a queue group (load balanced).
 type NatsEventKey = (&'static str, Option<&'static str>);
@@ -177,8 +152,25 @@ impl NatsTransport {
         tasks.abort_all();
 
         match result {
-            Some(Ok(())) => Err(consumer_stopped()),
-            Some(Err(join_error)) => Err(consumer_panicked(join_error)),
+            Some(Ok(())) => Err(sword_error! {
+                code: "sword.runtime.events.nats",
+                phase: DiagnosticPhase::Runtime,
+                target: "NATS transport",
+                title: "NATS consumer stopped before shutdown",
+                reason: "a subscription finished without a shutdown request",
+                source: "NatsTransport::run",
+                hints: ["Check the NATS connection and server logs"],
+            }),
+            Some(Err(join_error)) => Err(sword_error! {
+                code: "sword.runtime.events.nats",
+                phase: DiagnosticPhase::Runtime,
+                target: "NATS transport",
+                title: "NATS consumer task panicked",
+                reason: join_error,
+                source: "NatsTransport::run",
+                hints: ["Check the panic message in the logs"],
+                cause: join_error,
+            }),
             None => Ok(()),
         }
     }
