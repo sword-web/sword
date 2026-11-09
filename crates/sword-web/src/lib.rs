@@ -4,22 +4,30 @@ mod interceptor;
 mod request;
 mod response;
 
+use sword_core::{Config, ConfigFailure, ConfigValidateExt};
+
 #[cfg(feature = "swagger-ui")]
 pub use self::application::OpenApiConfig;
+
 pub use self::application::{
     WebApplication, WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
     WebLoggerConfig, WebLoggerLevel,
 };
+
 pub use self::controller::{
     WebController, connect, controller, delete, get, head, options, patch, post, put, sse, trace,
 };
+
 pub use self::interceptor::{
     OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
     WebInterceptorResult,
 };
+
 #[cfg(feature = "validator")]
 pub use self::request::ValidatorRequestValidation;
+
 pub use self::request::{Request, RequestError, StreamRequest};
+
 pub use self::response::{
     ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
     KeepAlive, Redirect, Sse, WebResult,
@@ -33,6 +41,7 @@ pub mod prelude {
     pub use axum::extract::multipart::{
         Field, InvalidBoundary, Multipart, MultipartError, MultipartRejection,
     };
+
     pub use axum::http::{HeaderMap as Headers, Method, Uri};
     pub use axum::middleware::Next;
     #[cfg(feature = "multipart")]
@@ -55,11 +64,18 @@ pub mod prelude {
     };
     #[cfg(feature = "validator")]
     pub use crate::request::ValidatorRequestValidation;
+
     pub use crate::request::{Request, RequestError, StreamRequest};
     pub use crate::response::{
         ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
         KeepAlive, Redirect, Sse, WebResult,
     };
+}
+
+/// Checks the `[web]` section before the application is built.
+pub fn validate_config(config: &Config) -> Result<(), ConfigFailure> {
+    config.get_validated_section::<WebApplicationConfig>()?;
+    Ok(())
 }
 
 /// Items required by generated code.

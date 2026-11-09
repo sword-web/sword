@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use sword_core::{
-    ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
-};
+use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, inventory_submit};
 use sword_layers::{body_limit::BodyLimitConfig, timeout::RequestTimeoutConfig};
 
 use super::logger::WebLoggerConfig;
@@ -70,28 +68,32 @@ impl ConfigItem for WebApplicationConfig {
     }
 }
 
-inventory_submit! {[
-    ConfigRegistrar::new(|state, config| {
-        state.insert(config.try_get::<WebApplicationConfig>().ok().flatten().unwrap_or_default());
-
-        Ok(())
-    })
-]}
-
-impl ValidateConfig for WebApplicationConfig {
+impl ConfigCheck for WebApplicationConfig {
     const SECTION: &'static str = "web";
     const CODE: &'static str = "sword.build.web";
 
-    fn validate(&self) -> ConfigErrors {
-        let mut errors = ConfigErrors::new();
+    fn check(&self) -> Result<(), Vec<ConfigProblem>> {
+        let mut problems = Vec::new();
 
         if self.host.trim().is_empty() {
-            errors.push(
-                ConfigIssue::new("host", "host must not be empty")
+            problems.push(
+                ConfigProblem::new("host", "host must not be empty")
                     .with_hint("Use 0.0.0.0, 127.0.0.1, or a specific interface"),
             );
         }
 
-        errors
+        if problems.is_empty() {
+            Ok(())
+        } else {
+            Err(problems)
+        }
     }
 }
+
+inventory_submit! {[
+    ConfigRegistrar::new(|state, config| {
+        state.insert(config.get_or_default::<WebApplicationConfig>());
+
+        Ok(())
+    })
+]}

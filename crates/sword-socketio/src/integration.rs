@@ -66,11 +66,7 @@ impl WebExtension for SocketIoWebExtension {
     fn init_state(&self, ctx: &WebExtensionContext) -> Result<(), Error> {
         let state = &ctx.state;
 
-        let mut socketio_config = ConfigSection::load::<SocketIoServerConfig>(
-            &ctx.config,
-            ctx.config_document.as_deref(),
-        )?
-        .unwrap_or_default();
+        let mut socketio_config = ctx.config.get_or_default::<SocketIoServerConfig>();
 
         if state.get::<SocketIo>().is_ok() && state.get::<SocketIoLayer>().is_ok() {
             return Ok(());

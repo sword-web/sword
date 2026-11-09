@@ -7,12 +7,16 @@ mod extract;
 mod integration;
 mod interceptor;
 
+use sword_core::{Config, ConfigFailure, ConfigValidateExt};
+
 pub use self::config::{SocketIoParser, SocketIoServerConfig};
+
 pub use self::controller::{
     AckSender, AckStream, BroadcastOperators, ConfOperators, Data, DisconnectReason, Event,
     Extension, HttpExtension, LocalAdapter, MaybeExtension, MaybeHttpExtension, ProtocolVersion,
     Room, RoomParam, SendError, SocketIo, SocketRef, TransportType, TryData, on,
 };
+
 pub use self::error::SocketError;
 pub use self::extract::SocketContext;
 pub use self::interceptor::OnConnect;
@@ -27,6 +31,12 @@ pub mod prelude {
     pub use crate::error::SocketError;
     pub use crate::extract::SocketContext;
     pub use crate::interceptor::OnConnect;
+}
+
+/// Checks the `[socketio]` section before the application is built.
+pub fn validate_config(config: &Config) -> Result<(), ConfigFailure> {
+    config.get_validated_section::<SocketIoServerConfig>()?;
+    Ok(())
 }
 
 /// Items required by generated code.

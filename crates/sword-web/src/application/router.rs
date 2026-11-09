@@ -1,6 +1,5 @@
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use axum::Router;
 
@@ -17,7 +16,6 @@ pub struct WebApplicationRouter {
     pub layer_stack: LayerStack<State>,
     pub controller_registry: ControllerRegistry,
     pub web_config: WebApplicationConfig,
-    pub config_document: Option<Arc<ConfigDocument>>,
 }
 
 impl WebApplicationRouter {
@@ -30,7 +28,6 @@ impl WebApplicationRouter {
         let extension_ctx = WebExtensionContext {
             state: self.state.clone(),
             config: self.config.clone(),
-            config_document: self.config_document.clone(),
             controller_map: self.controller_registry.snapshot(),
         };
 

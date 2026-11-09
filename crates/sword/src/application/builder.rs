@@ -1,17 +1,21 @@
 use std::any::Any;
+use std::path::Path;
+
 #[cfg(any(feature = "web", feature = "socketio"))]
 use std::convert::Infallible;
-use std::path::Path;
-use std::sync::Arc;
 
 use sword_core::*;
+use sword_layers::tracing::{TracingConfig, TracingSubscriber};
+
 #[cfg(any(feature = "events-memory", feature = "events-nats"))]
 use sword_events::EventApplication;
+
 #[cfg(feature = "grpc")]
 use sword_grpc::GrpcApplication;
+
 #[cfg(feature = "jobs")]
 use sword_jobs::JobSchedulerRuntime;
-use sword_layers::tracing::{TracingConfig, TracingSubscriber};
+
 #[cfg(any(feature = "web", feature = "socketio"))]
 use sword_web::{WebApplication, internal::*};
 
@@ -28,7 +32,6 @@ pub struct ApplicationBuilder {
     container: DependencyContainer,
     controller_registry: ControllerRegistry,
     layer_stack: LayerStack<State>,
-    config_document: Option<Arc<ConfigDocument>>,
 }
 
 impl ApplicationBuilder {
@@ -75,10 +78,9 @@ impl ApplicationBuilder {
     /// Initializes a sword application from a built `Config`.
     /// When using this method you don't get environment config detection via `SWORD_ENV`.
     pub fn from_config(config: Config) -> Result<Self, Error> {
-        let config_document = ConfigDocument::load(&config);
-        let tracing_config =
-            ConfigSection::load::<TracingConfig>(&config, config_document.as_ref())?
-                .unwrap_or_default();
+        validate_all(&config)?;
+
+        let tracing_config = config.get_or_default::<TracingConfig>();
 
         TracingSubscriber::from(tracing_config)
             .init()
@@ -130,7 +132,6 @@ impl ApplicationBuilder {
             container: DependencyContainer::new(),
             controller_registry: ControllerRegistry::new(),
             layer_stack: LayerStack::new(),
-            config_document: config_document.map(Arc::new),
         })
     }
 
@@ -213,11 +214,8 @@ impl ApplicationBuilder {
         // register them before building the dependency container to make it available to components.
 
         #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-        let mut events_application = EventApplication::new(
-            &self.config,
-            self.container.provider_registry(),
-            self.config_document.as_deref(),
-        )?;
+        let mut events_application =
+            EventApplication::new(&self.config, self.container.provider_registry())?;
 
         // The dependency container is built once all providers and components are registered.
         self.build_dependency_container()?;
@@ -235,7 +233,6 @@ impl ApplicationBuilder {
         let ctx = EngineBuildContext {
             state: self.state,
             config: self.config.clone(),
-            config_document: self.config_document.clone(),
             controllers: self.controller_registry,
             layer_stack: self.layer_stack,
         };
@@ -298,5 +295,43 @@ impl ApplicationBuilder {
 
             Error::new(diagnostic.build()).with_source(err)
         })
+    }
+}
+
+fn validate_all(config: &Config) -> Result<(), Error> {
+    let mut failures = Vec::new();
+
+    if let Err(failure) = config.get_validated_section::<ApplicationConfig>() {
+        failures.push(failure);
+    }
+
+    #[cfg(feature = "web")]
+    if let Err(failure) = sword_web::validate_config(config) {
+        failures.push(failure);
+    }
+
+    #[cfg(feature = "grpc")]
+    if let Err(failure) = sword_grpc::validate_config(config) {
+        failures.push(failure);
+    }
+
+    #[cfg(feature = "socketio")]
+    if let Err(failure) = sword_socketio::validate_config(config) {
+        failures.push(failure);
+    }
+
+    #[cfg(any(feature = "events-memory", feature = "events-nats"))]
+    if let Err(failure) = sword_events::validate_config(config) {
+        failures.push(failure);
+    }
+
+    if let Err(failure) = sword_layers::validate_config(config) {
+        failures.push(failure);
+    }
+
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(sword_core::config_failures_error(failures, config))
     }
 }

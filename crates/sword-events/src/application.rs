@@ -1,19 +1,21 @@
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 
-use tokio::task::JoinSet;
-
 use sword_core::*;
+use tokio::task::JoinSet;
 
 use crate::EventSource;
 use crate::config::EventApplicationConfig;
-#[cfg(feature = "memory")]
-use crate::memory::MemoryTransport;
-#[cfg(feature = "nats")]
-use crate::nats::NatsTransport;
+
 use crate::registrar::{
     EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar, EventRegistrar,
 };
+
+#[cfg(feature = "memory")]
+use crate::memory::MemoryTransport;
+
+#[cfg(feature = "nats")]
+use crate::nats::NatsTransport;
 
 /// Background engine that consumes published events and dispatches them to the
 /// registered handlers.
@@ -22,15 +24,10 @@ pub struct EventApplication {
 }
 
 impl EventApplication {
-    pub fn new(
-        config: &Config,
-        providers: &ProviderRegistry,
-        document: Option<&ConfigDocument>,
-    ) -> Result<Self, Error> {
+    pub fn new(config: &Config, providers: &ProviderRegistry) -> Result<Self, Error> {
         check_event_key_uniqueness()?;
 
-        let events_config =
-            ConfigSection::load::<EventApplicationConfig>(config, document)?.unwrap_or_default();
+        let events_config = config.get_or_default::<EventApplicationConfig>();
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]

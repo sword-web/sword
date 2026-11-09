@@ -135,14 +135,11 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let EngineBuildContext {
             state,
             config,
-            config_document,
             controllers,
             layer_stack,
         } = ctx;
 
-        let web_config =
-            ConfigSection::load::<WebApplicationConfig>(&config, config_document.as_deref())?
-                .unwrap_or_default();
+        let web_config = config.get_or_default::<WebApplicationConfig>();
 
         // The extractor reads the limit from State so it always matches the value
         // enforced by BodyLimitLayer.
@@ -151,7 +148,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let mut router = WebApplicationRouter {
             state: state.clone(),
             config,
-            config_document,
             layer_stack,
             controller_registry: controllers,
             web_config: web_config.clone(),

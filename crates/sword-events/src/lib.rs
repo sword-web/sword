@@ -15,18 +15,32 @@ mod nats;
 
 pub mod prelude;
 
+use sword_core::{Config, ConfigFailure, ConfigValidateExt};
+
 pub use self::application::EventApplication;
 pub use self::config::EventApplicationConfig;
+
 #[cfg(feature = "memory")]
 pub use self::config::InMemoryEventsConfig;
+
 #[cfg(feature = "nats")]
 pub use self::config::NatsEventsConfig;
+
 pub use self::event::{Event, EventCodecError, EventPublish, EventPublishError, EventSource};
+
 #[cfg(feature = "memory")]
 pub use self::memory::MemoryEventPublisher;
+
 #[cfg(feature = "nats")]
 pub use self::nats::NatsEventPublisher;
+
 pub use self::registrar::EventHandlerResult;
+
+/// Checks the `[events]` section before the application is built.
+pub fn validate_config(config: &Config) -> Result<(), ConfigFailure> {
+    config.get_validated_section::<EventApplicationConfig>()?;
+    Ok(())
+}
 
 /// Items required by generated code.
 ///

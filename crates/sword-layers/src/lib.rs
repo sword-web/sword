@@ -55,6 +55,15 @@ pub mod tracing;
 #[cfg(feature = "req-timeout")]
 pub mod timeout;
 
+/// Checks the enabled layer configuration sections before the application is built.
+#[cfg(feature = "tracing")]
+pub fn validate_config(config: &sword_core::Config) -> Result<(), sword_core::ConfigFailure> {
+    use sword_core::ConfigValidateExt;
+
+    config.get_validated_section::<tracing::TracingConfig>()?;
+    Ok(())
+}
+
 pub trait DisplayConfig {
     fn display(&self);
 }

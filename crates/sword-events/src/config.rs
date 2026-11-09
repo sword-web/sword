@@ -1,8 +1,6 @@
 use serde::Deserialize;
 
-use sword_core::{
-    ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, ValidateConfig, inventory_submit,
-};
+use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, inventory_submit};
 
 #[derive(Clone, Debug, Deserialize, Default)]
 #[serde(default)]
@@ -34,20 +32,19 @@ impl ConfigItem for EventApplicationConfig {
     }
 }
 
-impl ValidateConfig for EventApplicationConfig {
+impl ConfigCheck for EventApplicationConfig {
     const SECTION: &'static str = "events";
     const CODE: &'static str = "sword.build.events";
 
-    fn validate(&self) -> ConfigErrors {
-        let mut errors = ConfigErrors::new();
+    fn check(&self) -> Result<(), Vec<ConfigProblem>> {
+        let mut problems = Vec::new();
 
         #[cfg(feature = "memory")]
         if let Some(memory) = &self.memory
             && memory.buffer_size == 0
         {
-            errors.push(
-                ConfigIssue::new("buffer_size", "`buffer_size` must be greater than 0")
-                    .with_section("events.memory")
+            problems.push(
+                ConfigProblem::new("buffer_size", "`buffer_size` must be greater than 0")
                     .with_hint("Remove the key to use 1024, or set a positive number"),
             );
         }
@@ -56,14 +53,17 @@ impl ValidateConfig for EventApplicationConfig {
         if let Some(nats) = &self.nats
             && nats.url.trim().is_empty()
         {
-            errors.push(
-                ConfigIssue::new("url", "`url` must not be empty")
-                    .with_section("events.nats")
+            problems.push(
+                ConfigProblem::new("url", "`url` must not be empty")
                     .with_hint("Use a URL such as nats://127.0.0.1:4222"),
             );
         }
 
-        errors
+        if problems.is_empty() {
+            Ok(())
+        } else {
+            Err(problems)
+        }
     }
 }
 
@@ -89,7 +89,7 @@ impl Default for NatsEventsConfig {
 
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.try_get::<EventApplicationConfig>().ok().flatten().unwrap_or_default());
+        state.insert(config.get_or_default::<EventApplicationConfig>());
 
         Ok(())
     })

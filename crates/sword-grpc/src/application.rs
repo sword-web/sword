@@ -230,14 +230,11 @@ impl TryFrom<EngineBuildContext> for GrpcApplication {
         let EngineBuildContext {
             state,
             config,
-            config_document,
             controllers,
             ..
         } = ctx;
 
-        let grpc_config =
-            ConfigSection::load::<GrpcApplicationConfig>(&config, config_document.as_deref())?
-                .unwrap_or_default();
+        let grpc_config = config.get_or_default::<GrpcApplicationConfig>();
 
         let grpc_controllers_ids = controllers.get_by_kind(Controller::Grpc);
 

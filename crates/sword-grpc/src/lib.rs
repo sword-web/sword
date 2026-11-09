@@ -7,18 +7,23 @@ mod logger;
 mod registry;
 mod response;
 
+use sword_core::{Config, ConfigFailure, ConfigValidateExt};
+
 pub use tonic::transport::Channel;
 
 pub use self::application::GrpcApplication;
 pub use self::client::{
     ClientConnectionKind, DEFAULT_TIMEOUT, FromConfig, GrpcClientConfig, GrpcClientError,
 };
+
 pub use self::config::GrpcApplicationConfig;
 pub use self::controller::{GrpcResult, GrpcStream};
 pub use self::interceptor::{GrpcInterceptorResult, OnRequest, OnRequestWithConfig};
 pub use self::logger::{GrpcLoggerConfig, GrpcLoggerLevel};
+
 #[cfg(feature = "error-details")]
 pub use self::response::GrpcStatus;
+
 pub use self::response::{GrpcError, GrpcResponse};
 
 pub mod prelude {
@@ -26,6 +31,7 @@ pub mod prelude {
     pub use tonic::{
         Code, Extensions, Request, Response, Status, Streaming, async_trait, include_proto,
     };
+
     #[cfg(feature = "error-details")]
     pub use tonic_types::{
         BadRequest, DebugInfo, ErrorDetail, ErrorDetails, ErrorInfo, FieldViolation, Help,
@@ -38,9 +44,17 @@ pub mod prelude {
     pub use crate::controller::{GrpcResult, GrpcStream};
     pub use crate::interceptor::{GrpcInterceptorResult, OnRequest, OnRequestWithConfig};
     pub use crate::logger::{GrpcLoggerConfig, GrpcLoggerLevel};
+
     #[cfg(feature = "error-details")]
     pub use crate::response::GrpcStatus;
+
     pub use crate::response::{GrpcError, GrpcResponse};
+}
+
+/// Checks the `[grpc]` section before the application is built.
+pub fn validate_config(config: &Config) -> Result<(), ConfigFailure> {
+    config.get_validated_section::<GrpcApplicationConfig>()?;
+    Ok(())
 }
 
 /// Items required by generated code.

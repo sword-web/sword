@@ -9,7 +9,7 @@ use socketioxide_parser_common::CommonParser;
 use socketioxide_parser_msgpack::MsgPackParser;
 
 use sword_core::{
-    ByteConfig, ConfigErrors, ConfigIssue, ConfigItem, ConfigRegistrar, TimeConfig, ValidateConfig,
+    ByteConfig, ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, TimeConfig,
     inventory_submit,
 };
 use sword_layers::DisplayConfig;
@@ -246,16 +246,16 @@ impl ConfigItem for SocketIoServerConfig {
     }
 }
 
-impl ValidateConfig for SocketIoServerConfig {
+impl ConfigCheck for SocketIoServerConfig {
     const SECTION: &'static str = "socketio";
     const CODE: &'static str = "sword.build.socketio";
 
-    fn validate(&self) -> ConfigErrors {
-        let mut errors = ConfigErrors::new();
+    fn check(&self) -> Result<(), Vec<ConfigProblem>> {
+        let mut problems = Vec::new();
 
         if self.max_buffer_size == Some(0) {
-            errors.push(
-                ConfigIssue::new(
+            problems.push(
+                ConfigProblem::new(
                     "max-buffer-size",
                     "`max-buffer-size` must be greater than 0",
                 )
@@ -264,8 +264,8 @@ impl ValidateConfig for SocketIoServerConfig {
         }
 
         if self.ws_read_buffer_size == Some(0) {
-            errors.push(
-                ConfigIssue::new(
+            problems.push(
+                ConfigProblem::new(
                     "ws-read-buffer-size",
                     "`ws-read-buffer-size` must be greater than 0",
                 )
@@ -273,13 +273,17 @@ impl ValidateConfig for SocketIoServerConfig {
             );
         }
 
-        errors
+        if problems.is_empty() {
+            Ok(())
+        } else {
+            Err(problems)
+        }
     }
 }
 
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.try_get::<SocketIoServerConfig>().ok().flatten().unwrap_or_default());
+        state.insert(config.get_or_default::<SocketIoServerConfig>());
 
         Ok(())
     })
