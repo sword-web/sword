@@ -1,8 +1,9 @@
-use super::Diagnostic;
-use super::types::Severity;
+use std::fmt::Display;
 
 use ::miette::{LabeledSpan, SourceCode};
-use std::fmt::Display;
+
+use super::Diagnostic;
+use super::types::Severity;
 
 impl std::error::Error for Diagnostic {}
 

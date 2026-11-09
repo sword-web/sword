@@ -1,7 +1,7 @@
-use crate::shared::{Error, Result, paths::*};
-
 use proc_macro2::TokenStream;
 use quote::quote;
+
+use crate::shared::{Error, Result, paths::*};
 
 /// Parsed value of the `source = EventSource::...` controller argument.
 ///

@@ -1,13 +1,13 @@
-use crate::{
-    core::EventSourceKind,
-    shared::{Result, cmeta::CMetaStack, location, paths::*},
-};
-
 use darling::{Error, FromMeta, ast::NestedMeta};
 use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{FnArg, ItemFn, Path, Type};
+
+use crate::{
+    core::EventSourceKind,
+    shared::{Result, cmeta::CMetaStack, location, paths::*},
+};
 
 #[derive(FromMeta)]
 struct Args {

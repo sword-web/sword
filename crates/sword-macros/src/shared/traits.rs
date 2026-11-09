@@ -1,8 +1,8 @@
-use crate::shared::paths::*;
-
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Ident, Type};
+
+use crate::shared::paths::*;
 
 /// Generates the implementation of the `Build` trait for a component.
 ///

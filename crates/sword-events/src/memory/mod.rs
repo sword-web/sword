@@ -1,15 +1,19 @@
 mod publisher;
 mod subscriber;
 
-use crate::{Event, EventApplicationConfig, EventKeyHandlerMap, application::HandlerEntry};
-
-pub use publisher::MemoryEventPublisher;
-use subscriber::MemoryEventSubscriber;
-
 use std::{collections::HashMap, sync::Arc};
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Shutdown, sword_error};
+
 use tokio::sync::mpsc;
+
+use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
+
+use self::subscriber::MemoryEventSubscriber;
+use crate::Event;
+use crate::application::HandlerEntry;
+use crate::config::EventApplicationConfig;
+use crate::registrar::EventKeyHandlerMap;
+
+pub use self::publisher::MemoryEventPublisher;
 
 /// Creates the in-memory transport components
 /// Since the publisher and subscriber are separate components this struct contains

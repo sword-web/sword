@@ -1,13 +1,12 @@
+use proc_macro2::{Span, TokenStream};
+use quote::quote;
+use syn::{Error, Fields, Ident};
+
 use super::parse::GrpcErrorArgs;
 use crate::shared::errors::{
     TracingLevel, generate_message_expr, generate_pattern, generate_tracing_stmt,
 };
-
 use crate::shared::paths::*;
-
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use syn::{Error, Fields, Ident};
 
 pub fn generate_from_arm(
     enum_name: &Ident,

@@ -1,8 +1,8 @@
-use super::parsing::ParsedOnHandler;
-use crate::shared::paths::*;
-
 use proc_macro2::TokenStream;
 use quote::quote;
+
+use super::parsing::ParsedOnHandler;
+use crate::shared::paths::*;
 
 pub fn expand_on_attribute(handler: ParsedOnHandler) -> TokenStream {
     let ParsedOnHandler {

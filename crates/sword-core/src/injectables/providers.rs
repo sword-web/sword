@@ -1,5 +1,7 @@
-use crate::{Injectable, RwMap};
 use std::{any::TypeId, collections::HashMap, sync::Arc};
+
+use super::Injectable;
+use crate::RwMap;
 
 /// Marker trait for pre-instantiated dependencies (providers).
 ///

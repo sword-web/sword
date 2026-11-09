@@ -3,11 +3,12 @@
 //! This module defines configuration and conversion into Tower's `ServeDir`
 //! service for serving files from a configured directory.
 
-use crate::DisplayConfig;
-use crate::SwordServiceRegistrar;
 use serde::{Deserialize, Serialize};
 use thisconfig::{ByteConfig, ConfigItem};
 use tower_http::services::{ServeDir, ServeFile};
+
+use crate::DisplayConfig;
+use crate::SwordServiceRegistrar;
 
 pub type ServeDirLayer = ServeDir<ServeFile>;
 

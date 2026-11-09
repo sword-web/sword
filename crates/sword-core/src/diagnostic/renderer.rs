@@ -1,7 +1,9 @@
+use std::sync::OnceLock;
+
+use parking_lot::RwLock;
+
 use super::Error;
 use super::types::{DiagnosticPhase, DiagnosticsMode};
-use parking_lot::RwLock;
-use std::sync::OnceLock;
 
 /// The renderer currently used for process-level diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

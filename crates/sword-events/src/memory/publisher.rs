@@ -1,7 +1,8 @@
-use crate::{Event, EventPublish, EventPublishError};
-
 use std::sync::Arc;
+
 use tokio::sync::mpsc::Sender;
+
+use crate::{Event, EventPublish, EventPublishError};
 
 #[derive(Clone)]
 pub struct MemoryEventPublisher {

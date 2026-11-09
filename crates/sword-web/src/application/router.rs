@@ -1,25 +1,21 @@
-use crate::application::*;
-use crate::controller::{RouteRegistrar, WebControllerRegistrar};
-use crate::response::JsonResponse;
-
-use axum::Router;
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use sword_core::diagnostic::*;
-use sword_core::sword_error;
+use axum::Router;
 
 use sword_core::*;
 use sword_layers::prelude::*;
 
-pub(crate) struct WebApplicationRouter {
+use crate::application::*;
+use crate::controller::{RouteRegistrar, WebControllerRegistrar};
+use crate::response::JsonResponse;
+
+pub struct WebApplicationRouter {
     pub state: State,
     pub config: Config,
     pub layer_stack: LayerStack<State>,
     pub controller_registry: ControllerRegistry,
     pub web_config: WebApplicationConfig,
-    pub config_document: Option<Arc<ConfigDocument>>,
 }
 
 impl WebApplicationRouter {
@@ -32,7 +28,6 @@ impl WebApplicationRouter {
         let extension_ctx = WebExtensionContext {
             state: self.state.clone(),
             config: self.config.clone(),
-            config_document: self.config_document.clone(),
             controller_map: self.controller_registry.snapshot(),
         };
 

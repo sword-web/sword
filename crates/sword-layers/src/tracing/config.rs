@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sword_core::{ConfigErrors, ConfigIssue, ValidateConfig};
 use thisconfig::ConfigItem;
 use tracing_subscriber::EnvFilter;
+
+use sword_core::{ConfigCheck, ConfigProblem};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -113,20 +114,18 @@ impl TracingConfig {
     }
 }
 
-impl ValidateConfig for TracingConfig {
+impl ConfigCheck for TracingConfig {
     const SECTION: &'static str = "tracing";
     const CODE: &'static str = "sword.build.tracing";
 
-    fn validate(&self) -> ConfigErrors {
-        let mut errors = ConfigErrors::new();
-
+    fn check(&self) -> Result<(), Vec<ConfigProblem>> {
         if let Err(err) = EnvFilter::try_new(&self.filter) {
-            errors.push(
-                ConfigIssue::new("filter", format!("invalid tracing filter: {err}"))
+            return Err(vec![
+                ConfigProblem::new("filter", format!("invalid tracing filter: {err}"))
                     .with_hint("Use EnvFilter directives such as `info` or `my_crate=debug`"),
-            );
+            ]);
         }
 
-        errors
+        Ok(())
     }
 }

@@ -1,5 +1,6 @@
-use async_nats::Client;
 use std::sync::{Arc, OnceLock};
+
+use async_nats::Client;
 
 #[derive(Clone)]
 pub(super) struct NatsClient {

@@ -1,10 +1,12 @@
-use crate::diagnostic::SourceLocation;
-use crate::{DependencyInjectionError, HasDeps, Injectable, RwMap, State};
 use std::{
     any::{TypeId, type_name},
     collections::HashMap,
     sync::Arc,
 };
+
+use super::Injectable;
+use crate::diagnostic::SourceLocation;
+use crate::{DependencyInjectionError, HasDeps, RwMap, State};
 
 type ComponentBuilderFn = Box<dyn Fn(&State) -> Result<Injectable, DependencyInjectionError>>;
 

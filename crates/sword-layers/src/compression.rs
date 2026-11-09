@@ -3,12 +3,13 @@
 //! This module defines compression configuration and conversion into
 //! `tower_http::compression::CompressionLayer` using the configured algorithms.
 
-use crate::{DisplayConfig, SwordLayerRegistrar};
+use std::any::Any;
 
 use serde::{Deserialize, Serialize};
-use std::any::Any;
 use thisconfig::Config;
 use thisconfig::ConfigItem;
+
+use crate::{DisplayConfig, SwordLayerRegistrar};
 
 pub use tower_http::compression::CompressionLayer;
 

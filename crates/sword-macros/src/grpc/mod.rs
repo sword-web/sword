@@ -1,6 +1,8 @@
 mod errors;
 
-pub use errors::derive_grpc_error;
+use darling::Error;
+use proc_macro2::TokenStream;
+use quote::quote;
 
 use crate::{
     core::{ControllerKind, ControllerStruct, InterceptorArgs},
@@ -11,9 +13,7 @@ use crate::{
     },
 };
 
-use darling::Error;
-use proc_macro2::TokenStream;
-use quote::quote;
+pub use self::errors::derive_grpc_error;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::Grpc { service } = &controller.kind else {
@@ -120,7 +120,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 controller_id: #TypeId::of::<#self_ty>(),
                 reflection_descriptor_set: #reflection_descriptor_set,
                 build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
-                    let controller = #self_ty::build(state).map_err(|e| {
+                    let controller = <#self_ty as #Build>::build(state).map_err(|e| {
                         #sword_error! {
                             code: "sword.build.grpc",
                             phase: #DiagnosticPhase::Build,

@@ -1,21 +1,21 @@
+use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
+use std::net::SocketAddr;
+
+use tower::util::option_layer;
+
+use sword_core::*;
+use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
+
 use crate::config::GrpcApplicationConfig;
 use crate::controller::GrpcControllerRegistrar;
 use crate::logger::{GrpcLoggerConfig, GrpcLoggerLayer};
 use crate::registry::GrpcServiceRegistry;
 
-use std::any::TypeId;
-use std::collections::{HashMap, HashSet};
-use std::net::SocketAddr;
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{ConfigSection, Controller, EngineBuildContext, Shutdown, State, sword_error};
-
-use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
-use tower::util::option_layer;
-
 pub struct GrpcApplication {
-    pub state: State,
-    pub config: GrpcApplicationConfig,
-    pub controller_ids: HashSet<TypeId>,
+    state: State,
+    config: GrpcApplicationConfig,
+    controller_ids: HashSet<TypeId>,
 }
 
 impl GrpcApplication {
@@ -230,14 +230,11 @@ impl TryFrom<EngineBuildContext> for GrpcApplication {
         let EngineBuildContext {
             state,
             config,
-            config_document,
             controllers,
             ..
         } = ctx;
 
-        let grpc_config =
-            ConfigSection::load::<GrpcApplicationConfig>(&config, config_document.as_deref())?
-                .unwrap_or_default();
+        let grpc_config = config.get_or_default::<GrpcApplicationConfig>();
 
         let grpc_controllers_ids = controllers.get_by_kind(Controller::Grpc);
 

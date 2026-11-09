@@ -1,13 +1,13 @@
-use crate::{
-    core::{EventSourceKind, InterceptorArgs, take_interceptors},
-    shared::{Error, Result, structs::Struct},
-};
-
 use darling::{FromDeriveInput, FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{DeriveInput, Ident, LitStr, Path, Type};
+
+use crate::{
+    core::{EventSourceKind, InterceptorArgs, take_interceptors},
+    shared::{Error, Result, structs::Struct},
+};
 
 // `#[controller(kind = ..., ...)]` model =====================================================
 

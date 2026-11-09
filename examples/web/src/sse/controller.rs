@@ -1,5 +1,6 @@
-use async_stream::stream;
 use std::time::Duration;
+
+use async_stream::stream;
 use tokio::time::sleep;
 
 use sword::prelude::*;

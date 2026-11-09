@@ -1,8 +1,9 @@
 mod shared;
 mod users;
 
-use crate::{shared::SharedModule, users::UsersModule};
 use sword::prelude::*;
+
+use crate::{shared::SharedModule, users::UsersModule};
 
 #[sword::main]
 async fn main() -> Result<(), Error> {

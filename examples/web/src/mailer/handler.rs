@@ -1,8 +1,9 @@
-use crate::mailer::{Mailer, events::UserCreatedEvent};
-
 use std::sync::Arc;
+
 use sword::events::*;
 use sword::prelude::*;
+
+use crate::mailer::{Mailer, events::UserCreatedEvent};
 
 #[controller(kind = Controller::Events, source = EventSource::Memory)]
 pub struct MailHandler {

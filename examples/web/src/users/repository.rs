@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
+use uuid::Uuid;
+
+use sword::prelude::*;
+
 use super::entity::User;
 use crate::shared::{database::Database, errors::AppResult};
-
-use std::sync::Arc;
-use sword::prelude::*;
-use uuid::Uuid;
 
 #[injectable]
 pub struct UserRepository {

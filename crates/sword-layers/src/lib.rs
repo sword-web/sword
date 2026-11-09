@@ -1,6 +1,7 @@
 #![allow(clippy::new_ret_no_self)]
 
 use std::any::Any;
+
 use thisconfig::Config;
 
 #[cfg(feature = "body-limit")]
@@ -8,8 +9,8 @@ pub mod body_limit {
     mod grpc;
     mod web;
 
-    pub use grpc::*;
-    pub use web::*;
+    pub use self::grpc::*;
+    pub use self::web::*;
 }
 
 #[cfg(feature = "compression")]
@@ -53,6 +54,15 @@ pub mod tracing;
 
 #[cfg(feature = "req-timeout")]
 pub mod timeout;
+
+/// Checks the enabled layer configuration sections before the application is built.
+#[cfg(feature = "tracing")]
+pub fn validate_config(config: &sword_core::Config) -> Result<(), sword_core::ConfigFailure> {
+    use sword_core::ConfigValidateExt;
+
+    config.get_validated_section::<tracing::TracingConfig>()?;
+    Ok(())
+}
 
 pub trait DisplayConfig {
     fn display(&self);

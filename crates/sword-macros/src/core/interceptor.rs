@@ -1,10 +1,3 @@
-use crate::shared::{
-    Result, location,
-    paths::*,
-    structs::Struct,
-    traits::{generate_build_impl, generate_clone_impl, generate_has_deps_impl},
-};
-
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -12,6 +5,13 @@ use quote::quote;
 use syn::{
     Attribute, DeriveInput, Expr, Ident, Path, Token,
     parse::{Parse, ParseStream, discouraged::Speculative},
+};
+
+use crate::shared::{
+    Result, location,
+    paths::*,
+    structs::Struct,
+    traits::{generate_build_impl, generate_clone_impl, generate_has_deps_impl},
 };
 
 // #[derive(Interceptor)] macro expansion ===========================================

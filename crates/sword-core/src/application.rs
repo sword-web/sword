@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::LayerStack;
+use crate::config::{ConfigCheck, ConfigProblem};
 use crate::diagnostic::DiagnosticsMode;
-use crate::{Config, ConfigItem, ConfigRegistrar, ControllerRegistry, State, inventory_submit};
+use crate::{
+    Config, ConfigItem, ConfigRegistrar, ControllerRegistry, LayerStack, State, inventory_submit,
+};
 
 /// Configuration structure for the Sword application.
 ///
@@ -31,9 +33,18 @@ impl ConfigItem for ApplicationConfig {
     }
 }
 
+impl ConfigCheck for ApplicationConfig {
+    const SECTION: &'static str = "application";
+    const CODE: &'static str = "sword.build.application";
+
+    fn check(&self) -> Result<(), Vec<ConfigProblem>> {
+        Ok(())
+    }
+}
+
 inventory_submit! {[
     ConfigRegistrar::new(|state, config| {
-        state.insert(config.try_get::<ApplicationConfig>().ok().flatten().unwrap_or_default());
+        state.insert(config.get_or_default::<ApplicationConfig>());
 
         Ok(())
     })
@@ -47,7 +58,6 @@ inventory_submit! {[
 pub struct EngineBuildContext {
     pub state: State,
     pub config: Config,
-    pub config_document: Option<std::sync::Arc<crate::ConfigDocument>>,
     pub controllers: ControllerRegistry,
     pub layer_stack: LayerStack<State>,
 }

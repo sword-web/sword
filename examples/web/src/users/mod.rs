@@ -3,13 +3,13 @@ mod dtos;
 mod entity;
 mod repository;
 
-use controller::UsersController;
-
-pub use dtos::{CreateUserDto, UpdateUserDto};
-pub use entity::User;
-pub use repository::UserRepository;
-
 use sword::prelude::*;
+
+use self::controller::UsersController;
+
+pub use self::dtos::{CreateUserDto, UpdateUserDto};
+pub use self::entity::User;
+pub use self::repository::UserRepository;
 
 pub struct UsersModule;
 

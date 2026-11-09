@@ -2,13 +2,13 @@ mod expand;
 mod parse;
 mod validate;
 
-use crate::shared::Result;
-use crate::shared::paths::*;
-
-use parse::HttpErrorArgs;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput};
+
+use self::parse::HttpErrorArgs;
+use crate::shared::Result;
+use crate::shared::paths::*;
 
 pub fn derive_http_error(input: TokenStream) -> Result<TokenStream> {
     let input: DeriveInput = syn::parse(input)?;

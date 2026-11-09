@@ -1,7 +1,8 @@
-use crate::interceptors::AnotherInterceptor;
-use crate::interceptors::LoggingInterceptor;
 use sword::prelude::*;
 use sword::web::*;
+
+use crate::interceptors::AnotherInterceptor;
+use crate::interceptors::LoggingInterceptor;
 
 #[controller(kind = Controller::Web, path = "/")]
 #[interceptor(LoggingInterceptor)]

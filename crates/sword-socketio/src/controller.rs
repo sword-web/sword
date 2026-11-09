@@ -1,4 +1,12 @@
+use std::any::{Any, TypeId};
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
+
+use sword_core::{ControllerSpec, Error, State};
+
 use crate::extract::SocketContext;
+
 pub use socketioxide::{
     ProtocolVersion, SendError, SocketIo, TransportType,
     ack::AckStream,
@@ -11,12 +19,6 @@ pub use socketioxide::{
     socket::DisconnectReason,
 };
 pub use socketioxide_core::adapter::{Room, RoomParam};
-use std::any::{Any, TypeId};
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-use sword_core::diagnostic::Error;
-use sword_core::{ControllerSpec, State};
 
 pub use sword_macros::on;
 

@@ -1,7 +1,10 @@
-use crate::extract::SocketContext;
-use socketioxide::adapter::{Adapter as SocketIoSocketAdapter, LocalAdapter};
 use std::fmt::Display;
+
+use socketioxide::adapter::{Adapter as SocketIoSocketAdapter, LocalAdapter};
+
 use sword_core::Interceptor;
+
+use crate::extract::SocketContext;
 
 /// An interceptor that is called when a new Socket.IO connection is established.
 ///

@@ -2,8 +2,9 @@ mod errors;
 mod interceptors;
 mod routes;
 
-pub use errors::derive_http_error;
-pub use routes::expand_route;
+use darling::Error;
+use proc_macro2::TokenStream;
+use quote::quote;
 
 use crate::{
     core::{ControllerKind, ControllerStruct},
@@ -16,9 +17,8 @@ use crate::{
     },
 };
 
-use darling::Error;
-use proc_macro2::TokenStream;
-use quote::quote;
+pub use self::errors::derive_http_error;
+pub use self::routes::expand_route;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::Web { path } = &controller.kind else {
@@ -67,7 +67,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
                 controller_id: #TypeId::of::<#self_ty>(),
                 controller_path: #path,
                 build: |state: &#State| -> ::std::result::Result<(), #DiagnosticError> {
-                    let controller = #self_ty::build(state).map_err(|e| {
+                    let controller = <#self_ty as #Build>::build(state).map_err(|e| {
                         #sword_error! {
                             code: "sword.build.web",
                             phase: #DiagnosticPhase::Build,

@@ -1,13 +1,10 @@
 use axum::routing::Router;
-use std::sync::Arc;
-use sword_core::diagnostic::Error;
-use sword_core::{Config, ConfigDocument, ControllerMap, State};
+use sword_core::{Config, ControllerMap, Error, State};
 
 #[derive(Clone)]
 pub struct WebExtensionContext {
     pub state: State,
     pub config: Config,
-    pub config_document: Option<Arc<ConfigDocument>>,
     pub controller_map: ControllerMap,
 }
 

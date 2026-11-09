@@ -1,8 +1,9 @@
-use crate::shared::errors::AppResult;
-
 use argon2::{Algorithm, Argon2, ParamsBuilder, PasswordHasher, PasswordVerifier, Version};
-use sword::prelude::*;
 use tokio::task;
+
+use sword::prelude::*;
+
+use crate::shared::errors::AppResult;
 
 const DEFAULT_ARGON_MEMORY_KIB: u32 = 19 * 1024;
 

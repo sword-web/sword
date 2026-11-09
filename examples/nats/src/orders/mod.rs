@@ -5,15 +5,16 @@ mod controllers {
     mod events;
     mod web;
 
-    pub use events::OrderEventsHandler;
-    pub use web::OrdersController;
+    pub use self::events::OrderEventsHandler;
+    pub use self::web::OrdersController;
 }
 
-use controllers::{OrderEventsHandler, OrdersController};
-pub use dtos::{CreateOrderDto, ShipOrderDto};
-pub use event::{OrderCreated, OrderShipped};
-
 use sword::prelude::*;
+
+use self::controllers::{OrderEventsHandler, OrdersController};
+
+pub use self::dtos::{CreateOrderDto, ShipOrderDto};
+pub use self::event::{OrderCreated, OrderShipped};
 
 pub struct OrdersModule;
 

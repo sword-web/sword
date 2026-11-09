@@ -1,11 +1,12 @@
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{Expr, Path};
+
 use crate::{
     core::InterceptorArgs,
     shared::{location, paths::*},
     web::routes::RequestMode,
 };
-use proc_macro2::TokenStream;
-use quote::quote;
-use syn::{Expr, Path};
 
 pub struct RequestModeTokens {
     request_ty: TokenStream,

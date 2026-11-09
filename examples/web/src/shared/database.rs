@@ -1,6 +1,8 @@
+use std::{path::Path, sync::Arc};
+
 use serde::Deserialize;
 use sqlx::{PgPool, migrate::Migrator};
-use std::{path::Path, sync::Arc};
+
 use sword::prelude::*;
 
 use crate::shared::errors::AppResult;

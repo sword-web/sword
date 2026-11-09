@@ -1,15 +1,16 @@
-use crate::{
-    mailer::UserCreatedEvent,
-    shared::{Hasher, errors::AppError},
-    users::*,
-};
-
 use std::sync::Arc;
+
 use uuid::Uuid;
 
 use sword::events::*;
 use sword::prelude::*;
 use sword::web::*;
+
+use crate::{
+    mailer::UserCreatedEvent,
+    shared::{Hasher, errors::AppError},
+    users::*,
+};
 
 #[controller(kind = Controller::Web, path = "/users")]
 pub struct UsersController {

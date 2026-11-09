@@ -2,40 +2,18 @@ mod client;
 mod publisher;
 mod subscriber;
 
-use crate::{EventApplicationConfig, EventHandlerFn, EventRegistrar, application::HandlerEntry};
-
-use client::NatsClient;
 use std::{collections::HashMap, sync::Arc};
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{Shutdown, sword_error};
+
 use tokio::task::JoinSet;
 
-pub use publisher::NatsEventPublisher;
+use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
 
-fn consumer_stopped() -> Error {
-    sword_error! {
-        code: "sword.runtime.events.nats",
-        phase: DiagnosticPhase::Runtime,
-        target: "NATS transport",
-        title: "NATS consumer stopped before shutdown",
-        reason: "a subscription finished without a shutdown request",
-        source: "NatsTransport::run",
-        hints: ["Check the NATS connection and server logs"],
-    }
-}
+use self::client::NatsClient;
+use crate::application::HandlerEntry;
+use crate::config::EventApplicationConfig;
+use crate::registrar::{EventHandlerFn, EventRegistrar};
 
-fn consumer_panicked(error: tokio::task::JoinError) -> Error {
-    sword_error! {
-        code: "sword.runtime.events.nats",
-        phase: DiagnosticPhase::Runtime,
-        target: "NATS transport",
-        title: "NATS consumer task panicked",
-        reason: error,
-        source: "NatsTransport::run",
-        hints: ["Check the panic message in the logs"],
-        cause: error,
-    }
-}
+pub use self::publisher::NatsEventPublisher;
 
 /// A NATS subscription: `(subject, group)`. `None` means an individual
 /// subscription (fan-out); `Some` means a queue group (load balanced).
@@ -174,8 +152,25 @@ impl NatsTransport {
         tasks.abort_all();
 
         match result {
-            Some(Ok(())) => Err(consumer_stopped()),
-            Some(Err(join_error)) => Err(consumer_panicked(join_error)),
+            Some(Ok(())) => Err(sword_error! {
+                code: "sword.runtime.events.nats",
+                phase: DiagnosticPhase::Runtime,
+                target: "NATS transport",
+                title: "NATS consumer stopped before shutdown",
+                reason: "a subscription finished without a shutdown request",
+                source: "NatsTransport::run",
+                hints: ["Check the NATS connection and server logs"],
+            }),
+            Some(Err(join_error)) => Err(sword_error! {
+                code: "sword.runtime.events.nats",
+                phase: DiagnosticPhase::Runtime,
+                target: "NATS transport",
+                title: "NATS consumer task panicked",
+                reason: join_error,
+                source: "NatsTransport::run",
+                hints: ["Check the panic message in the logs"],
+                cause: join_error,
+            }),
             None => Ok(()),
         }
     }

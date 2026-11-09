@@ -1,5 +1,6 @@
-use ::miette::{LabeledSpan, NamedSource};
 use std::fmt::{Display, Formatter};
+
+use ::miette::{LabeledSpan, NamedSource};
 
 #[macro_use]
 mod macros;
@@ -9,11 +10,11 @@ mod miette;
 mod renderer;
 mod types;
 
-pub use builder::DiagnosticBuilder;
-pub use error::Error;
-pub use types::{DiagnosticCode, DiagnosticPhase, DiagnosticsMode, Severity};
-
 use crate::diagnostic::renderer::Renderer;
+
+pub use self::builder::DiagnosticBuilder;
+pub use self::error::Error;
+pub use self::types::{DiagnosticCode, DiagnosticPhase, DiagnosticsMode, Severity};
 
 /// A location in a Rust source file.
 ///

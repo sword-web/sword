@@ -1,10 +1,11 @@
-use crate::request::{Request, StreamRequest};
-use crate::response::JsonResponse;
+use std::future::Future;
+
+use axum::response::Response as AxumResponse;
+
 use sword_core::Interceptor;
 
-pub use axum::middleware::Next;
-use axum::response::Response as AxumResponse;
-use std::future::Future;
+use crate::request::{Request, StreamRequest};
+use crate::response::JsonResponse;
 
 pub type WebInterceptorResult = Result<AxumResponse, JsonResponse>;
 

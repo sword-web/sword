@@ -1,6 +1,7 @@
-use super::Diagnostic;
 use std::error::Error as StdError;
 use std::fmt::{self, Display, Formatter};
+
+use super::Diagnostic;
 
 /// The error type returned by fallible Sword APIs.
 ///

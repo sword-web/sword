@@ -1,14 +1,13 @@
-use crate::{
-    core::{InterceptorArgs, take_interceptors},
-    shared::{Result, paths::*},
-};
-
-use super::WebRouteContext;
-
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::{GenericArgument, ItemFn, LitStr, PathArguments, ReturnType, Type, spanned::Spanned};
+
+use super::WebRouteContext;
+use crate::{
+    core::{InterceptorArgs, take_interceptors},
+    shared::{Result, paths::*},
+};
 
 /// Parsed data from a route attribute
 pub struct ParsedRouteAttribute {

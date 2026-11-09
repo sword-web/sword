@@ -1,14 +1,15 @@
-use crate::{
-    shared::{AuthInterceptor, LoggingInterceptor},
-    users::{CreateUserDto, UpdateUserDto, UserRepository, proto::*},
-};
+use std::sync::Arc;
 
 use async_stream::try_stream;
-use std::sync::Arc;
 use tokio::time::{self, Duration};
 
 use sword::grpc::*;
 use sword::prelude::*;
+
+use crate::{
+    shared::{AuthInterceptor, LoggingInterceptor},
+    users::{CreateUserDto, UpdateUserDto, UserRepository, proto::*},
+};
 
 #[controller(kind = Controller::Grpc, service = UserServiceServer)]
 #[interceptor(LoggingInterceptor, config = "UsersController")]

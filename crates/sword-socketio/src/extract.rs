@@ -1,10 +1,10 @@
-use crate::config::SocketIoParser;
-use crate::error::SocketError;
+use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::http::{Extensions as HttpExtensions, HeaderMap, request::Parts};
 use bytes::Bytes;
 use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
+use socketioxide::handler::Value;
 use socketioxide::{
     ProtocolVersion, SendError, TransportType,
     ack::AckStream,
@@ -15,19 +15,18 @@ use socketioxide::{
     operators::{BroadcastOperators, ConfOperators},
     socket::{DisconnectReason, Socket},
 };
-
-use socketioxide::handler::Value;
 use socketioxide_core::{
     Sid,
     adapter::{Room, RoomParam},
     parser::ParseError,
 };
-use sword_web::prelude::Cookies;
-
-use std::{convert::Infallible, sync::Arc, time::Duration};
-
 #[cfg(feature = "validator")]
 use validator::Validate;
+
+use sword_web::prelude::Cookies;
+
+use crate::config::SocketIoParser;
+use crate::error::SocketError;
 
 enum SocketKind {
     Connection,

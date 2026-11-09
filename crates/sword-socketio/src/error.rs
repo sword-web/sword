@@ -1,7 +1,6 @@
 use socketioxide::{ParserError, SendError};
 use socketioxide_core::parser::ParseError;
 use thiserror::Error;
-
 #[cfg(feature = "validator")]
 use validator::ValidationErrors;
 

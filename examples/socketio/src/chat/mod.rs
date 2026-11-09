@@ -3,12 +3,13 @@ mod dtos;
 mod entity;
 mod interceptor;
 
-use controller::ChatController;
 use sword::prelude::*;
 
-pub use dtos::IncommingMessageDto;
-pub use entity::Message;
-pub use interceptor::ChatInterceptor;
+use self::controller::ChatController;
+
+pub use self::dtos::IncommingMessageDto;
+pub use self::entity::Message;
+pub use self::interceptor::ChatInterceptor;
 
 pub struct ChatModule;
 

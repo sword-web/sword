@@ -3,22 +3,26 @@ mod extensions;
 mod logger;
 mod router;
 
-use axum::Router;
-use router::WebApplicationRouter;
 use std::net::SocketAddr;
-use sword_core::diagnostic::Error;
-use sword_core::sword_error;
-use sword_core::*;
-use sword_layers::body_limit::BodyLimitValue;
+
+use axum::Router;
 use tokio::net::TcpListener;
 
-pub use config::WebApplicationConfig;
-pub use extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
+use sword_core::*;
+use sword_layers::body_limit::BodyLimitValue;
+
+use self::router::WebApplicationRouter;
+
+#[cfg(feature = "swagger-ui")]
+pub use self::config::OpenApiConfig;
+pub use self::config::WebApplicationConfig;
+pub use self::extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
+pub use self::logger::{WebLoggerConfig, WebLoggerLevel};
 
 pub struct WebApplication {
-    pub state: State,
-    pub router: Router<State>,
-    pub config: WebApplicationConfig,
+    state: State,
+    router: Router<State>,
+    config: WebApplicationConfig,
 }
 
 impl WebApplication {
@@ -69,7 +73,7 @@ impl WebApplication {
         let bind_addr: SocketAddr = bind.parse::<SocketAddr>().map_err(|err| {
             sword_error! {
                 code: "sword.runtime.web",
-                phase: sword_core::diagnostic::DiagnosticPhase::Startup,
+                phase: DiagnosticPhase::Startup,
                 target: "WebApplication::run",
                 title: "Invalid web bind address",
                 reason: err,
@@ -83,7 +87,7 @@ impl WebApplication {
         let listener = TcpListener::bind(bind_addr).await.map_err(|err| {
             sword_error! {
                 code: "sword.runtime.web",
-                phase: sword_core::diagnostic::DiagnosticPhase::Startup,
+                phase: DiagnosticPhase::Startup,
                 target: "WebApplication::run",
                 title: "Failed to bind HTTP listener",
                 reason: err,
@@ -101,7 +105,7 @@ impl WebApplication {
                 res.map_err(|err| {
                     sword_error! {
                         code: "sword.runtime.web",
-                        phase: sword_core::diagnostic::DiagnosticPhase::Runtime,
+                        phase: DiagnosticPhase::Runtime,
                         target: "WebApplication::run",
                         title: "HTTP server stopped with an internal error",
                         reason: err,
@@ -131,14 +135,11 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let EngineBuildContext {
             state,
             config,
-            config_document,
             controllers,
             layer_stack,
         } = ctx;
 
-        let web_config =
-            ConfigSection::load::<WebApplicationConfig>(&config, config_document.as_deref())?
-                .unwrap_or_default();
+        let web_config = config.get_or_default::<WebApplicationConfig>();
 
         // The extractor reads the limit from State so it always matches the value
         // enforced by BodyLimitLayer.
@@ -147,7 +148,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let mut router = WebApplicationRouter {
             state: state.clone(),
             config,
-            config_document,
             layer_stack,
             controller_registry: controllers,
             web_config: web_config.clone(),

@@ -1,8 +1,9 @@
-use crate::shared::{Error, Result, paths::*};
 use darling::{FromMeta, ast::NestedMeta};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::DeriveInput;
+
+use crate::shared::{Error, Result, paths::*};
 
 const EVENT_DISABLED_CHARS: &[char] = &[
     '#', '>', '<', '*', '!', '?', '=', '~', '&', '|', '^', '$', '@', '%', '`', '\\', '/', '{', '}',

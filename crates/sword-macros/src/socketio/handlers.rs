@@ -1,8 +1,9 @@
 mod expand;
 mod parsing;
 
-use crate::shared::{Result, cmeta::CMetaStack};
 use proc_macro::TokenStream;
+
+use crate::shared::{Result, cmeta::CMetaStack};
 
 /// Entry point for the `#[on("...")]` handler attribute.
 pub fn expand_on_handler(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {

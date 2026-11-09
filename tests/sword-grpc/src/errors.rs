@@ -1,9 +1,10 @@
 use serial_test::serial;
-use sword::grpc::*;
-use sword::prelude::*;
 use thiserror::Error;
 use tokio::time::{Duration, sleep};
 use tonic::{Code, Request, transport::Channel};
+
+use sword::grpc::*;
+use sword::prelude::*;
 
 pub mod proto {
     tonic::include_proto!("users");
@@ -89,7 +90,7 @@ impl Module for ErrorModule {
     }
 }
 
-async fn start_error_server() -> tokio::task::JoinHandle<Result<(), sword::diagnostic::Error>> {
+async fn start_error_server() -> tokio::task::JoinHandle<Result<(), sword::Error>> {
     let config_path = format!("{}/config/config.toml", env!("CARGO_MANIFEST_DIR"));
     let app = Application::from_config_path(&config_path)
         .expect("application builder")

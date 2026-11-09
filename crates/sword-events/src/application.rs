@@ -1,26 +1,21 @@
+use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
+
+use sword_core::*;
+use tokio::task::JoinSet;
+
+use crate::EventSource;
+use crate::config::EventApplicationConfig;
+
+use crate::registrar::{
+    EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar, EventRegistrar,
+};
+
 #[cfg(feature = "memory")]
 use crate::memory::MemoryTransport;
 
 #[cfg(feature = "nats")]
 use crate::nats::NatsTransport;
-
-use crate::{
-    EventApplicationConfig, EventControllerRegistrar, EventHandlerFn, EventHandlerRegistrar,
-    EventRegistrar, EventSource,
-};
-
-use std::{
-    any::TypeId,
-    collections::{HashMap, HashSet},
-};
-
-use sword_core::diagnostic::{DiagnosticPhase, Error};
-use sword_core::{
-    Config, ConfigDocument, ConfigSection, Controller, ControllerRegistry, ProviderRegistry,
-    Shutdown, State, sword_error,
-};
-
-use tokio::task::JoinSet;
 
 /// Background engine that consumes published events and dispatches them to the
 /// registered handlers.
@@ -29,15 +24,10 @@ pub struct EventApplication {
 }
 
 impl EventApplication {
-    pub fn new(
-        config: &Config,
-        providers: &ProviderRegistry,
-        document: Option<&ConfigDocument>,
-    ) -> Result<Self, Error> {
+    pub fn new(config: &Config, providers: &ProviderRegistry) -> Result<Self, Error> {
         check_event_key_uniqueness()?;
 
-        let events_config =
-            ConfigSection::load::<EventApplicationConfig>(config, document)?.unwrap_or_default();
+        let events_config = config.get_or_default::<EventApplicationConfig>();
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]
@@ -104,9 +94,26 @@ impl EventApplication {
         tasks.abort_all();
 
         match result {
-            Some(Ok(Ok(()))) => Err(transport_stopped()),
+            Some(Ok(Ok(()))) => Err(sword_error! {
+                code: "sword.runtime.events",
+                phase: DiagnosticPhase::Runtime,
+                target: "EventApplication::run",
+                title: "Event transport stopped before shutdown",
+                reason: "a transport finished without a shutdown request",
+                source: "EventApplication::run",
+                hints: ["Check the event transport logs"],
+            }),
             Some(Ok(Err(error))) => Err(error),
-            Some(Err(join_error)) => Err(transport_panicked(join_error)),
+            Some(Err(join_error)) => Err(sword_error! {
+                code: "sword.runtime.events",
+                phase: DiagnosticPhase::Runtime,
+                target: "EventApplication::run",
+                title: "Event transport task panicked",
+                reason: join_error,
+                source: "EventApplication::run",
+                hints: ["Check the panic message in the logs"],
+                cause: join_error,
+            }),
             None => Ok(()),
         }
     }
@@ -159,31 +166,6 @@ impl EventTransport {
         }
 
         Ok(())
-    }
-}
-
-fn transport_stopped() -> Error {
-    sword_error! {
-        code: "sword.runtime.events",
-        phase: DiagnosticPhase::Runtime,
-        target: "EventApplication::run",
-        title: "Event transport stopped before shutdown",
-        reason: "a transport finished without a shutdown request",
-        source: "EventApplication::run",
-        hints: ["Check the event transport logs"],
-    }
-}
-
-fn transport_panicked(error: tokio::task::JoinError) -> Error {
-    sword_error! {
-        code: "sword.runtime.events",
-        phase: DiagnosticPhase::Runtime,
-        target: "EventApplication::run",
-        title: "Event transport task panicked",
-        reason: error,
-        source: "EventApplication::run",
-        hints: ["Check the panic message in the logs"],
-        cause: error,
     }
 }
 

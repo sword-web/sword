@@ -344,7 +344,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     let output = if cfg!(feature = "hot-reload") {
         quote! {
             async fn __internal_main() {
-                let result: ::std::result::Result<(), ::sword::diagnostic::Error> =
+                let result: ::std::result::Result<(), ::sword::internal::core::Error> =
                     (async #body).await;
 
                 if let Err(error) = result {
@@ -363,7 +363,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
                     Err(err) => {
                         let error = ::sword::internal::core::sword_error! {
                             code: "sword.runtime.main",
-                            phase: ::sword::internal::core::diagnostic::DiagnosticPhase::Runtime,
+                            phase: ::sword::internal::core::DiagnosticPhase::Runtime,
                             target: "#[sword::main]",
                             title: "Failed to build Tokio runtime",
                             reason: err,
@@ -389,7 +389,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             #(#attrs)*
             #vis fn main() -> ::std::process::ExitCode {
-                let result: ::std::result::Result<(), ::sword::diagnostic::Error> =
+                let result: ::std::result::Result<(), ::sword::internal::core::Error> =
                     match ::sword::internal::tokio_runtime::Builder::new_multi_thread()
                         .enable_all()
                         .build()
@@ -397,7 +397,7 @@ pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
                         Ok(runtime) => runtime.block_on(async #body),
                         Err(err) => Err(::sword::internal::core::sword_error! {
                             code: "sword.runtime.main",
-                            phase: ::sword::internal::core::diagnostic::DiagnosticPhase::Runtime,
+                            phase: ::sword::internal::core::DiagnosticPhase::Runtime,
                             target: "#[sword::main]",
                             title: "Failed to build Tokio runtime",
                             reason: err,

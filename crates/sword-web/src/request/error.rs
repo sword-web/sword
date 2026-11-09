@@ -1,5 +1,6 @@
-use http_body_util::LengthLimitError;
 use std::error::Error as StdError;
+
+use http_body_util::LengthLimitError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

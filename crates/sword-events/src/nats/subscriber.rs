@@ -1,8 +1,10 @@
-use crate::{EventHandlerFn, EventRegistrar, dispatch::dispatch};
+use std::{collections::HashMap, sync::Arc};
 
 use async_nats::Subscriber;
 use futures_lite::StreamExt;
-use std::{collections::HashMap, sync::Arc};
+
+use crate::dispatch::dispatch;
+use crate::registrar::{EventHandlerFn, EventRegistrar};
 
 pub async fn consume(
     mut subscription: Subscriber,

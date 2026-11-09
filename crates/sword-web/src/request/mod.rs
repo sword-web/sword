@@ -4,28 +4,25 @@ mod extract;
 #[cfg(feature = "validator")]
 mod validator;
 
-use super::response::JsonResponse;
-use crate::interceptor::WebInterceptorResult;
+use std::{fmt::Display, str::FromStr};
 
 use axum::{
     body::{Body as AxumBody, Bytes as BodyBytes},
     extract::RawPathParams,
-    http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Version, request::Parts},
+    http::{Extensions, HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, request::Parts},
     middleware::Next,
 };
-
 use serde::de::DeserializeOwned;
-use std::{fmt::Display, str::FromStr};
+
 use sword_layers::cookies::Cookies;
 use sword_layers::request_id::RequestId;
 
-pub use error::*;
+use super::response::JsonResponse;
+use crate::interceptor::WebInterceptorResult;
 
-#[allow(unused_imports)]
-pub use extract::*;
-
+pub use self::error::RequestError;
 #[cfg(feature = "validator")]
-pub use validator::ValidatorRequestValidation;
+pub use self::validator::ValidatorRequestValidation;
 
 /// Represents the incoming request in the Sword framework.
 ///
@@ -51,8 +48,9 @@ pub struct StreamRequest {
 
 macro_rules! impl_request_accessors {
     ($next_error:expr) => {
-        pub fn uri(&self) -> String {
-            self.parts.uri.to_string()
+        /// Returns a reference to the incoming Request Uri.
+        pub fn uri(&self) -> &Uri {
+            &self.parts.uri
         }
 
         /// Returns a reference to the HTTP method of the request.

@@ -1,10 +1,10 @@
-use crate::shared::{Error, Result, cmeta::CMetaStack, paths::*};
-
 use heck::ToPascalCase;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::{Ident, ItemFn, LitStr};
+
+use crate::shared::{Error, Result, cmeta::CMetaStack, paths::*};
 
 /// Parsed data from an `#[on("...")]` handler attribute.
 pub struct ParsedOnHandler {

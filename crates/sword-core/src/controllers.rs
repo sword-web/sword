@@ -1,9 +1,10 @@
-use parking_lot::{RawRwLock, RwLock, lock_api::RwLockReadGuard};
 use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
+
+use parking_lot::{RawRwLock, RwLock, lock_api::RwLockReadGuard};
 
 pub type ControllerMap = HashMap<Controller, HashSet<TypeId>>;
 pub type ControllerIds = HashSet<TypeId>;

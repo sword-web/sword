@@ -1,6 +1,9 @@
 mod handlers;
 
-pub use handlers::expand_on_handler;
+use darling::Error;
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::Path;
 
 use crate::{
     core::{ControllerKind, ControllerStruct},
@@ -13,10 +16,7 @@ use crate::{
     },
 };
 
-use darling::Error;
-use proc_macro2::TokenStream;
-use quote::quote;
-use syn::Path;
+pub use self::handlers::expand_on_handler;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     let ControllerKind::SocketIo { namespace } = &controller.kind else {

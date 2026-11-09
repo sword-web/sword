@@ -1,5 +1,6 @@
-use sword_core::Interceptor;
 use tonic::{Request, Status};
+
+use sword_core::Interceptor;
 
 /// Result alias used by gRPC request interceptors.
 pub type GrpcInterceptorResult = Result<Request<()>, Status>;

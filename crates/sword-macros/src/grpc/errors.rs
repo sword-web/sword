@@ -2,13 +2,13 @@ mod expand;
 mod parse;
 mod validate;
 
-use crate::shared::Result;
-use crate::shared::paths::*;
-
-use parse::GrpcErrorArgs;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput};
+
+use self::parse::GrpcErrorArgs;
+use crate::shared::Result;
+use crate::shared::paths::*;
 
 pub fn derive_grpc_error(input: TokenStream) -> Result<TokenStream> {
     let input: DeriveInput = syn::parse(input)?;

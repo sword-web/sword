@@ -1,12 +1,11 @@
+use std::time::Instant;
+
 use axum::{
     extract::{Request, State},
     middleware::Next,
     response::Response,
 };
-
-use duration_str::HumanFormat;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 use tracing::Level;
 
 const REQUEST_ID_LENGTH: usize = 8;
@@ -38,7 +37,7 @@ pub enum WebLoggerLevel {
     Info,
 }
 
-pub(crate) async fn web_logger_mw(
+pub async fn web_logger_mw(
     State(logger_config): State<WebLoggerConfig>,
     req: Request,
     next: Next,
@@ -56,16 +55,15 @@ pub(crate) async fn web_logger_mw(
     let started = Instant::now();
 
     let response = next.run(req).await;
-    let status = response.status();
     let elapsed = started.elapsed();
-    let latency = elapsed.human_format();
+    let status = response.status();
 
     let request_id = response
         .headers()
         .get("x-request-id")
         .and_then(|v| v.to_str().ok())
-        .map(|id| id.chars().take(REQUEST_ID_LENGTH).collect::<String>())
-        .unwrap_or_else(|| "-".to_string());
+        .map(|id| id.get(..REQUEST_ID_LENGTH).unwrap_or(id))
+        .unwrap_or("-");
 
     let uri_for_log = if logger_config.log_query {
         uri.path_and_query().map_or("", |pq| pq.as_str())
@@ -84,7 +82,7 @@ pub(crate) async fn web_logger_mw(
         Level::ERROR => tracing::error!(
             target: "sword.web.logger",
             status = status.as_u16(),
-            latency = latency,
+            latency = ?elapsed,
             request_id = %request_id,
             "{} {uri_for_log}",
             method,
@@ -92,7 +90,7 @@ pub(crate) async fn web_logger_mw(
         Level::WARN => tracing::warn!(
             target: "sword.web.logger",
             status = status.as_u16(),
-            latency = latency,
+            latency = ?elapsed,
             request_id = %request_id,
             "{} {uri_for_log}",
             method,
@@ -100,7 +98,7 @@ pub(crate) async fn web_logger_mw(
         _ => tracing::info!(
             target: "sword.web.logger",
             status = status.as_u16(),
-            latency = latency,
+            latency = ?elapsed,
             request_id = %request_id,
             "{} {uri_for_log}",
             method,

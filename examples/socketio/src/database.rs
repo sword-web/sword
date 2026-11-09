@@ -1,7 +1,10 @@
-use crate::chat::Message;
 use std::sync::Arc;
-use sword::prelude::*;
+
 use tokio::sync::RwLock;
+
+use sword::prelude::*;
+
+use crate::chat::Message;
 
 #[injectable(provider)]
 pub struct Database {
