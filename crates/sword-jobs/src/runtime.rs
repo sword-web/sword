@@ -105,23 +105,11 @@ impl JobSchedulerRuntime {
         Ok(scheduler)
     }
 
-    /// Runs the scheduler until `shutdown` is cancelled, then stops it.
+    /// Runs the scheduler until `shutdown` is cancelled.
     pub async fn run(self, shutdown: Shutdown) -> Result<(), Error> {
-        let mut scheduler = self.start().await?;
+        let _scheduler = self.start().await?;
 
         shutdown.cancelled().await;
-
-        scheduler.shutdown().await.map_err(|err| {
-            sword_error! {
-                code: "sword.runtime.jobs",
-                phase: DiagnosticPhase::Runtime,
-                target: "job scheduler",
-                title: "Could not shut down the job scheduler",
-                reason: err,
-                source: "JobSchedulerRuntime::run",
-                hints: ["Check that running jobs can be stopped cleanly"],
-            }
-        })?;
 
         Ok(())
     }
