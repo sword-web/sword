@@ -45,8 +45,13 @@ pub struct InMemoryEventsConfig {
 
 #[cfg(feature = "nats")]
 #[derive(Clone, Debug, Deserialize)]
+#[serde(default)]
 pub struct NatsEventsConfig {
     pub url: String,
+    pub connection_timeout_ms: Option<u64>,
+    pub retry_on_initial_connect: bool,
+    pub max_reconnects: Option<usize>,
+    pub subscription_capacity: Option<usize>,
     pub handler_timeout_ms: Option<u64>,
 }
 
@@ -86,13 +91,51 @@ impl ConfigCheck for EventApplicationConfig {
         }
 
         #[cfg(feature = "nats")]
-        if let Some(nats) = &self.nats
-            && nats.url.trim().is_empty()
-        {
-            problems.push(
-                ConfigProblem::new("url", "`url` must not be empty")
-                    .with_hint("Use a URL such as nats://127.0.0.1:4222"),
-            );
+        if let Some(nats) = &self.nats {
+            if nats.url.trim().is_empty() {
+                problems.push(
+                    ConfigProblem::new("url", "`url` must not be empty")
+                        .with_hint("Use a URL such as nats://127.0.0.1:4222"),
+                );
+            }
+
+            if nats.connection_timeout_ms == Some(0) {
+                problems.push(
+                    ConfigProblem::new(
+                        "connection_timeout_ms",
+                        "`connection_timeout_ms` must be greater than 0",
+                    )
+                    .with_hint("Remove the key to use the client default"),
+                );
+            }
+
+            if nats.max_reconnects == Some(0) {
+                problems.push(
+                    ConfigProblem::new("max_reconnects", "`max_reconnects` must be greater than 0")
+                        .with_hint("Remove the key to retry without a limit"),
+                );
+            }
+
+            if nats.subscription_capacity == Some(0) {
+                problems.push(
+                    ConfigProblem::new(
+                        "subscription_capacity",
+                        "`subscription_capacity` must be greater than 0",
+                    )
+                    .with_hint("Remove the key to use 65536"),
+                );
+            } else if nats
+                .subscription_capacity
+                .is_some_and(|cap| cap > Semaphore::MAX_PERMITS)
+            {
+                problems.push(
+                    ConfigProblem::new(
+                        "subscription_capacity",
+                        "`subscription_capacity` is too large",
+                    )
+                    .with_hint("Use a smaller value"),
+                );
+            }
         }
 
         if problems.is_empty() {
@@ -120,6 +163,10 @@ impl Default for NatsEventsConfig {
     fn default() -> Self {
         Self {
             url: "nats://127.0.0.1:4222".to_string(),
+            connection_timeout_ms: None,
+            retry_on_initial_connect: false,
+            max_reconnects: None,
+            subscription_capacity: None,
             handler_timeout_ms: None,
         }
     }

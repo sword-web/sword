@@ -35,7 +35,7 @@ impl NatsTransport {
         let handler_timeout =
             resolve_handler_timeout(config.handler_timeout_ms, nats_config.handler_timeout_ms);
 
-        let client = NatsClient::new(nats_config.url);
+        let client = NatsClient::new(nats_config);
         let publisher = NatsEventPublisher::new(client.clone());
 
         let events = inventory::iter::<EventRegistrar>()
