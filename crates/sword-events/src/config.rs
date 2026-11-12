@@ -1,15 +1,32 @@
 use serde::Deserialize;
+use tokio::sync::Semaphore;
 
 use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, inventory_submit};
 
-#[derive(Clone, Debug, Deserialize, Default)]
+const DEFAULT_CONCURRENCY: usize = 256;
+
+#[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct EventApplicationConfig {
+    pub concurrency: usize,
+
     #[cfg(feature = "memory")]
     pub memory: Option<InMemoryEventsConfig>,
 
     #[cfg(feature = "nats")]
     pub nats: Option<NatsEventsConfig>,
+}
+
+impl Default for EventApplicationConfig {
+    fn default() -> Self {
+        Self {
+            concurrency: DEFAULT_CONCURRENCY,
+            #[cfg(feature = "memory")]
+            memory: None,
+            #[cfg(feature = "nats")]
+            nats: None,
+        }
+    }
 }
 
 #[cfg(feature = "memory")]
@@ -38,6 +55,18 @@ impl ConfigCheck for EventApplicationConfig {
 
     fn check(&self) -> Result<(), Vec<ConfigProblem>> {
         let mut problems = Vec::new();
+
+        if self.concurrency == 0 {
+            problems.push(
+                ConfigProblem::new("concurrency", "`concurrency` must be greater than 0")
+                    .with_hint("Remove the key to use 256, or set a positive number"),
+            );
+        } else if self.concurrency > Semaphore::MAX_PERMITS {
+            problems.push(
+                ConfigProblem::new("concurrency", "`concurrency` is too large")
+                    .with_hint("Use a smaller value"),
+            );
+        }
 
         #[cfg(feature = "memory")]
         if let Some(memory) = &self.memory
