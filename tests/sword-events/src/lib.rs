@@ -44,6 +44,54 @@ impl Default for EventStore {
 
 impl Provider for EventStore {}
 
+// ---- concurrency probe ------------------------------------------------------
+
+/// Tracks how many burst handlers run at the same time.
+pub struct ConcurrencyProbe {
+    in_flight: AtomicUsize,
+    max_in_flight: AtomicUsize,
+    hits: AtomicUsize,
+}
+
+impl ConcurrencyProbe {
+    pub fn new() -> Self {
+        Self {
+            in_flight: AtomicUsize::new(0),
+            max_in_flight: AtomicUsize::new(0),
+            hits: AtomicUsize::new(0),
+        }
+    }
+
+    fn enter(&self) {
+        let current = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+        self.max_in_flight.fetch_max(current, Ordering::SeqCst);
+    }
+
+    fn leave(&self) {
+        self.in_flight.fetch_sub(1, Ordering::SeqCst);
+    }
+
+    fn record_hit(&self) {
+        self.hits.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn max(&self) -> usize {
+        self.max_in_flight.load(Ordering::SeqCst)
+    }
+
+    fn hits(&self) -> usize {
+        self.hits.load(Ordering::SeqCst)
+    }
+}
+
+impl Default for ConcurrencyProbe {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Provider for ConcurrencyProbe {}
+
 // ---- event + handler --------------------------------------------------------
 
 #[event(key = "user.created")]
@@ -89,6 +137,53 @@ impl UsersController {
     }
 }
 
+// ---- burst event ------------------------------------------------------------
+
+#[event(key = "burst.created")]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct BurstCreated {
+    pub id: u32,
+}
+
+#[controller(kind = Controller::Events, source = EventSource::Memory)]
+pub struct BurstHandler {
+    probe: Arc<ConcurrencyProbe>,
+}
+
+impl BurstHandler {
+    #[subscribe(key = "burst.created")]
+    async fn on_burst(&self, _event: &BurstCreated) -> EventHandlerResult<()> {
+        self.probe.enter();
+        tokio::time::sleep(Duration::from_millis(40)).await;
+        self.probe.record_hit();
+        self.probe.leave();
+
+        Ok(())
+    }
+}
+
+#[controller(kind = Controller::Web, path = "/burst")]
+pub struct BurstController {
+    publisher: Arc<MemoryEventPublisher>,
+    probe: Arc<ConcurrencyProbe>,
+}
+
+impl BurstController {
+    #[post("/start")]
+    async fn start(&self) -> WebResult {
+        for id in 0..10 {
+            self.publisher.publish(BurstCreated { id }).await.unwrap();
+        }
+
+        Ok(JsonResponse::Ok().message("published"))
+    }
+
+    #[get("/stats")]
+    async fn stats(&self) -> String {
+        format!("{},{}", self.probe.max(), self.probe.hits())
+    }
+}
+
 // ---- module + harness -------------------------------------------------------
 
 struct TestModule;
@@ -97,6 +192,8 @@ impl Module for TestModule {
     fn register_controllers(controllers: &ControllerRegistry) {
         controllers.register::<UsersController>();
         controllers.register::<UserCreatedHandler>();
+        controllers.register::<BurstController>();
+        controllers.register::<BurstHandler>();
     }
 }
 
@@ -106,6 +203,7 @@ async fn start_app() -> tokio::task::JoinHandle<()> {
     let app = Application::from_config_path("Config.toml")
         .expect("application builder")
         .with_provider(EventStore::new())
+        .with_provider(ConcurrencyProbe::new())
         .with_module::<TestModule>()
         .build()
         .expect("application");
@@ -173,6 +271,29 @@ async fn poll_count(expected: usize) -> usize {
     count
 }
 
+/// Polls `GET /burst/stats` until `expected` handlers have run.
+async fn poll_burst_stats(expected: usize) -> (usize, usize) {
+    let mut max = 0;
+    let mut hits = 0;
+
+    for _ in 0..300 {
+        let body = http("GET", "/burst/stats").await;
+
+        if let Some((value, count)) = body.trim().split_once(',') {
+            max = value.parse().unwrap_or(0);
+            hits = count.parse().unwrap_or(0);
+        }
+
+        if hits >= expected {
+            break;
+        }
+
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+
+    (max, hits)
+}
+
 // ---- tests ------------------------------------------------------------------
 
 #[tokio::test]
@@ -189,6 +310,32 @@ async fn web_route_publishes_event_that_increments_store() {
     );
 
     server.abort();
+}
+
+#[tokio::test]
+#[serial]
+async fn concurrency_limit_bounds_parallel_handlers() {
+    let server = start_app().await;
+
+    let _ = http("POST", "/burst/start").await;
+
+    let (max, hits) = poll_burst_stats(10).await;
+
+    assert_eq!(hits, 10, "every burst event should be handled");
+    assert!(max <= 2, "handlers exceeded the concurrency limit: {max}");
+    assert!(max >= 2, "the limit was never reached, got {max}");
+
+    server.abort();
+}
+
+#[test]
+fn concurrency_zero_fails_at_startup() {
+    let config = Config::builder()
+        .add_toml_str("[events]\nconcurrency = 0\n")
+        .build()
+        .expect("config");
+
+    assert!(Application::from_config(config).is_err());
 }
 
 #[tokio::test]
