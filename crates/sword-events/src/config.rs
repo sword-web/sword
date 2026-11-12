@@ -1,5 +1,8 @@
 use std::time::Duration;
 
+#[cfg(feature = "nats")]
+use std::{fmt, path::PathBuf};
+
 use serde::Deserialize;
 use tokio::sync::Semaphore;
 
@@ -53,6 +56,36 @@ pub struct NatsEventsConfig {
     pub max_reconnects: Option<usize>,
     pub subscription_capacity: Option<usize>,
     pub handler_timeout_ms: Option<u64>,
+    pub auth: Option<NatsAuthConfig>,
+    pub tls: Option<NatsTlsConfig>,
+}
+
+#[cfg(feature = "nats")]
+#[derive(Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct NatsAuthConfig {
+    pub user: Option<String>,
+    pub password: Option<String>,
+    pub token: Option<String>,
+}
+
+impl fmt::Debug for NatsAuthConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NatsAuthConfig")
+            .field("user", &self.user)
+            .field("password", &self.password.as_ref().map(|_| "***"))
+            .field("token", &self.token.as_ref().map(|_| "***"))
+            .finish()
+    }
+}
+
+#[cfg(feature = "nats")]
+#[derive(Clone, Debug, Deserialize, Default)]
+#[serde(default)]
+pub struct NatsTlsConfig {
+    pub ca_file: Option<PathBuf>,
+    pub client_cert: Option<PathBuf>,
+    pub client_key: Option<PathBuf>,
 }
 
 impl ConfigItem for EventApplicationConfig {
@@ -136,6 +169,68 @@ impl ConfigCheck for EventApplicationConfig {
                     .with_hint("Use a smaller value"),
                 );
             }
+
+            if let Some(auth) = &nats.auth {
+                let has_token = auth.token.is_some();
+                let has_user = auth.user.is_some() || auth.password.is_some();
+
+                if has_token && has_user {
+                    problems.push(
+                        ConfigProblem::new(
+                            "auth",
+                            "`auth` accepts a token or a user and password, not both",
+                        )
+                        .with_hint("Remove one of the two methods"),
+                    );
+                }
+
+                if auth.user.is_some() != auth.password.is_some() {
+                    problems.push(
+                        ConfigProblem::new("auth", "`user` and `password` must be set together")
+                            .with_hint("Set both keys or remove them"),
+                    );
+                }
+
+                if auth.user.as_deref().is_some_and(str::is_empty) {
+                    problems.push(ConfigProblem::new("user", "`user` must not be empty"));
+                }
+
+                if auth.token.as_deref().is_some_and(str::is_empty) {
+                    problems.push(ConfigProblem::new("token", "`token` must not be empty"));
+                }
+            }
+
+            if let Some(tls) = &nats.tls {
+                if tls.client_cert.is_some() != tls.client_key.is_some() {
+                    problems.push(
+                        ConfigProblem::new(
+                            "tls",
+                            "`client_cert` and `client_key` must be set together",
+                        )
+                        .with_hint("Set both keys for mutual TLS, or remove them"),
+                    );
+                }
+
+                for (key, path) in [
+                    ("ca_file", &tls.ca_file),
+                    ("client_cert", &tls.client_cert),
+                    ("client_key", &tls.client_key),
+                ] {
+                    if let Some(path) = path
+                        && !path.exists()
+                    {
+                        problems.push(
+                            ConfigProblem::new(
+                                key,
+                                format!("`{key}` does not exist at {}", path.display()),
+                            )
+                            .with_hint(
+                                "Use an absolute path or a path relative to the working directory",
+                            ),
+                        );
+                    }
+                }
+            }
         }
 
         if problems.is_empty() {
@@ -168,6 +263,8 @@ impl Default for NatsEventsConfig {
             max_reconnects: None,
             subscription_capacity: None,
             handler_timeout_ms: None,
+            auth: None,
+            tls: None,
         }
     }
 }

@@ -5,3 +5,4 @@ examples/*.md
 .vscode/mcp.json
 
 **/target
+tests/sword-events/nats/certs/

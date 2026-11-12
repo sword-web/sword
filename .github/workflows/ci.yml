@@ -335,6 +335,9 @@ jobs:
       - name: Run tests (sword-events-tests)
         run: cargo test -p sword-events-tests
 
+      - name: Run NATS integration tests
+        run: tests/sword-events/nats/run.sh
+
       - name: Build docs (sword-events)
         env:
           RUSTDOCFLAGS: "-D warnings"

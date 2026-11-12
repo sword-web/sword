@@ -56,10 +56,20 @@ impl EventApplication {
 
         #[cfg(feature = "nats")]
         {
-            let (publisher, transport) = NatsTransport::new(&events_config);
+            let nats_configured = events_config.nats.is_some();
+            let nats_config = events_config.nats.clone().unwrap_or_default();
+
+            let (publisher, transport) = NatsTransport::new(
+                nats_config,
+                events_config.handler_timeout_ms,
+                events_config.concurrency,
+            );
 
             providers.register(publisher);
-            transports.push(EventTransport::Nats(transport));
+
+            if nats_configured {
+                transports.push(EventTransport::Nats(Box::new(transport)));
+            }
         }
 
         Ok(Self { transports })
@@ -141,7 +151,7 @@ enum EventTransport {
     Memory(MemoryTransport),
 
     #[cfg(feature = "nats")]
-    Nats(NatsTransport),
+    Nats(Box<NatsTransport>),
 }
 
 impl EventTransport {

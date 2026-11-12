@@ -11,7 +11,7 @@ use client::NatsClient;
 use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
 
 use crate::application::HandlerEntry;
-use crate::config::{EventApplicationConfig, resolve_handler_timeout};
+use crate::config::{NatsEventsConfig, resolve_handler_timeout};
 use crate::registrar::{EventHandlerFn, EventRegistrar};
 
 pub use publisher::NatsEventPublisher;
@@ -30,10 +30,13 @@ pub struct NatsTransport {
 }
 
 impl NatsTransport {
-    pub fn new(config: &EventApplicationConfig) -> (NatsEventPublisher, Self) {
-        let nats_config = config.nats.clone().unwrap_or_default();
+    pub fn new(
+        nats_config: NatsEventsConfig,
+        global_timeout_ms: u64,
+        concurrency: usize,
+    ) -> (NatsEventPublisher, Self) {
         let handler_timeout =
-            resolve_handler_timeout(config.handler_timeout_ms, nats_config.handler_timeout_ms);
+            resolve_handler_timeout(global_timeout_ms, nats_config.handler_timeout_ms);
 
         let client = NatsClient::new(nats_config);
         let publisher = NatsEventPublisher::new(client.clone());
@@ -46,7 +49,7 @@ impl NatsTransport {
             client,
             subscriptions: HashMap::new(),
             events: Arc::new(events),
-            permits: Arc::new(Semaphore::new(config.concurrency)),
+            permits: Arc::new(Semaphore::new(concurrency)),
             handler_timeout,
         };
 

@@ -38,6 +38,26 @@ impl NatsClient {
             options = options.subscription_capacity(capacity);
         }
 
+        if let Some(auth) = &self.config.auth {
+            if let Some(token) = &auth.token {
+                options = options.token(token.clone());
+            } else if let (Some(user), Some(password)) = (&auth.user, &auth.password) {
+                options = options.user_and_password(user.clone(), password.clone());
+            }
+        }
+
+        if let Some(tls) = &self.config.tls {
+            options = options.require_tls(true);
+
+            if let Some(ca_file) = &tls.ca_file {
+                options = options.add_root_certificates(ca_file.clone());
+            }
+
+            if let (Some(cert), Some(key)) = (&tls.client_cert, &tls.client_key) {
+                options = options.add_client_certificate(cert.clone(), key.clone());
+            }
+        }
+
         let client = options.connect(&self.config.url).await?;
         let _ = self.inner.set(client);
 
