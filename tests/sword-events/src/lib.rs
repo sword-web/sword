@@ -143,6 +143,7 @@ impl UsersController {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct BurstCreated {
     pub id: u32,
+    pub sleep_ms: u64,
 }
 
 #[controller(kind = Controller::Events, source = EventSource::Memory)]
@@ -152,9 +153,9 @@ pub struct BurstHandler {
 
 impl BurstHandler {
     #[subscribe(key = "burst.created")]
-    async fn on_burst(&self, _event: &BurstCreated) -> EventHandlerResult<()> {
+    async fn on_burst(&self, event: &BurstCreated) -> EventHandlerResult<()> {
         self.probe.enter();
-        tokio::time::sleep(Duration::from_millis(40)).await;
+        tokio::time::sleep(Duration::from_millis(event.sleep_ms)).await;
         self.probe.record_hit();
         self.probe.leave();
 
@@ -172,8 +173,37 @@ impl BurstController {
     #[post("/start")]
     async fn start(&self) -> WebResult {
         for id in 0..10 {
-            self.publisher.publish(BurstCreated { id }).await.unwrap();
+            self.publisher
+                .publish(BurstCreated { id, sleep_ms: 40 })
+                .await
+                .unwrap();
         }
+
+        Ok(JsonResponse::Ok().message("published"))
+    }
+
+    #[post("/slow")]
+    async fn slow(&self) -> WebResult {
+        self.publisher
+            .publish(BurstCreated {
+                id: 0,
+                sleep_ms: 200,
+            })
+            .await
+            .unwrap();
+
+        Ok(JsonResponse::Ok().message("published"))
+    }
+
+    #[post("/fast")]
+    async fn fast(&self) -> WebResult {
+        self.publisher
+            .publish(BurstCreated {
+                id: 0,
+                sleep_ms: 10,
+            })
+            .await
+            .unwrap();
 
         Ok(JsonResponse::Ok().message("published"))
     }
@@ -199,8 +229,8 @@ impl Module for TestModule {
 
 /// Builds and runs the full application (web + events) and waits until the web
 /// listener accepts connections.
-async fn start_app() -> tokio::task::JoinHandle<()> {
-    let app = Application::from_config_path("Config.toml")
+async fn start_app(config_path: &str) -> tokio::task::JoinHandle<()> {
+    let app = Application::from_config_path(config_path)
         .expect("application builder")
         .with_provider(EventStore::new())
         .with_provider(ConcurrencyProbe::new())
@@ -271,27 +301,31 @@ async fn poll_count(expected: usize) -> usize {
     count
 }
 
+/// Reads `GET /burst/stats` once.
+async fn burst_stats() -> (usize, usize) {
+    let body = http("GET", "/burst/stats").await;
+
+    match body.trim().split_once(',') {
+        Some((max, hits)) => (max.parse().unwrap_or(0), hits.parse().unwrap_or(0)),
+        None => (0, 0),
+    }
+}
+
 /// Polls `GET /burst/stats` until `expected` handlers have run.
 async fn poll_burst_stats(expected: usize) -> (usize, usize) {
-    let mut max = 0;
-    let mut hits = 0;
+    let mut stats = (0, 0);
 
     for _ in 0..300 {
-        let body = http("GET", "/burst/stats").await;
+        stats = burst_stats().await;
 
-        if let Some((value, count)) = body.trim().split_once(',') {
-            max = value.parse().unwrap_or(0);
-            hits = count.parse().unwrap_or(0);
-        }
-
-        if hits >= expected {
+        if stats.1 >= expected {
             break;
         }
 
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
 
-    (max, hits)
+    stats
 }
 
 // ---- tests ------------------------------------------------------------------
@@ -299,7 +333,7 @@ async fn poll_burst_stats(expected: usize) -> (usize, usize) {
 #[tokio::test]
 #[serial]
 async fn web_route_publishes_event_that_increments_store() {
-    let server = start_app().await;
+    let server = start_app("Config.toml").await;
 
     let _ = http("POST", "/users/create").await;
 
@@ -315,7 +349,7 @@ async fn web_route_publishes_event_that_increments_store() {
 #[tokio::test]
 #[serial]
 async fn concurrency_limit_bounds_parallel_handlers() {
-    let server = start_app().await;
+    let server = start_app("Config.toml").await;
 
     let _ = http("POST", "/burst/start").await;
 
@@ -340,8 +374,53 @@ fn concurrency_zero_fails_at_startup() {
 
 #[tokio::test]
 #[serial]
+async fn handler_timeout_releases_the_permit() {
+    let server = start_app("ConfigTimeout.toml").await;
+
+    let _ = http("POST", "/burst/slow").await;
+    tokio::time::sleep(Duration::from_millis(150)).await;
+
+    let (_, hits) = burst_stats().await;
+    assert_eq!(hits, 0, "the slow handler should time out");
+
+    let _ = http("POST", "/burst/fast").await;
+    let (_, hits) = poll_burst_stats(1).await;
+
+    assert_eq!(hits, 1, "the permit should be free after the timeout");
+
+    server.abort();
+}
+
+#[tokio::test]
+#[serial]
+async fn transport_timeout_overrides_the_global_value() {
+    let server = start_app("ConfigOverride.toml").await;
+
+    let _ = http("POST", "/burst/slow").await;
+    let (_, hits) = poll_burst_stats(1).await;
+
+    assert_eq!(hits, 1, "the 500 ms override should let the handler finish");
+
+    server.abort();
+}
+
+#[tokio::test]
+#[serial]
+async fn zero_timeout_disables_the_limit() {
+    let server = start_app("ConfigNoTimeout.toml").await;
+
+    let _ = http("POST", "/burst/slow").await;
+    let (_, hits) = poll_burst_stats(1).await;
+
+    assert_eq!(hits, 1, "a timeout of zero should disable the limit");
+
+    server.abort();
+}
+
+#[tokio::test]
+#[serial]
 async fn multiple_events_accumulate_in_store() {
-    let server = start_app().await;
+    let server = start_app("Config.toml").await;
 
     let _ = http("POST", "/users/create").await;
     let _ = http("POST", "/users/create").await;

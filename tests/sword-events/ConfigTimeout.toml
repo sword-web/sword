@@ -1,0 +1,15 @@
+[application]
+
+[web]
+host = "127.0.0.1"
+port = 8083
+body-limit = "1MB"
+
+[events]
+concurrency = 1
+handler_timeout_ms = 50
+
+[events.memory]
+buffer_size = 1024
+num_of_event_retry = 0
+delay_between_event_retry_ms = 0

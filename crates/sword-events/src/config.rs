@@ -1,14 +1,18 @@
+use std::time::Duration;
+
 use serde::Deserialize;
 use tokio::sync::Semaphore;
 
 use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, inventory_submit};
 
 const DEFAULT_CONCURRENCY: usize = 256;
+const DEFAULT_HANDLER_TIMEOUT_MS: u64 = 30_000;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct EventApplicationConfig {
     pub concurrency: usize,
+    pub handler_timeout_ms: u64,
 
     #[cfg(feature = "memory")]
     pub memory: Option<InMemoryEventsConfig>,
@@ -21,6 +25,7 @@ impl Default for EventApplicationConfig {
     fn default() -> Self {
         Self {
             concurrency: DEFAULT_CONCURRENCY,
+            handler_timeout_ms: DEFAULT_HANDLER_TIMEOUT_MS,
             #[cfg(feature = "memory")]
             memory: None,
             #[cfg(feature = "nats")]
@@ -35,12 +40,14 @@ pub struct InMemoryEventsConfig {
     pub buffer_size: usize,
     pub num_of_event_retry: u8,
     pub delay_between_event_retry_ms: u64,
+    pub handler_timeout_ms: Option<u64>,
 }
 
 #[cfg(feature = "nats")]
 #[derive(Clone, Debug, Deserialize)]
 pub struct NatsEventsConfig {
     pub url: String,
+    pub handler_timeout_ms: Option<u64>,
 }
 
 impl ConfigItem for EventApplicationConfig {
@@ -103,6 +110,7 @@ impl Default for InMemoryEventsConfig {
             buffer_size: 1024,
             num_of_event_retry: 3,
             delay_between_event_retry_ms: 1000,
+            handler_timeout_ms: None,
         }
     }
 }
@@ -112,6 +120,7 @@ impl Default for NatsEventsConfig {
     fn default() -> Self {
         Self {
             url: "nats://127.0.0.1:4222".to_string(),
+            handler_timeout_ms: None,
         }
     }
 }
@@ -123,3 +132,12 @@ inventory_submit! {[
         Ok(())
     })
 ]}
+
+/// Resolves the handler timeout from the transport override and the global value.
+///
+/// A value of zero disables the timeout.
+pub fn resolve_handler_timeout(global_ms: u64, override_ms: Option<u64>) -> Option<Duration> {
+    let value = override_ms.unwrap_or(global_ms);
+
+    (value > 0).then(|| Duration::from_millis(value))
+}
