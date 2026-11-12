@@ -28,6 +28,22 @@ impl EventApplication {
         check_event_key_uniqueness()?;
 
         let events_config = config.get_or_default::<EventApplicationConfig>();
+
+        if events_config.concurrency == 0 {
+            return Err(sword_error! {
+                code: "sword.build.events",
+                phase: DiagnosticPhase::Build,
+                target: "events",
+                title: "Invalid events concurrency",
+                reason: "`concurrency` must be greater than 0",
+                source: "EventApplication::new",
+                hints: [
+                    "Set a positive value in the [events] config section",
+                    "The default is 256",
+                ],
+            });
+        }
+
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]

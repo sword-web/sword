@@ -3,7 +3,7 @@ mod subscriber;
 
 use std::{collections::HashMap, sync::Arc};
 
-use tokio::sync::mpsc;
+use tokio::sync::{Semaphore, mpsc};
 
 use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
 
@@ -54,6 +54,7 @@ impl MemoryTransport {
             receiver: rx,
             handlers: Default::default(),
             config: engine_config,
+            permits: Arc::new(Semaphore::new(config.concurrency)),
         };
 
         Ok((publisher, Self { subscriber }))

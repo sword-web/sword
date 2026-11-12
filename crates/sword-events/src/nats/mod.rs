@@ -4,6 +4,7 @@ mod subscriber;
 
 use std::{collections::HashMap, sync::Arc};
 
+use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 
 use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
@@ -24,6 +25,7 @@ pub struct NatsTransport {
     client: NatsClient,
     subscriptions: NatsEventHandlerMap,
     events: Arc<HashMap<&'static str, &'static EventRegistrar>>,
+    permits: Arc<Semaphore>,
 }
 
 impl NatsTransport {
@@ -41,6 +43,7 @@ impl NatsTransport {
             client,
             subscriptions: HashMap::new(),
             events: Arc::new(events),
+            permits: Arc::new(Semaphore::new(config.concurrency)),
         };
 
         (publisher, transport)
@@ -133,6 +136,7 @@ impl NatsTransport {
                 subscriber,
                 handlers,
                 self.events.clone(),
+                self.permits.clone(),
             ));
         }
 

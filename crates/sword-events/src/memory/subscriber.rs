@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
+use tokio::sync::Semaphore;
 use tokio::sync::mpsc::Receiver;
 
 use sword_core::Shutdown;
 
+use crate::dispatch::dispatch;
 use crate::registrar::EventKeyHandlerMap;
 use crate::{Event, InMemoryEventsConfig};
 
@@ -19,6 +21,7 @@ pub struct MemoryEventSubscriber {
     pub receiver: Receiver<Arc<dyn Event>>,
     pub handlers: EventKeyHandlerMap,
     pub config: InMemoryEventsConfig,
+    pub permits: Arc<Semaphore>,
 }
 
 impl MemoryEventSubscriber {
@@ -28,12 +31,13 @@ impl MemoryEventSubscriber {
             mut receiver,
             handlers,
             config,
+            permits,
         } = self;
 
         loop {
             tokio::select! {
                 maybe = receiver.recv() => match maybe {
-                    Some(event) => Self::dispatch(&handlers, &config, event),
+                    Some(event) => Self::dispatch(&handlers, &config, &permits, event).await,
                     None => break,
                 },
                 _ = shutdown.cancelled() => break,
@@ -49,9 +53,10 @@ impl MemoryEventSubscriber {
     /// Events without registered handlers are ignored. Each handler runs
     /// concurrently in its own task so a slow handler does not block the others
     /// or the receive loop.
-    fn dispatch(
+    async fn dispatch(
         handlers: &EventKeyHandlerMap,
         config: &InMemoryEventsConfig,
+        permits: &Arc<Semaphore>,
         event: Arc<dyn Event>,
     ) {
         let key = event.key();
@@ -61,11 +66,13 @@ impl MemoryEventSubscriber {
             return;
         };
 
-        crate::dispatch::dispatch(
+        dispatch(
             entries,
             event,
+            permits,
             config.num_of_event_retry,
             config.delay_between_event_retry_ms,
-        );
+        )
+        .await;
     }
 }
