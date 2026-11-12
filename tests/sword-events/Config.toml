@@ -1,6 +1,0 @@
-[application]
-
-[web]
-host = "127.0.0.1"
-port = 8083
-body-limit = "1MB"

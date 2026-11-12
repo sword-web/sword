@@ -1,7 +1,12 @@
 use std::sync::Arc;
+use std::time::Duration;
 
+use tokio::sync::Semaphore;
 use tokio::sync::mpsc::Receiver;
 
+use sword_core::Shutdown;
+
+use crate::dispatch::dispatch;
 use crate::registrar::EventKeyHandlerMap;
 use crate::{Event, InMemoryEventsConfig};
 
@@ -13,25 +18,29 @@ use crate::{Event, InMemoryEventsConfig};
 /// The event handling flow is:
 /// consume -> dispatch -> invoke (with retries)
 /// (recv)     (per key)    (per handler)
-pub(super) struct MemoryEventSubscriber {
-    pub(super) receiver: Receiver<Arc<dyn Event>>,
-    pub(super) handlers: EventKeyHandlerMap,
-    pub(super) config: InMemoryEventsConfig,
+pub struct MemoryEventSubscriber {
+    pub receiver: Receiver<Arc<dyn Event>>,
+    pub handlers: EventKeyHandlerMap,
+    pub config: InMemoryEventsConfig,
+    pub permits: Arc<Semaphore>,
+    pub handler_timeout: Option<Duration>,
 }
 
 impl MemoryEventSubscriber {
     /// Consumes events until the channel is closed or `shutdown` is cancelled.
-    pub async fn run(self, shutdown: sword_core::Shutdown) {
+    pub async fn run(self, shutdown: Shutdown) {
         let MemoryEventSubscriber {
             mut receiver,
             handlers,
             config,
+            permits,
+            handler_timeout,
         } = self;
 
         loop {
             tokio::select! {
                 maybe = receiver.recv() => match maybe {
-                    Some(event) => Self::dispatch(&handlers, &config, event),
+                    Some(event) => Self::dispatch(&handlers, &config, &permits, handler_timeout, event).await,
                     None => break,
                 },
                 _ = shutdown.cancelled() => break,
@@ -47,9 +56,11 @@ impl MemoryEventSubscriber {
     /// Events without registered handlers are ignored. Each handler runs
     /// concurrently in its own task so a slow handler does not block the others
     /// or the receive loop.
-    fn dispatch(
+    async fn dispatch(
         handlers: &EventKeyHandlerMap,
         config: &InMemoryEventsConfig,
+        permits: &Arc<Semaphore>,
+        handler_timeout: Option<Duration>,
         event: Arc<dyn Event>,
     ) {
         let key = event.key();
@@ -59,11 +70,14 @@ impl MemoryEventSubscriber {
             return;
         };
 
-        crate::dispatch::dispatch(
+        dispatch(
             entries,
             event,
+            permits,
             config.num_of_event_retry,
             config.delay_between_event_retry_ms,
-        );
+            handler_timeout,
+        )
+        .await;
     }
 }

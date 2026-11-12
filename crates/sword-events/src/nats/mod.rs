@@ -2,18 +2,19 @@ mod client;
 mod publisher;
 mod subscriber;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 
+use client::NatsClient;
 use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
 
-use self::client::NatsClient;
 use crate::application::HandlerEntry;
-use crate::config::EventApplicationConfig;
+use crate::config::{NatsEventsConfig, resolve_handler_timeout};
 use crate::registrar::{EventHandlerFn, EventRegistrar};
 
-pub use self::publisher::NatsEventPublisher;
+pub use publisher::NatsEventPublisher;
 
 /// A NATS subscription: `(subject, group)`. `None` means an individual
 /// subscription (fan-out); `Some` means a queue group (load balanced).
@@ -24,13 +25,20 @@ pub struct NatsTransport {
     client: NatsClient,
     subscriptions: NatsEventHandlerMap,
     events: Arc<HashMap<&'static str, &'static EventRegistrar>>,
+    permits: Arc<Semaphore>,
+    handler_timeout: Option<Duration>,
 }
 
 impl NatsTransport {
-    pub fn new(config: &EventApplicationConfig) -> (NatsEventPublisher, Self) {
-        let nats_config = config.nats.clone().unwrap_or_default();
+    pub fn new(
+        nats_config: NatsEventsConfig,
+        global_timeout_ms: u64,
+        concurrency: usize,
+    ) -> (NatsEventPublisher, Self) {
+        let handler_timeout =
+            resolve_handler_timeout(global_timeout_ms, nats_config.handler_timeout_ms);
 
-        let client = NatsClient::new(nats_config.url);
+        let client = NatsClient::new(nats_config);
         let publisher = NatsEventPublisher::new(client.clone());
 
         let events = inventory::iter::<EventRegistrar>()
@@ -41,6 +49,8 @@ impl NatsTransport {
             client,
             subscriptions: HashMap::new(),
             events: Arc::new(events),
+            permits: Arc::new(Semaphore::new(concurrency)),
+            handler_timeout,
         };
 
         (publisher, transport)
@@ -133,6 +143,8 @@ impl NatsTransport {
                 subscriber,
                 handlers,
                 self.events.clone(),
+                self.permits.clone(),
+                self.handler_timeout,
             ));
         }
 

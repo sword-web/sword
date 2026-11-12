@@ -3,14 +3,14 @@ mod subscriber;
 
 use std::{collections::HashMap, sync::Arc};
 
-use tokio::sync::mpsc;
+use tokio::sync::{Semaphore, mpsc};
 
 use sword_core::{DiagnosticPhase, Error, Shutdown, sword_error};
 
 use self::subscriber::MemoryEventSubscriber;
 use crate::Event;
 use crate::application::HandlerEntry;
-use crate::config::EventApplicationConfig;
+use crate::config::{EventApplicationConfig, resolve_handler_timeout};
 use crate::registrar::EventKeyHandlerMap;
 
 pub use self::publisher::MemoryEventPublisher;
@@ -47,6 +47,9 @@ impl MemoryTransport {
             });
         }
 
+        let handler_timeout =
+            resolve_handler_timeout(config.handler_timeout_ms, engine_config.handler_timeout_ms);
+
         let (tx, rx) = mpsc::channel::<Arc<dyn Event>>(engine_config.buffer_size);
 
         let publisher = MemoryEventPublisher::new(tx);
@@ -54,6 +57,8 @@ impl MemoryTransport {
             receiver: rx,
             handlers: Default::default(),
             config: engine_config,
+            permits: Arc::new(Semaphore::new(config.concurrency)),
+            handler_timeout,
         };
 
         Ok((publisher, Self { subscriber }))

@@ -28,6 +28,22 @@ impl EventApplication {
         check_event_key_uniqueness()?;
 
         let events_config = config.get_or_default::<EventApplicationConfig>();
+
+        if events_config.concurrency == 0 {
+            return Err(sword_error! {
+                code: "sword.build.events",
+                phase: DiagnosticPhase::Build,
+                target: "events",
+                title: "Invalid events concurrency",
+                reason: "`concurrency` must be greater than 0",
+                source: "EventApplication::new",
+                hints: [
+                    "Set a positive value in the [events] config section",
+                    "The default is 256",
+                ],
+            });
+        }
+
         let mut transports = Vec::new();
 
         #[cfg(feature = "memory")]
@@ -40,10 +56,20 @@ impl EventApplication {
 
         #[cfg(feature = "nats")]
         {
-            let (publisher, transport) = NatsTransport::new(&events_config);
+            let nats_configured = events_config.nats.is_some();
+            let nats_config = events_config.nats.clone().unwrap_or_default();
+
+            let (publisher, transport) = NatsTransport::new(
+                nats_config,
+                events_config.handler_timeout_ms,
+                events_config.concurrency,
+            );
 
             providers.register(publisher);
-            transports.push(EventTransport::Nats(transport));
+
+            if nats_configured {
+                transports.push(EventTransport::Nats(Box::new(transport)));
+            }
         }
 
         Ok(Self { transports })
@@ -125,7 +151,7 @@ enum EventTransport {
     Memory(MemoryTransport),
 
     #[cfg(feature = "nats")]
-    Nats(NatsTransport),
+    Nats(Box<NatsTransport>),
 }
 
 impl EventTransport {

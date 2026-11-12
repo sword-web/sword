@@ -24,7 +24,7 @@ pub use self::config::EventApplicationConfig;
 pub use self::config::InMemoryEventsConfig;
 
 #[cfg(feature = "nats")]
-pub use self::config::NatsEventsConfig;
+pub use self::config::{NatsAuthConfig, NatsEventsConfig, NatsTlsConfig};
 
 pub use self::event::{Event, EventCodecError, EventPublish, EventPublishError, EventSource};
 
