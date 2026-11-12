@@ -6,7 +6,7 @@ pub struct NatsEventPublisher {
 }
 
 impl NatsEventPublisher {
-    pub(super) fn new(client: NatsClient) -> Self {
+    pub fn new(client: NatsClient) -> Self {
         Self { client }
     }
 }

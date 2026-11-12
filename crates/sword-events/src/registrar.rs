@@ -16,7 +16,7 @@ type BoxedFuture<T> = Pin<Box<dyn Future<Output = EventHandlerResult<T>> + Send>
 pub type EventHandlerFn = Arc<dyn Fn(Arc<dyn Event>) -> BoxedFuture<()> + Send + Sync>;
 
 #[cfg(feature = "memory")]
-pub(crate) type EventKeyHandlerMap = HashMap<&'static str, Vec<EventHandlerFn>>;
+pub type EventKeyHandlerMap = HashMap<&'static str, Vec<EventHandlerFn>>;
 
 /// Builds an Events controller from DI state once
 pub struct EventControllerRegistrar {

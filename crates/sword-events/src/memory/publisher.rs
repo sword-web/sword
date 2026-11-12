@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::Sender;
 
+use sword_core::Provider;
+
 use crate::{Event, EventPublish, EventPublishError};
 
 #[derive(Clone)]
@@ -10,7 +12,7 @@ pub struct MemoryEventPublisher {
 }
 
 impl MemoryEventPublisher {
-    pub(super) fn new(sender: Sender<Arc<dyn Event>>) -> Self {
+    pub fn new(sender: Sender<Arc<dyn Event>>) -> Self {
         Self { sender }
     }
 }
@@ -24,4 +26,4 @@ impl EventPublish for MemoryEventPublisher {
     }
 }
 
-impl sword_core::Provider for MemoryEventPublisher {}
+impl Provider for MemoryEventPublisher {}

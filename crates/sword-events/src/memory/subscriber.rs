@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc::Receiver;
 
+use sword_core::Shutdown;
+
 use crate::registrar::EventKeyHandlerMap;
 use crate::{Event, InMemoryEventsConfig};
 
@@ -13,15 +15,15 @@ use crate::{Event, InMemoryEventsConfig};
 /// The event handling flow is:
 /// consume -> dispatch -> invoke (with retries)
 /// (recv)     (per key)    (per handler)
-pub(super) struct MemoryEventSubscriber {
-    pub(super) receiver: Receiver<Arc<dyn Event>>,
-    pub(super) handlers: EventKeyHandlerMap,
-    pub(super) config: InMemoryEventsConfig,
+pub struct MemoryEventSubscriber {
+    pub receiver: Receiver<Arc<dyn Event>>,
+    pub handlers: EventKeyHandlerMap,
+    pub config: InMemoryEventsConfig,
 }
 
 impl MemoryEventSubscriber {
     /// Consumes events until the channel is closed or `shutdown` is cancelled.
-    pub async fn run(self, shutdown: sword_core::Shutdown) {
+    pub async fn run(self, shutdown: Shutdown) {
         let MemoryEventSubscriber {
             mut receiver,
             handlers,
