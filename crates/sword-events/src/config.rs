@@ -69,6 +69,7 @@ pub struct NatsAuthConfig {
     pub token: Option<String>,
 }
 
+#[cfg(feature = "nats")]
 impl fmt::Debug for NatsAuthConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("NatsAuthConfig")

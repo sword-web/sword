@@ -36,3 +36,7 @@ publish = false
 name = "sword-socketio-tests"
 release = false
 publish = false
+
+[[package]]
+name = "sword-events"
+publish_all_features = true
