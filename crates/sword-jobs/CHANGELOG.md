@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/sword-web/sword/compare/sword-jobs-v0.5.0...sword-jobs-v0.6.0) - 2026-11-13
+
+### Other
+
+- *(jobs)* remove the unused scheduler shutdown
+- *(imports)* group by std, extern, sword and crate
+- *(api)* [**breaking**] reorganize public, prelude and internal visibility
+- *(validation)* update README.md
+- *(diagnostics)* migrate facade and remove the legacy macro
+- *(jobs)* migrate generated job diagnostics
+- *(jobs)* return diagnostics from run
+- document application and sub-features in README
+- [**breaking**] assemble the events engine and rename controller kinds
+
 ## [0.5.0](https://github.com/sword-web/sword/compare/sword-jobs-v0.4.1...sword-jobs-v0.5.0) - 2026-10-13
 
 ### Added

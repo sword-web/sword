@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/sword-web/sword/compare/sword-layers-v0.5.0...sword-layers-v0.6.0) - 2026-11-13
+
+### Added
+
+- *(config)* validate sections before startup
+
+### Other
+
+- *(imports)* group by std, extern, sword and crate
+- *(api)* [**breaking**] reorganize public, prelude and internal visibility
+- *(diagnostics)* remove repeated text from reports
+- *(layers)* validate the tracing section
+
 ## [0.5.0](https://github.com/sword-web/sword/compare/sword-layers-v0.4.1...sword-layers-v0.5.0) - 2026-10-13
 
 ### Other

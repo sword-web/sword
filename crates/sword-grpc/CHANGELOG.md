@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/sword-web/sword/compare/sword-grpc-v0.5.0...sword-grpc-v0.6.0) - 2026-11-13
+
+### Added
+
+- *(config)* validate sections before startup
+- *(grpc)* add injectable gRPC clients
+
+### Other
+
+- *(imports)* group by std, extern, sword and crate
+- *(api)* [**breaking**] reorganize public, prelude and internal visibility
+- *(web,grpc)* [**breaking**] improve access-log timing and request URI access
+- *(grpc)* cut allocations in the access logger
+- *(validation)* update README.md
+- *(runtime)* remove graceful shutdown
+- *(diagnostics)* remove repeated text from reports
+- *(diagnostics)* migrate facade and remove the legacy macro
+- *(grpc)* migrate generated grpc diagnostics
+- *(macros)* make config registration fallible
+- *(grpc)* validate the grpc section
+- *(grpc)* return diagnostics from run
+- document application and sub-features in README
+
 ## [0.5.0](https://github.com/sword-web/sword/compare/sword-grpc-v0.4.1...sword-grpc-v0.5.0) - 2026-10-13
 
 ### Added
