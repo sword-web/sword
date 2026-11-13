@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/sword-web/sword/compare/sword-macros-v0.5.0...sword-macros-v0.6.0) - 2026-11-13
+
+### Added
+
+- *(main)* return ExitCode and report once
+- *(events)* added generic types check for event macro
+- *(events)* handle both empty and invalid chars from event macro
+- *(events)* implement NATS transport with queue groups
+- prepare sword-events and its macros to NATs
+- added events-nats feature flag
+
+### Fixed
+
+- *(macros)* add stable locations to grpc, events and jobs
+- *(macros)* add stable locations to generated diagnostics
+- *(di)* resolve component locations on stable
+- *(events)* apply clippy idiomatic code suggestions
+- *(events)* handle wildcards with &dyn Event
+
+### Other
+
+- *(events)* [**breaking**] rename source to transport
+- *(imports)* group by std, extern, sword and crate
+- *(api)* [**breaking**] reorganize public, prelude and internal visibility
+- *(validation)* update README.md
+- apply some clippy and nursery fixes
+- *(diagnostics)* remove repeated text from reports
+- *(diagnostics)* migrate facade and remove the legacy macro
+- *(socketio)* migrate generated handler diagnostics
+- *(jobs)* migrate generated job diagnostics
+- *(events)* migrate generated event diagnostics
+- *(grpc)* migrate generated grpc diagnostics
+- *(web)* migrate generated web diagnostics
+- *(macros)* make config registration fallible
+- document application and sub-features in README
+- [**breaking**] assemble the events engine and rename controller kinds
+- *(events)* [**breaking**] make transports pluggable
+- *(events)* [**breaking**] rename handle macro to subscribe
+
 ## [0.5.0](https://github.com/sword-web/sword/compare/sword-macros-v0.4.1...sword-macros-v0.5.0) - 2026-10-13
 
 ### Added

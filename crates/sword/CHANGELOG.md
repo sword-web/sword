@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/sword-web/sword/compare/sword-v0.5.0...sword-v0.6.0) - 2026-11-13
+
+### Added
+
+- *(config)* validate sections before startup
+- *(config)* apply the diagnostics mode from application config
+- *(diagnostic)* add diagnostic model and renderer
+- added events-nats feature flag
+
+### Fixed
+
+- *(di)* resolve component locations on stable
+
+### Other
+
+- *(errors)* inline runtime sword_error diagnostics
+- *(imports)* group by std, extern, sword and crate
+- *(api)* [**breaking**] reorganize public, prelude and internal visibility
+- *(validation)* update README.md
+- *(validation)* [**breaking**] rename feature-flags across sword crates
+- *(runtime)* remove graceful shutdown
+- *(diagnostics)* remove repeated text from reports
+- *(diagnostics)* migrate facade and remove the legacy macro
+- *(events)* migrate generated event diagnostics
+- *(macros)* make config registration fallible
+- *(core)* return interceptor build failures
+- *(events)* validate the events section
+- *(grpc)* validate the grpc section
+- *(web)* validate the web section and make extensions fallible
+- *(layers)* validate the tracing section
+- *(jobs)* return diagnostics from run
+- *(events)* return diagnostics from run
+- *(grpc)* return diagnostics from run
+- *(web)* return diagnostics from run
+- *(runtime)* run engines as fallible tasks
+- *(runtime)* make router fallible
+- document application and sub-features in README
+- [**breaking**] assemble the events engine and rename controller kinds
+- *(events)* [**breaking**] make transports pluggable
+- *(grpc)* cover client injection and end-to-end call
+
 ## [0.5.0](https://github.com/sword-web/sword/compare/sword-v0.4.1...sword-v0.5.0) - 2026-10-13
 
 ### Added
