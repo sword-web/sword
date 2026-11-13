@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 use syn::{FnArg, ItemFn, Path, Type};
 
 use crate::{
-    core::EventSourceKind,
+    core::EventTransportKind,
     shared::{Result, cmeta::CMetaStack, location, paths::*},
 };
 
@@ -14,7 +14,7 @@ struct Args {
     key: String,
 
     #[darling(default)]
-    source: Option<Path>,
+    transport: Option<Path>,
 
     #[darling(default)]
     group: Option<String>,
@@ -27,14 +27,14 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
     };
 
     let args = Args::from_list(&NestedMeta::parse_meta_list(attr.into())?)?;
-    let source = resolve_event_source(&args)?;
+    let transport = resolve_event_transport(&args)?;
 
     let group_tokens = match &args.group {
         Some(group) => quote! { Some(#group) },
         None => quote! { None },
     };
 
-    let source_tokens = source.as_tokens();
+    let transport_tokens = transport.as_tokens();
     let event_key = args.key;
 
     if event_key.is_empty() {
@@ -133,7 +133,7 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
             #inventory::submit! {
                 #EventHandlerRegistrar {
                     key: #event_key,
-                    source: #source_tokens,
+                    transport: #transport_tokens,
                     group: #group_tokens,
                     controller_ty: #TypeId::of::<#controller_ty>(),
                     handler_fn: #build_fn_name,
@@ -145,34 +145,34 @@ pub fn expand_subscribe(attr: TokenStream, item: TokenStream) -> Result<TokenStr
     Ok(expanded.into())
 }
 
-fn resolve_event_source(args: &Args) -> Result<EventSourceKind> {
-    let controller_source = match CMetaStack::get("event_controller", "source").as_deref() {
+fn resolve_event_transport(args: &Args) -> Result<EventTransportKind> {
+    let controller_transport = match CMetaStack::get("event_controller", "transport").as_deref() {
         None | Some("") => None,
-        Some(name) => Some(EventSourceKind::from_name(name)?),
+        Some(name) => Some(EventTransportKind::from_name(name)?),
     };
 
-    let handler_source = args
-        .source
+    let handler_transport = args
+        .transport
         .as_ref()
-        .map(EventSourceKind::from_path)
+        .map(EventTransportKind::from_path)
         .transpose()?;
 
-    let source = match (handler_source, controller_source) {
+    let transport = match (handler_transport, controller_transport) {
         (Some(handler), None) => handler,
         (None, Some(controller)) => controller,
         (Some(_), Some(_)) => {
             return Err(Error::custom(
-                "the controller already declares a `source`; don't declare it on the handler",
+                "the controller already declares a `transport`; don't declare it on the handler",
             ));
         }
         (None, None) => {
             return Err(Error::custom(
-                "this handler must declare `source` because the controller does not",
+                "this handler must declare `transport` because the controller does not",
             ));
         }
     };
 
-    Ok(source)
+    Ok(transport)
 }
 
 enum EventParam {

@@ -5,7 +5,7 @@ use sword::prelude::*;
 
 use crate::mailer::{Mailer, events::UserCreatedEvent};
 
-#[controller(kind = Controller::Events, source = EventSource::Memory)]
+#[controller(kind = Controller::Events, transport = EventTransport::Memory)]
 pub struct MailHandler {
     mailer: Arc<Mailer>,
 }

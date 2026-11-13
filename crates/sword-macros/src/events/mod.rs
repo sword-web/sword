@@ -5,7 +5,7 @@ use darling::Error;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::core::{ControllerKind, ControllerStruct, EventSourceKind};
+use crate::core::{ControllerKind, ControllerStruct, EventTransportKind};
 use crate::shared::{
     Result,
     cmeta::CMetaStack,
@@ -18,7 +18,7 @@ pub use self::event::expand_event_struct;
 pub use self::subscribe::expand_subscribe;
 
 pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
-    let ControllerKind::Events { source } = &controller.kind else {
+    let ControllerKind::Events { transport } = &controller.kind else {
         return Err(
             Error::custom("Expected an event handler controller").with_span(controller.ty())
         );
@@ -31,8 +31,11 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
     CMetaStack::push("event_controller", "controller_ty", &self_ty.to_string());
     CMetaStack::push(
         "event_controller",
-        "source",
-        source.as_ref().map(EventSourceKind::name).unwrap_or(""),
+        "transport",
+        transport
+            .as_ref()
+            .map(EventTransportKind::name)
+            .unwrap_or(""),
     );
 
     let build_impl = generate_build_impl(self_ty, &fields);

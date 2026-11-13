@@ -26,7 +26,7 @@ pub use self::config::InMemoryEventsConfig;
 #[cfg(feature = "nats")]
 pub use self::config::{NatsAuthConfig, NatsEventsConfig, NatsTlsConfig};
 
-pub use self::event::{Event, EventCodecError, EventPublish, EventPublishError, EventSource};
+pub use self::event::{Event, EventCodecError, EventPublish, EventPublishError, EventTransport};
 
 #[cfg(feature = "memory")]
 pub use self::memory::MemoryEventPublisher;

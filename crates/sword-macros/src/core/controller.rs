@@ -5,17 +5,25 @@ use quote::quote;
 use syn::{DeriveInput, Ident, LitStr, Path, Type};
 
 use crate::{
-    core::{EventSourceKind, InterceptorArgs, take_interceptors},
+    core::{EventTransportKind, InterceptorArgs, take_interceptors},
     shared::{Error, Result, structs::Struct},
 };
 
 // `#[controller(kind = ..., ...)]` model =====================================================
 
 pub enum ControllerKind {
-    Web { path: String },
-    SocketIo { namespace: String },
-    Grpc { service: Path },
-    Events { source: Option<EventSourceKind> },
+    Web {
+        path: String,
+    },
+    SocketIo {
+        namespace: String,
+    },
+    Grpc {
+        service: Path,
+    },
+    Events {
+        transport: Option<EventTransportKind>,
+    },
     Jobs,
 }
 
@@ -33,7 +41,7 @@ struct ControllerArgs {
     service: Option<Path>,
 
     #[darling(default)]
-    source: Option<Path>,
+    transport: Option<Path>,
 }
 
 pub struct ControllerStruct {
@@ -83,8 +91,10 @@ impl ControllerArgs {
                     );
                 }
 
-                if let Some(source) = &self.source {
-                    return Err(Error::custom("`source` is not valid for Web").with_span(source));
+                if let Some(transport) = &self.transport {
+                    return Err(
+                        Error::custom("`transport` is not valid for Web").with_span(transport)
+                    );
                 }
 
                 let path = self
@@ -122,9 +132,9 @@ impl ControllerArgs {
                     );
                 }
 
-                if let Some(source) = &self.source {
+                if let Some(transport) = &self.transport {
                     return Err(
-                        Error::custom("`source` is not valid for SocketIo").with_span(source)
+                        Error::custom("`transport` is not valid for SocketIo").with_span(transport)
                     );
                 }
 
@@ -167,8 +177,10 @@ impl ControllerArgs {
                     );
                 }
 
-                if let Some(source) = &self.source {
-                    return Err(Error::custom("`source` is not valid for Grpc").with_span(source));
+                if let Some(transport) = &self.transport {
+                    return Err(
+                        Error::custom("`transport` is not valid for Grpc").with_span(transport)
+                    );
                 }
 
                 let service = self.service.as_ref().ok_or_else(|| {
@@ -215,15 +227,15 @@ impl ControllerArgs {
                 }
 
                 #[cfg(feature = "events")]
-                let source = self
-                    .source
+                let transport = self
+                    .transport
                     .as_ref()
-                    .map(EventSourceKind::from_path)
+                    .map(EventTransportKind::from_path)
                     .transpose()?;
 
                 #[cfg(feature = "events")]
                 {
-                    Ok(ControllerKind::Events { source })
+                    Ok(ControllerKind::Events { transport })
                 }
 
                 #[cfg(not(feature = "events"))]
@@ -254,9 +266,11 @@ impl ControllerArgs {
                         .with_span(service));
                 }
 
-                if let Some(source) = &self.source {
-                    return Err(Error::custom("`source` is not valid for Jobs Controllers")
-                        .with_span(source));
+                if let Some(transport) = &self.transport {
+                    return Err(
+                        Error::custom("`transport` is not valid for Jobs Controllers")
+                            .with_span(transport),
+                    );
                 }
 
                 #[cfg(feature = "jobs")]

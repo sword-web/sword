@@ -74,7 +74,7 @@ pub struct NatsCreated {
     pub id: u32,
 }
 
-#[controller(kind = Controller::Events, source = EventSource::Nats)]
+#[controller(kind = Controller::Events, transport = EventTransport::Nats)]
 pub struct NatsHandler {
     probe: Arc<ConcurrencyProbe>,
 }

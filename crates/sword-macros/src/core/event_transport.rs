@@ -3,17 +3,17 @@ use quote::quote;
 
 use crate::shared::{Error, Result, paths::*};
 
-/// Parsed value of the `source = EventSource::...` controller argument.
+/// Parsed value of the `transport = EventTransport::...` controller argument.
 ///
 /// This lives in `core` (not in the feature-gated `events` module) because
 /// `ControllerKind::Events` references it and the controller macro must always
 /// be able to report a clear error when the `events` feature is disabled.
-pub enum EventSourceKind {
+pub enum EventTransportKind {
     Memory,
     Nats,
 }
 
-impl EventSourceKind {
+impl EventTransportKind {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Memory => "Memory",
@@ -26,15 +26,15 @@ impl EventSourceKind {
             "Memory" => Ok(Self::Memory),
             "Nats" => Ok(Self::Nats),
             _ => Err(Error::custom(format!(
-                "Invalid event source `{name}`. Expected 'Memory' or 'Nats'."
+                "Invalid event transport `{name}`. Expected 'Memory' or 'Nats'."
             ))),
         }
     }
 
     pub fn as_tokens(&self) -> TokenStream {
         match self {
-            Self::Memory => quote! { #EventSource::Memory },
-            Self::Nats => quote! { #EventSource::Nats },
+            Self::Memory => quote! { #EventTransport::Memory },
+            Self::Nats => quote! { #EventTransport::Nats },
         }
     }
 
@@ -49,7 +49,7 @@ impl EventSourceKind {
             "Memory" => Ok(Self::Memory),
             "Nats" => Ok(Self::Nats),
             _ => Err(Error::custom(format!(
-                "Invalid event source type: {name}. Expected 'Memory' or 'Nats'."
+                "Invalid event transport type: {name}. Expected 'Memory' or 'Nats'."
             ))),
         }
     }

@@ -3,7 +3,7 @@ use sword::prelude::*;
 
 use crate::orders::OrderCreated;
 
-#[controller(kind = Controller::Events, source = EventSource::Nats)]
+#[controller(kind = Controller::Events, transport = EventTransport::Nats)]
 pub struct OrderEventsHandler;
 
 impl OrderEventsHandler {

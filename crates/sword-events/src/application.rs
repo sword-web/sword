@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use sword_core::*;
 use tokio::task::JoinSet;
 
-use crate::EventSource;
+use crate::EventTransport;
 use crate::config::EventApplicationConfig;
 
 use crate::registrar::{
@@ -20,7 +20,7 @@ use crate::nats::NatsTransport;
 /// Background engine that consumes published events and dispatches them to the
 /// registered handlers.
 pub struct EventApplication {
-    transports: Vec<EventTransport>,
+    transports: Vec<TransportRunner>,
 }
 
 impl EventApplication {
@@ -51,7 +51,7 @@ impl EventApplication {
             let (publisher, transport) = MemoryTransport::new(&events_config)?;
 
             providers.register(publisher);
-            transports.push(EventTransport::Memory(transport));
+            transports.push(TransportRunner::Memory(transport));
         }
 
         #[cfg(feature = "nats")]
@@ -68,7 +68,7 @@ impl EventApplication {
             providers.register(publisher);
 
             if nats_configured {
-                transports.push(EventTransport::Nats(Box::new(transport)));
+                transports.push(TransportRunner::Nats(Box::new(transport)));
             }
         }
 
@@ -76,7 +76,7 @@ impl EventApplication {
     }
 
     /// Registers the event handlers for all the controllers in the application,
-    /// grouping them by their source kind and event key.
+    /// grouping them by their transport and event key.
     pub fn with_controllers(
         &mut self,
         controllers: &ControllerRegistry,
@@ -84,13 +84,13 @@ impl EventApplication {
     ) -> Result<(), Error> {
         let mut subscriptions = EventSubscriptions::collect(state, controllers)?;
 
-        // Set the handlers for each transport based on its source kind
+        // Set the handlers for each transport
         //
-        // MemoryTransport will only receive handlers for EventSource::Memory
-        // NatsTransport will only receive handlers for EventSource::Nats
+        // MemoryTransport will only receive handlers for EventTransport::Memory
+        // NatsTransport will only receive handlers for EventTransport::Nats
 
         for transport in &mut self.transports {
-            transport.set_handlers(subscriptions.take(transport.source()));
+            transport.set_handlers(subscriptions.take(transport.transport()));
         }
 
         Ok(())
@@ -146,7 +146,7 @@ impl EventApplication {
 }
 
 /// Possible event transports (backends) that can be used to publish and consume events.
-enum EventTransport {
+enum TransportRunner {
     #[cfg(feature = "memory")]
     Memory(MemoryTransport),
 
@@ -154,24 +154,24 @@ enum EventTransport {
     Nats(Box<NatsTransport>),
 }
 
-impl EventTransport {
-    fn source(&self) -> EventSource {
+impl TransportRunner {
+    fn transport(&self) -> EventTransport {
         match self {
             #[cfg(feature = "memory")]
-            EventTransport::Memory(_) => EventSource::Memory,
+            TransportRunner::Memory(_) => EventTransport::Memory,
 
             #[cfg(feature = "nats")]
-            EventTransport::Nats(_) => EventSource::Nats,
+            TransportRunner::Nats(_) => EventTransport::Nats,
         }
     }
 
     fn set_handlers(&mut self, handlers: Vec<HandlerEntry>) {
         match self {
             #[cfg(feature = "memory")]
-            EventTransport::Memory(transport) => transport.set_handlers(handlers),
+            TransportRunner::Memory(transport) => transport.set_handlers(handlers),
 
             #[cfg(feature = "nats")]
-            EventTransport::Nats(transport) => transport.set_handlers(handlers),
+            TransportRunner::Nats(transport) => transport.set_handlers(handlers),
         }
     }
 
@@ -179,12 +179,12 @@ impl EventTransport {
         #[allow(unreachable_patterns)]
         match self {
             #[cfg(feature = "memory")]
-            EventTransport::Memory(transport) => {
+            TransportRunner::Memory(transport) => {
                 transport.run(shutdown).await;
             }
 
             #[cfg(feature = "nats")]
-            EventTransport::Nats(transport) => {
+            TransportRunner::Nats(transport) => {
                 transport.run(shutdown).await?;
             }
 
@@ -203,16 +203,16 @@ pub struct HandlerEntry {
 }
 
 /// All the event handlers registered in the application,
-/// grouped by event source and event key.
+/// grouped by event transport and event key.
 struct EventSubscriptions {
-    by_source: HashMap<EventSource, Vec<HandlerEntry>>,
+    by_transport: HashMap<EventTransport, Vec<HandlerEntry>>,
 }
 
 impl EventSubscriptions {
     /// Builds all the registered event controllers and its handlers,
-    /// grouping them by their source kind
+    /// grouping them by their transport
     fn collect(state: &State, controllers: &ControllerRegistry) -> Result<Self, Error> {
-        let mut events_by_source: HashMap<EventSource, Vec<HandlerEntry>> = HashMap::new();
+        let mut events_by_transport: HashMap<EventTransport, Vec<HandlerEntry>> = HashMap::new();
 
         for type_id in controllers.get_by_kind(Controller::Events) {
             let Some(controller) = controller_registrar(&type_id) else {
@@ -233,21 +233,21 @@ impl EventSubscriptions {
                     handler: (handler.handler_fn)(state)?,
                 };
 
-                events_by_source
-                    .entry(handler.source)
+                events_by_transport
+                    .entry(handler.transport)
                     .or_default()
                     .push(handler_entry);
             }
         }
 
         Ok(Self {
-            by_source: events_by_source,
+            by_transport: events_by_transport,
         })
     }
 
-    /// Returns the map of event handlers for a specific source, removing it from the subscriptions.
-    fn take(&mut self, source: EventSource) -> Vec<HandlerEntry> {
-        self.by_source.remove(&source).unwrap_or_default()
+    /// Returns the map of event handlers for a specific transport, removing it from the subscriptions.
+    fn take(&mut self, transport: EventTransport) -> Vec<HandlerEntry> {
+        self.by_transport.remove(&transport).unwrap_or_default()
     }
 }
 

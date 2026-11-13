@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use sword_core::{Error as DiagnosticError, State};
 
-use crate::{Event, EventCodecError, EventSource};
+use crate::{Event, EventCodecError, EventTransport};
 
 pub type EventHandlerResult<T> = Result<T, Box<dyn Error + Send + Sync + 'static>>;
 type BoxedFuture<T> = Pin<Box<dyn Future<Output = EventHandlerResult<T>> + Send>>;
@@ -29,8 +29,8 @@ pub struct EventHandlerRegistrar {
     /// The event key that this handler is subscribed to. AKA the subject in NATS.
     pub key: &'static str,
 
-    /// This is used to determine which event transport (event source) to use.
-    pub source: EventSource,
+    /// This is used to determine which event transport to use.
+    pub transport: EventTransport,
 
     /// The group that this handler belongs to. This is used to determine which NATS queue group to subscribe to.
     pub group: Option<&'static str>,

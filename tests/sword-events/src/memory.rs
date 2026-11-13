@@ -56,7 +56,7 @@ pub struct UserCreated {
     pub id: u32,
 }
 
-#[controller(kind = Controller::Events, source = EventSource::Memory)]
+#[controller(kind = Controller::Events, transport = EventTransport::Memory)]
 pub struct UserCreatedHandler {
     store: Arc<EventStore>,
 }
@@ -98,7 +98,7 @@ pub struct BurstCreated {
     pub sleep_ms: u64,
 }
 
-#[controller(kind = Controller::Events, source = EventSource::Memory)]
+#[controller(kind = Controller::Events, transport = EventTransport::Memory)]
 pub struct BurstHandler {
     probe: Arc<ConcurrencyProbe>,
 }

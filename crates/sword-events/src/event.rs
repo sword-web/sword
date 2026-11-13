@@ -2,10 +2,10 @@ use std::{any::Any, fmt::Debug};
 
 use thiserror::Error;
 
-/// Event source enum used by `#[controller(kind = Controller::EventHandler, ...)]`
+/// Event transport enum used by `#[controller(kind = Controller::Events, ...)]`
 /// attributes and runtime internals to select which event backend a handler consumes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EventSource {
+pub enum EventTransport {
     #[cfg(feature = "memory")]
     Memory,
 
