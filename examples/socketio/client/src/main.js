@@ -26,7 +26,7 @@ const inputEl = document.querySelector("#messageInput");
 
 document.cookie = "CHAT_EXAMPLE_COOKIE=HELLO_CHAT_EXAMPLE_COOKIE; path=/";
 
-const socket = io("http://localhost:8081/chat", {
+const socket = io("http://localhost:8082/chat", {
 	path: "/api/socket.io",
 	transports: ["websocket"],
 	auth: {

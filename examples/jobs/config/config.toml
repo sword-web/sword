@@ -1,0 +1,9 @@
+[application]
+name = "Jobs Example"
+
+[tracing]
+enabled = true
+filter = "info,tokio_cron_scheduler=warn"
+format = "dev"
+time-style = "none"
+with-fields = []

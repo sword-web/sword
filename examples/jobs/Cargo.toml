@@ -1,0 +1,10 @@
+[package]
+name = "sword-jobs-example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sword = { workspace = true, features = ["jobs"] }
+
+tokio = { workspace = true }
+tracing = { workspace = true }

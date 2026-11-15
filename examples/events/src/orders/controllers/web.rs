@@ -17,7 +17,10 @@ fn next_order_id() -> String {
 
 #[controller(kind = Controller::Web, path = "/orders")]
 pub struct OrdersController {
-    publisher: Arc<NatsEventPublisher>,
+    /// In-process publisher: the event is dispatched inside this application.
+    memory: Arc<MemoryEventPublisher>,
+    /// Broker publisher: the event leaves the process through NATS.
+    nats: Arc<NatsEventPublisher>,
 }
 
 impl OrdersController {
@@ -30,8 +33,8 @@ impl OrdersController {
             total: body.total,
         };
 
-        self.publisher.publish(event).await.map_err(|error| {
-            tracing::error!(%error, "failed to publish order.created to NATS");
+        self.memory.publish(event).await.map_err(|error| {
+            tracing::error!(%error, "failed to publish order.created in memory");
             JsonResponse::InternalServerError().message("failed to publish event")
         })?;
 
@@ -47,7 +50,7 @@ impl OrdersController {
             tracking: body.tracking,
         };
 
-        self.publisher.publish(event).await.map_err(|error| {
+        self.nats.publish(event).await.map_err(|error| {
             tracing::error!(%error, "failed to publish order.shipped to NATS");
             JsonResponse::InternalServerError().message("failed to publish event")
         })?;

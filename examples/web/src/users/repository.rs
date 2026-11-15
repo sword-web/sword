@@ -14,7 +14,7 @@ pub struct UserRepository {
 
 impl UserRepository {
     pub async fn find_by_id(&self, id: &Uuid) -> AppResult<Option<User>> {
-        let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+        let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
             .bind(id)
             .fetch_optional(self.db.get_pool())
             .await?;
@@ -23,7 +23,7 @@ impl UserRepository {
     }
 
     pub async fn find_by_username(&self, username: &str) -> AppResult<Option<User>> {
-        let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE username = $1")
+        let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE username = ?")
             .bind(username)
             .fetch_optional(self.db.get_pool())
             .await?;
@@ -43,7 +43,7 @@ impl UserRepository {
         sqlx::query(
             r#"
             INSERT INTO users (id, username, password)
-            VALUES ($1, $2, $3)
+            VALUES (?, ?, ?)
             ON CONFLICT (id)
             DO UPDATE SET
                 username = EXCLUDED.username,
@@ -60,7 +60,7 @@ impl UserRepository {
     }
 
     pub async fn delete(&self, id: &Uuid) -> AppResult<()> {
-        sqlx::query("DELETE FROM users WHERE id = $1")
+        sqlx::query("DELETE FROM users WHERE id = ?")
             .bind(id)
             .execute(self.db.get_pool())
             .await?;

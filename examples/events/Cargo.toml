@@ -1,10 +1,10 @@
 [package]
-name = "sword-nats-example"
+name = "sword-events-example"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sword = { workspace = true, features = ["web", "events", "events-nats"] }
+sword = { workspace = true, features = ["web", "events", "events-memory", "events-nats"] }
 
 tokio = { workspace = true }
 serde = { workspace = true }

@@ -9,7 +9,7 @@ use crate::{chat::ChatModule, database::Database};
 async fn main() -> Result<(), Error> {
     let database = Database::new();
 
-    let app = Application::from_config_path("Config.toml")?
+    let app = Application::builder()?
         .with_module::<ChatModule>()
         .with_provider(database)
         .build()?;

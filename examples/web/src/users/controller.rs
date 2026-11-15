@@ -8,11 +8,12 @@ use sword::web::*;
 
 use crate::{
     mailer::UserCreatedEvent,
-    shared::{Hasher, errors::AppError},
+    shared::{AuditInterceptor, Hasher, RequestLoggingInterceptor, errors::AppError},
     users::*,
 };
 
 #[controller(kind = Controller::Web, path = "/users")]
+#[interceptor(RequestLoggingInterceptor)]
 pub struct UsersController {
     hasher: Arc<Hasher>,
     users: Arc<UserRepository>,
@@ -26,6 +27,7 @@ impl UsersController {
     }
 
     #[post("/")]
+    #[interceptor(AuditInterceptor)]
     async fn create_user(&self, req: Request) -> WebResult<User> {
         let body = req.body_validator::<CreateUserDto>()?;
 

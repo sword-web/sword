@@ -108,20 +108,19 @@ jobs:
               - 'crates/sword-web/**'
               - 'tests/sword-web/**'
               - 'examples/web/**'
-              - 'examples/interceptors/**'
             socketio:
               - 'crates/sword-socketio/**'
               - 'crates/sword-web/**'
               - 'tests/sword-socketio/**'
               - 'examples/socketio/**'
-              - 'examples/interceptors/**'
             jobs:
               - 'crates/sword-jobs/**'
               - 'tests/sword-jobs/**'
+              - 'examples/jobs/**'
             events:
               - 'crates/sword-events/**'
               - 'tests/sword-events/**'
-              - 'examples/nats/**'
+              - 'examples/events/**'
             mixed:
               - 'tests/sword-mixed/**'
             formatting:

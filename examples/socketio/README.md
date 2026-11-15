@@ -10,4 +10,4 @@ This example demonstrates a real-time chat application using Sword's Socket.IO c
 4. Install dependencies: `pnpm install`
 5. Run the client: `pnpm dev`
 
-Open http://localhost:5173 in your browser to interact with the chat application. The server runs on port 8081.
+Open http://localhost:5173 in your browser to interact with the chat application. The server runs on port 8082.

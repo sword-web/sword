@@ -1,42 +1,50 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
-use serde::Deserialize;
-use sqlx::{PgPool, migrate::Migrator};
+use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
 use sword::prelude::*;
 
 use crate::shared::errors::AppResult;
 
-#[config(key = "database")]
-#[derive(Clone, Deserialize)]
-pub struct DatabaseConfig {
-    pub uri: String,
-    pub migrations_path: String,
-}
-
+/// In-memory SQLite database. It is created on startup and dropped when the
+/// process exits, so the example runs without any external service.
 #[injectable(provider)]
 pub struct Database {
-    pool: Arc<PgPool>,
+    pool: Arc<SqlitePool>,
 }
 
 impl Database {
-    pub async fn new(db_conf: DatabaseConfig) -> AppResult<Self> {
-        let pool = PgPool::connect(&db_conf.uri).await?;
-        let migrator = Migrator::new(Path::new(&db_conf.migrations_path))
-            .await
-            .expect("Failed to initialize migrator");
+    pub async fn new() -> AppResult<Self> {
+        let options = SqliteConnectOptions::new()
+            .filename(":memory:")
+            .create_if_missing(true);
 
-        migrator
-            .run(&pool)
-            .await
-            .expect("Failed to run database migrations");
+        // `:memory:` databases are per connection, so the pool keeps a single
+        // connection to share the same data across every query.
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await?;
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS users (
+                id BLOB PRIMARY KEY,
+                username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await?;
 
         Ok(Self {
             pool: Arc::new(pool),
         })
     }
 
-    pub fn get_pool(&self) -> &PgPool {
+    pub fn get_pool(&self) -> &SqlitePool {
         &self.pool
     }
 }

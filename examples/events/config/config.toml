@@ -1,5 +1,5 @@
 [application]
-name = "NATS Events Example"
+name = "Events Example"
 
 [web]
 host = "127.0.0.1"

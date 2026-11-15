@@ -86,7 +86,6 @@ dioxus-devtools = { version = "0.7.2", features = ["serve"] }
 tower-http = "0.7.1"
 axum-test = "21.1.0"
 
-sqlx = { version = "0.9.0", features = ["postgres", "runtime-tokio", "uuid"] }
-dotenv = "0.15.0"
+sqlx = { version = "0.9.0", features = ["sqlite", "runtime-tokio", "uuid"] }
 argon2 = "0.6.0"
 chrono = "0.4.42"

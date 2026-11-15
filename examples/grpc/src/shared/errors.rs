@@ -27,4 +27,16 @@ pub enum AppError {
     #[error("Greeter service is temporarily unavailable")]
     #[tracing(warn)]
     SystemUnavailable,
+
+    #[grpc(code = "internal", message = "Database error: {message}")]
+    #[error("Database error: {message}")]
+    DatabaseError { message: String },
+}
+
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        Self::DatabaseError {
+            message: err.to_string(),
+        }
+    }
 }

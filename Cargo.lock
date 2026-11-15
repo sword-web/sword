@@ -1150,12 +1150,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
-
-[[package]]
 name = "dotenvy"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2070,15 +2064,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "interceptors"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sword",
- "sword-layers",
-]
-
-[[package]]
 name = "inventory"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2178,6 +2163,7 @@ version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e99fb7a497b1e3339bc746195567ed8d3e24945ecd636e3619d20b9de9e9149"
 dependencies = [
+ "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -4048,6 +4034,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sword-events-example"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sword",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "sword-events-tests"
 version = "0.1.0"
 dependencies = [
@@ -4088,6 +4084,7 @@ dependencies = [
  "async-stream",
  "prost",
  "prost-types",
+ "sqlx",
  "sword",
  "thiserror",
  "tokio",
@@ -4125,6 +4122,15 @@ dependencies = [
  "tokio-cron-scheduler",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "sword-jobs-example"
+version = "0.1.0"
+dependencies = [
+ "sword",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4179,16 +4185,6 @@ dependencies = [
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
-]
-
-[[package]]
-name = "sword-nats-example"
-version = "0.1.0"
-dependencies = [
- "serde",
- "sword",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -4277,7 +4273,6 @@ version = "0.1.0"
 dependencies = [
  "argon2",
  "async-stream",
- "dotenv",
  "serde",
  "sqlx",
  "sword",

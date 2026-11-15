@@ -13,7 +13,6 @@ sword = { workspace = true, features = [
     "web-validator",
     "events",
     "events-memory",
-    "jobs",
 ] }
 
 sword-layers = { workspace = true, features = [
@@ -32,5 +31,4 @@ tracing = { workspace = true }
 
 uuid = { workspace = true }
 sqlx = { workspace = true }
-dotenv = { workspace = true }
 argon2 = { workspace = true }

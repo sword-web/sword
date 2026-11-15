@@ -23,7 +23,7 @@ impl UserService for UsersController {
     type StreamUsersStream = GrpcStream<UserItem>;
 
     async fn list_users(&self, _: Request<ListUsersRequest>) -> GrpcResult<ListUsersReply> {
-        let users = self.users.find_all().await;
+        let users = self.users.find_all().await?;
         let users = users.into_iter().map(|u| UserItem::from(&u)).collect();
 
         Ok(GrpcResponse::message(ListUsersReply { users }))
@@ -33,7 +33,7 @@ impl UserService for UsersController {
         &self,
         _: Request<StreamUsersRequest>,
     ) -> GrpcResult<Self::StreamUsersStream> {
-        let users = self.users.find_all().await;
+        let users = self.users.find_all().await?;
 
         let output = try_stream! {
             for user in users {

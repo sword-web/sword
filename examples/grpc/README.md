@@ -1,11 +1,13 @@
 # Sword gRPC Example
 
-Minimal gRPC users CRUD example for Sword using `grpc` and an in-memory store.
+Minimal gRPC users CRUD example for Sword using `grpc` and an in-memory SQLite
+database.
 
 ## Run
 
 ```bash
-cargo run -p sword-grpc-example
+cd examples/grpc
+cargo run
 ```
 
 ## Available services

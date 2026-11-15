@@ -17,18 +17,18 @@ impl UserRepository {
     pub async fn find_by_id(&self, id: &str) -> AppResult<User> {
         self.db
             .get(id)
-            .await
+            .await?
             .ok_or_else(|| AppError::NotFoundError {
                 message: "User not found".to_string(),
             })
     }
 
-    pub async fn find_by_username(&self, username: &str) -> Option<User> {
-        self.db.find_by_username(username).await
+    pub async fn find_by_username(&self, username: &str) -> AppResult<Option<User>> {
+        Ok(self.db.find_by_username(username).await?)
     }
 
-    pub async fn find_all(&self) -> Vec<User> {
-        self.db.get_all().await
+    pub async fn find_all(&self) -> AppResult<Vec<User>> {
+        Ok(self.db.get_all().await?)
     }
 
     pub async fn create(&self, dto: CreateUserDto) -> AppResult<User> {
@@ -44,7 +44,7 @@ impl UserRepository {
             });
         }
 
-        if self.find_by_username(&dto.username).await.is_some() {
+        if self.find_by_username(&dto.username).await?.is_some() {
             return Err(AppError::UserConflictError {
                 value: dto.username,
             });
@@ -60,7 +60,7 @@ impl UserRepository {
             created_at: prost_types::Timestamp::from(std::time::SystemTime::now()),
         };
 
-        self.db.set(user.clone()).await;
+        self.db.set(user.clone()).await?;
 
         Ok(user)
     }
@@ -87,13 +87,13 @@ impl UserRepository {
             created_at: existing.created_at,
         };
 
-        self.db.upsert(updated.clone()).await;
+        self.db.upsert(updated.clone()).await?;
 
         Ok(updated)
     }
 
     pub async fn delete(&self, id: &str) -> AppResult<()> {
-        let deleted = self.db.delete(id).await;
+        let deleted = self.db.delete(id).await?;
 
         if deleted {
             Ok(())
