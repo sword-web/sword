@@ -3,10 +3,6 @@ release_always = false
 semver_check = false
 
 [[package]]
-name = "interceptors"
-release = false
-
-[[package]]
 name = "sword-web-example"
 release = false
 
@@ -19,7 +15,11 @@ name = "sword-socketio-example"
 release = false
 
 [[package]]
-name = "sword-nats-example"
+name = "sword-events-example"
+release = false
+
+[[package]]
+name = "sword-jobs-example"
 release = false
 
 [[package]]
@@ -34,6 +34,21 @@ publish = false
 
 [[package]]
 name = "sword-socketio-tests"
+release = false
+publish = false
+
+[[package]]
+name = "sword-events-tests"
+release = false
+publish = false
+
+[[package]]
+name = "sword-jobs-tests"
+release = false
+publish = false
+
+[[package]]
+name = "sword-mixed-tests"
 release = false
 publish = false
 
