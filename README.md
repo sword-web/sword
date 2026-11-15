@@ -59,10 +59,11 @@ impl UsersController {
 
 ## Full Examples
 
-- [Controllers API](./examples/web)
-- [Socket.IO Controllers Chat](./examples/socketio)
-- [Interceptors (Web + Socket.IO controllers)](./examples/interceptors)
-- [gRPC Application with error handling](./examples/grpc)
+- [Web API with validation, interceptors and a browser client](./examples/web)
+- [Socket.IO chat](./examples/socketio)
+- [gRPC application with error handling](./examples/grpc)
+- [Events through in-memory and NATS transports](./examples/events)
+- [Scheduled jobs: cron, repeated and one-shot](./examples/jobs)
 
 ## Application Features
 
@@ -74,17 +75,17 @@ Sword provides a set of application types based on cargo features:
 - `events`: enables event handling application primitives 
 - `jobs`: enables cron/repeated/once job scheduling
 
-Algo gives a set of sub-features for the top-level applications:
+Also gives a set of sub-features for the top-level applications:
 
 **Web Features**:
 
-- `web-validation`: enables input validation for web controllers
+- `web-validator`: enables input validation for web controllers
 - `web-multipart`: enables `multipart/form-data` support in web controllers
 - `web-swagger-ui`: enables Swagger UI for OpenAPI specs
 
 **Socket.IO Features**:
 
-- `socketio-validation`: enables input validation for Socket.IO controllers
+- `socketio-validator`: enables input validation for Socket.IO controllers
 
 **Grpc Features**:
 
