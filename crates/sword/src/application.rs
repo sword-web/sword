@@ -97,7 +97,7 @@ impl Application {
         let mut tasks = tokio::task::JoinSet::new();
 
         for engine in self.engines {
-            tracing::info!(
+            tracing::debug!(
                 target: "sword.startup.engine",
                 engine = engine.name(),
                 "Starting engine"

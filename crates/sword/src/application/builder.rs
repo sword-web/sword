@@ -192,7 +192,7 @@ impl ApplicationBuilder {
             let display_fn = registrar.display;
             let push_layer_fn = (registrar.register)(&self.config);
 
-            tracing::info!(
+            tracing::debug!(
                 target: "sword.layers",
                 name = registrar.name,
                 "Layer registered"

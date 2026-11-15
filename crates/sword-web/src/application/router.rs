@@ -53,7 +53,7 @@ impl WebApplicationRouter {
         // Each sword-layers service downcasts the api_router to its own concrete router type,
         // so registration is type-erased here.
         for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
-            tracing::info!(target: "sword.layers", name = registrar.name, "Registering service");
+            tracing::debug!(target: "sword.layers", name = registrar.name, "Registering service");
             (registrar.display)(&self.config);
             (registrar.register)(&self.config)(&mut api_router as &mut dyn std::any::Any);
         }
