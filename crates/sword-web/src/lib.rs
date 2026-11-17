@@ -4,15 +4,29 @@ mod interceptor;
 mod request;
 mod response;
 
-use sword_core::{Config, ConfigFailure, ConfigValidateExt};
+pub mod layers;
 
 #[cfg(feature = "swagger-ui")]
 pub use self::application::OpenApiConfig;
 
 pub use self::application::{
     WebApplication, WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar,
-    WebLoggerConfig, WebLoggerLevel,
 };
+
+pub use self::layers::{
+    body_limit::BodyLimitConfig,
+    logger::{WebLoggerConfig, WebLoggerLevel},
+    timeout::RequestTimeoutConfig,
+};
+
+#[cfg(feature = "compression")]
+pub use self::layers::compression::CompressionConfig;
+
+#[cfg(feature = "cors")]
+pub use self::layers::cors::CorsConfig;
+
+#[cfg(feature = "servedir")]
+pub use self::layers::servedir::ServeDirConfig;
 
 pub use self::controller::{
     WebController, connect, controller, delete, get, head, options, patch, post, put, sse, trace,
@@ -37,6 +51,7 @@ pub mod prelude {
     pub use async_stream::{stream, try_stream};
     pub use axum::body::Bytes as BodyBytes;
     pub use axum::extract::RawPathParams;
+
     #[cfg(feature = "multipart")]
     pub use axum::extract::multipart::{
         Field, InvalidBoundary, Multipart, MultipartError, MultipartRejection,
@@ -44,10 +59,28 @@ pub mod prelude {
 
     pub use axum::http::{HeaderMap as Headers, Method, Uri};
     pub use axum::middleware::Next;
+
     #[cfg(feature = "multipart")]
     pub use bytes::*;
 
-    pub use sword_layers::cookies::{
+    pub use crate::layers::body_limit::{BodyLimitConfig, BodyLimitValue};
+    pub use crate::layers::logger::{WebLoggerConfig, WebLoggerLevel};
+    pub use crate::layers::timeout::RequestTimeoutConfig;
+    pub use sword_extra::request_id::RequestId;
+
+    #[cfg(feature = "compression")]
+    pub use crate::layers::compression::{CompressionConfig, CompressionLayer};
+
+    #[cfg(feature = "cors")]
+    pub use crate::layers::cors::{CorsConfig, CorsLayer};
+
+    #[cfg(feature = "helmet")]
+    pub use crate::layers::helmet;
+
+    #[cfg(feature = "servedir")]
+    pub use crate::layers::servedir::{ServeDirConfig, ServeDirLayer};
+
+    pub use crate::layers::cookies::{
         Cookies, Key as CookiesKey, PrivateCookies, SignedCookies,
         cookie::{
             Cookie, CookieBuilder, Expiration as CookiesExpiration, KeyError as CookieKeyError,
@@ -62,6 +95,7 @@ pub mod prelude {
         OnRequest, OnRequestStream, OnRequestStreamWithConfig, OnRequestWithConfig,
         WebInterceptorResult,
     };
+
     #[cfg(feature = "validator")]
     pub use crate::request::ValidatorRequestValidation;
 
@@ -70,12 +104,6 @@ pub mod prelude {
         ContentDisposition, Event, EventStream, File, HttpError, JsonResponse, JsonResponseBody,
         KeepAlive, Redirect, Sse, WebResult,
     };
-}
-
-/// Checks the `[web]` section before the application is built.
-pub fn validate_config(config: &Config) -> Result<(), ConfigFailure> {
-    config.get_validated_section::<WebApplicationConfig>()?;
-    Ok(())
 }
 
 /// Items required by generated code.

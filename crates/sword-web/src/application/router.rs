@@ -2,18 +2,23 @@ use std::any::TypeId;
 use std::collections::HashMap;
 
 use axum::Router;
+use axum::middleware::{from_fn, from_fn_with_state};
 
 use sword_core::*;
-use sword_layers::prelude::*;
+use sword_extra::request_id::RequestIdLayer;
 
 use crate::application::*;
 use crate::controller::{RouteRegistrar, WebControllerRegistrar};
+use crate::layers::body_limit::{body_limit_layer, body_limit_response_mw};
+use crate::layers::cookies::CookieManagerLayer;
+use crate::layers::logger::web_logger_mw;
+use crate::layers::not_found::not_found_mw;
+use crate::layers::timeout::request_timeout_mw;
 use crate::response::JsonResponse;
 
 pub struct WebApplicationRouter {
     pub state: State,
     pub config: Config,
-    pub layer_stack: LayerStack<State>,
     pub controller_registry: ControllerRegistry,
     pub web_config: WebApplicationConfig,
 }
@@ -50,12 +55,14 @@ impl WebApplicationRouter {
         #[cfg(feature = "swagger-ui")]
         let (mut api_router, openapi_urls) = self.apply_openapi_specs(api_router);
 
-        // Each sword-layers service downcasts the api_router to its own concrete router type,
-        // so registration is type-erased here.
-        for registrar in inventory::iter::<sword_layers::SwordServiceRegistrar>() {
-            tracing::debug!(target: "sword.layers", name = registrar.name, "Registering service");
-            (registrar.display)(&self.config);
-            (registrar.register)(&self.config)(&mut api_router as &mut dyn std::any::Any);
+        // Static file serving is mounted before the prefix is applied, like the rest of the
+        // API router.
+        #[cfg(feature = "servedir")]
+        {
+            let servedir_config: crate::layers::servedir::ServeDirConfig =
+                self.config.get_or_default();
+            servedir_config.display();
+            api_router = crate::layers::servedir::apply(api_router, &servedir_config);
         }
 
         // Nest the API router under the global prefix, or use it directly
@@ -77,11 +84,34 @@ impl WebApplicationRouter {
             router = extension.extend_router(&extension_ctx, router)?;
         }
 
-        // Cookie parsing first, then user layers; NotFound is outermost so it only sees unmatched
-        // requests.
+        // Cookie parsing first, then user layers. The built-in response layers sit outside them
+        // so they also see responses produced by mounted services, and NotFound is outermost so
+        // it only rewrites unmatched requests.
         router = router.layer(CookieManagerLayer::new());
-        router = self.layer_stack.apply(router);
-        router = router.layer(NotFoundLayer);
+
+        #[cfg(feature = "cors")]
+        {
+            use crate::CorsConfig;
+            use tower_http::cors::CorsLayer;
+
+            let cors_config = self.config.get_or_default::<CorsConfig>();
+            cors_config.display();
+
+            router = router.layer(CorsLayer::from(cors_config));
+        }
+
+        #[cfg(feature = "compression")]
+        {
+            use crate::CompressionConfig;
+            use tower_http::compression::CompressionLayer;
+
+            let compression_config = self.config.get_or_default::<CompressionConfig>();
+            compression_config.display();
+
+            router = router.layer(CompressionLayer::from(compression_config));
+        }
+
+        router = router.layer(from_fn(not_found_mw));
 
         Ok(router)
     }
@@ -168,13 +198,16 @@ impl WebApplicationRouter {
     /// These are applied BEFORE the SocketIO layer, so SocketIO traffic bypasses
     /// HTTP controller timeout semantics.
     fn apply_web_layers(&self, mut router: Router<State>) -> Router<State> {
-        router = router.layer(BodyLimitLayer::new(&self.web_config.body_limit));
+        router = router.layer(body_limit_layer(&self.web_config.body_limit));
+        router = router.layer(from_fn(body_limit_response_mw));
 
-        // Timeout wraps the whole chain; the response layer turns a timeout into a reply instead
-        // of dropping the connection.
+        // The timeout is applied before the response layers so it can cancel the whole chain.
         if self.web_config.request_timeout.enabled {
-            router = router.layer(TimeoutLayer::from(self.web_config.request_timeout.clone()));
-            router = router.layer(RequestTimeoutResponseLayer::new());
+            self.web_config.request_timeout.display();
+            router = router.layer(from_fn_with_state(
+                self.web_config.request_timeout.clone(),
+                request_timeout_mw,
+            ));
         }
 
         // Request id is inserted before the logger runs so log lines can reference it.
@@ -183,10 +216,7 @@ impl WebApplicationRouter {
         if let Some(logger_config) = &self.web_config.logger
             && logger_config.enabled
         {
-            router = router.layer(axum::middleware::from_fn_with_state(
-                logger_config.clone(),
-                crate::application::logger::web_logger_mw,
-            ));
+            router = router.layer(from_fn_with_state(logger_config.clone(), web_logger_mw));
         }
 
         router

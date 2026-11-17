@@ -33,7 +33,8 @@ futures-util = { workspace = true }
 tower = { workspace = true, features = ["util"] }
 
 sword-core = { workspace = true }
-sword-layers = { workspace = true, features = ["tracing", "body-limit", "request-id"] }
+sword-extra = { workspace = true, features = ["request-id"] }
+byte-unit = "5.2.0"
 sword-macros = { workspace = true, features = ["grpc"] }
 
 tracing = { workspace = true }

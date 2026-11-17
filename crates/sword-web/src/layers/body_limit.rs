@@ -1,15 +1,22 @@
 //! Request body size limiting middleware.
 //!
-//! This module provides a layer that enforces a maximum request body size
-//! and maps oversized payload responses into Sword's standardized JSON shape.
+//! The limit itself is enforced by `tower_http` while the body is read; the
+//! response mapper rewrites oversized payload responses into Sword's
+//! standardized JSON shape.
 
 use std::str::FromStr;
 
-use byte_unit::Byte;
+use axum::{
+    extract::Request,
+    http::StatusCode,
+    middleware::Next,
+    response::{IntoResponse, Response},
+};
 use serde::{self, Deserialize, Deserializer, Serialize};
-use thisconfig::ByteConfig;
+use sword_core::{ByteConfig, DisplayConfig};
+use tower_http::limit::RequestBodyLimitLayer;
 
-use crate::DisplayConfig;
+use crate::JsonResponse;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(default)]
@@ -31,40 +38,28 @@ impl<'de> Deserialize<'de> for BodyLimitConfig {
     }
 }
 
-use axum::{
-    body::Body,
-    response::{IntoResponse, Response},
-};
-use axum_responses::JsonResponse;
-use tower::ServiceBuilder;
-use tower_http::limit::RequestBodyLimitLayer;
+/// Builds the layer that enforces the configured body size limit.
+pub fn body_limit_layer(config: &BodyLimitConfig) -> RequestBodyLimitLayer {
+    RequestBodyLimitLayer::new(config.max_size.parsed)
+}
 
-use crate::{MapResponseLayer, ResponseFnMapper, ServiceLayer};
+/// Rewrites `413 Payload Too Large` responses into Sword's JSON shape.
+pub async fn body_limit_response_mw(req: Request, next: Next) -> Response {
+    let response = next.run(req).await;
 
-pub struct BodyLimitLayer;
-
-impl BodyLimitLayer {
-    pub fn new(config: &BodyLimitConfig) -> ServiceLayer<MapResponseLayer, RequestBodyLimitLayer> {
-        fn map_body_limit_response(r: Response<Body>) -> Response<Body> {
-            if r.status().as_u16() != 413 {
-                return r;
-            }
-
-            JsonResponse::PayloadTooLarge()
-                .message("The request body exceeds the maximum allowed size by the server")
-                .into_response()
-        }
-
-        ServiceBuilder::new()
-            .layer(RequestBodyLimitLayer::new(config.max_size.parsed))
-            .map_response(map_body_limit_response as ResponseFnMapper)
+    if response.status() != StatusCode::PAYLOAD_TOO_LARGE {
+        return response;
     }
+
+    JsonResponse::PayloadTooLarge()
+        .message("The request body exceeds the maximum allowed size by the server")
+        .into_response()
 }
 
 impl DisplayConfig for BodyLimitConfig {
     fn display(&self) {
         tracing::debug!(
-            target: "sword.layers.body-limit",
+            target: "sword.web.body-limit",
             max_body_size = ?self.max_size.raw,
             "HTTP body limit configuration"
         );
@@ -74,8 +69,8 @@ impl DisplayConfig for BodyLimitConfig {
 impl Default for BodyLimitConfig {
     fn default() -> Self {
         let max_size = "10MB".to_string();
-        let parsed = Byte::from_str(&max_size)
-            .unwrap_or_else(|_| Byte::from_u64(10 * 1024 * 1024))
+        let parsed = byte_unit::Byte::from_str(&max_size)
+            .unwrap_or_else(|_| byte_unit::Byte::from_u64(10 * 1024 * 1024))
             .as_u64() as usize;
 
         BodyLimitConfig {

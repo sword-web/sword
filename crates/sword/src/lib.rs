@@ -1,6 +1,7 @@
 #![allow(async_fn_in_trait)]
 
 mod application;
+mod logging;
 pub mod prelude;
 
 pub use sword_core::{Diagnostic, Error, Module};
@@ -23,6 +24,7 @@ pub use sword_socketio::prelude as socketio;
 pub use sword_web::prelude as web;
 
 pub use self::application::*;
+pub use self::logging::{TracingConfig, TracingSubscriber};
 
 #[doc(hidden)]
 pub mod internal {

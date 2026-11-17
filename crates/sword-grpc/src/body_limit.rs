@@ -8,9 +8,7 @@ use std::str::FromStr;
 
 use byte_unit::Byte;
 use serde::{Deserialize, Serialize};
-use thisconfig::ByteConfig;
-
-use crate::DisplayConfig;
+use sword_core::{ByteConfig, DisplayConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

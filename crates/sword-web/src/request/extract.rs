@@ -7,8 +7,8 @@ use axum::{
 };
 use bytes::Bytes;
 
+use crate::layers::body_limit::BodyLimitValue;
 use sword_core::State;
-use sword_layers::body_limit::BodyLimitValue;
 
 use super::{JsonResponse, Request, RequestError, StreamRequest};
 

@@ -3,12 +3,10 @@
 //! This module defines configuration and conversion into Tower's `ServeDir`
 //! service for serving files from a configured directory.
 
+use axum::Router;
 use serde::{Deserialize, Serialize};
-use thisconfig::{ByteConfig, ConfigItem};
+use sword_core::{ByteConfig, ConfigItem, DisplayConfig, State};
 use tower_http::services::{ServeDir, ServeFile};
-
-use crate::DisplayConfig;
-use crate::SwordServiceRegistrar;
 
 pub type ServeDirLayer = ServeDir<ServeFile>;
 
@@ -112,23 +110,8 @@ impl ConfigItem for ServeDirConfig {
     }
 }
 
-inventory::submit! {
-    SwordServiceRegistrar {
-        name: "serve-dir",
-        display: |config: &thisconfig::Config| {
-            let cfg: &ServeDirConfig = &config.get_or_default::<ServeDirConfig>();
-            cfg.display();
-        },
-        register: |config: &thisconfig::Config| {
-            let cfg: ServeDirConfig = config.get_or_default::<ServeDirConfig>();
-            let router_path = cfg.router_path.clone();
-            let service: ServeDirLayer = cfg.into();
-            Box::new(move |any: &mut dyn std::any::Any| {
-                let router: &mut axum::Router<sword_core::State> = any
-                    .downcast_mut()
-                    .expect("SwordServiceRegistrar: expected Router<sword_core::State>");
-                *router = std::mem::take(router).nest_service(&router_path, service.clone());
-            })
-        },
-    }
+/// Mounts the static file service under its configured router path.
+pub fn apply(router: Router<State>, config: &ServeDirConfig) -> Router<State> {
+    let service: ServeDirLayer = config.clone().into();
+    router.nest_service(&config.router_path, service)
 }

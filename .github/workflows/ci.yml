@@ -96,7 +96,7 @@ jobs:
             core:
               - 'crates/sword-core/**'
               - 'crates/sword/**'
-              - 'crates/sword-layers/**'
+              - 'crates/sword-extra/**'
               - 'crates/sword-macros/**'
               - 'rust-toolchain.toml'
               - '.github/workflows/**'
@@ -166,8 +166,8 @@ jobs:
       - name: Run clippy (sword)
         run: cargo clippy -p sword --all-targets -- -D warnings
 
-      - name: Run clippy (sword-layers)
-        run: cargo clippy -p sword-layers --all-targets --all-features -- -D warnings
+      - name: Run clippy (sword-extra)
+        run: cargo clippy -p sword-extra --all-targets --all-features -- -D warnings
 
       - name: Run clippy (sword-macros, all features)
         run: cargo clippy -p sword-macros --all-targets --all-features -- -D warnings
@@ -182,17 +182,17 @@ jobs:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo doc -p sword --no-deps
 
-      - name: Build docs (sword-layers)
+      - name: Build docs (sword-extra)
         env:
           RUSTDOCFLAGS: "-D warnings"
-        run: cargo doc -p sword-layers --no-deps --all-features
+        run: cargo doc -p sword-extra --no-deps --all-features
 
       - name: Run unit tests
         run: |
           cargo test -p sword --lib
           cargo test -p sword-core --lib
           cargo test -p sword-macros --lib
-          cargo test -p sword-layers --all-features
+          cargo test -p sword-extra --all-features
 
   grpc-checks:
     needs: changes

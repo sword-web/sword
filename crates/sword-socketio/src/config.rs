@@ -8,11 +8,11 @@ use socketioxide_core::parser::{Parse, ParserError};
 use socketioxide_parser_common::CommonParser;
 use socketioxide_parser_msgpack::MsgPackParser;
 
+use sword_core::DisplayConfig;
 use sword_core::{
     ByteConfig, ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, TimeConfig,
     inventory_submit,
 };
-use sword_layers::DisplayConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default, rename_all = "kebab-case")]

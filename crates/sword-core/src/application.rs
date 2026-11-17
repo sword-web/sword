@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{ConfigCheck, ConfigProblem};
 use crate::diagnostic::DiagnosticsMode;
-use crate::{
-    Config, ConfigItem, ConfigRegistrar, ControllerRegistry, LayerStack, State, inventory_submit,
-};
+use crate::{Config, ConfigItem, ConfigRegistrar, ControllerRegistry, State, inventory_submit};
 
 /// Configuration structure for the Sword application.
 ///
@@ -59,5 +57,4 @@ pub struct EngineBuildContext {
     pub state: State,
     pub config: Config,
     pub controllers: ControllerRegistry,
-    pub layer_stack: LayerStack<State>,
 }

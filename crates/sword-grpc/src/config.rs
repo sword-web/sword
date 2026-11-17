@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::body_limit::GrpcBodyLimitConfig;
 use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, inventory_submit};
-use sword_layers::body_limit::GrpcBodyLimitConfig;
 
 use crate::{client::GrpcClientConfig, logger::GrpcLoggerConfig};
 

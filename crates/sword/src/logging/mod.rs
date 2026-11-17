@@ -14,7 +14,7 @@ use self::time::TimestampFormatter;
 
 pub use self::config::*;
 
-type BoxLayer = Box<dyn Layer<Registry> + Send + Sync + 'static>;
+type BoxedLayer = Box<dyn Layer<Registry> + Send + Sync + 'static>;
 static TRACING_INIT: OnceLock<()> = OnceLock::new();
 
 #[derive(Debug, Clone)]
@@ -34,7 +34,7 @@ impl TracingSubscriber {
         }
     }
 
-    pub fn fmt_layer(&self) -> BoxLayer {
+    pub fn fmt_layer(&self) -> BoxedLayer {
         let config = &self.config;
         let timer = TimestampFormatter::from_config(config);
 
@@ -63,7 +63,7 @@ impl TracingSubscriber {
         }
     }
 
-    pub fn layer(&self) -> BoxLayer {
+    pub fn layer(&self) -> BoxedLayer {
         Box::new(self.fmt_layer().with_filter(self.env_filter()))
     }
 

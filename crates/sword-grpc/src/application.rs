@@ -4,8 +4,11 @@ use std::net::SocketAddr;
 
 use tower::util::option_layer;
 
+use sword_core::DisplayConfig;
 use sword_core::*;
-use sword_layers::{DisplayConfig, body_limit::GrpcBodyLimitValue, request_id::RequestIdLayer};
+use sword_extra::request_id::RequestIdLayer;
+
+use crate::body_limit::GrpcBodyLimitValue;
 
 use crate::config::GrpcApplicationConfig;
 use crate::controller::GrpcControllerRegistrar;

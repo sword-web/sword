@@ -5,11 +5,8 @@
 
 use axum::http::{HeaderName, HeaderValue, Method};
 use serde::{Deserialize, Serialize};
-use thisconfig::Config;
-use thisconfig::{ConfigItem, TimeConfig};
+use sword_core::{ConfigItem, DisplayConfig, TimeConfig};
 use tower_http::cors::Any;
-
-use crate::{DisplayConfig, SwordLayerRegistrar};
 
 pub use tower_http::cors::CorsLayer;
 
@@ -133,23 +130,5 @@ impl From<CorsConfig> for CorsLayer {
 impl ConfigItem for CorsConfig {
     fn key() -> &'static str {
         "cors"
-    }
-}
-
-inventory::submit! {
-    SwordLayerRegistrar {
-        name: "cors",
-        register: |config: &Config| {
-            let layer: CorsLayer = config.get_or_default::<CorsConfig>().into();
-            Box::new(move |any: &mut dyn std::any::Any| {
-                let stack = any
-                    .downcast_mut::<sword_core::LayerStack<sword_core::State>>()
-                    .expect("SwordLayerRegistrar: expected LayerStack<State>");
-                stack.push(layer);
-            })
-        },
-        display: |config: &Config| {
-            config.get_or_default::<CorsConfig>().display();
-        },
     }
 }

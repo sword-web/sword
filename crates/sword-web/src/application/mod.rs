@@ -1,23 +1,20 @@
 mod config;
 mod extensions;
-mod logger;
 mod router;
 
 use std::net::SocketAddr;
 
 use axum::Router;
+use sword_core::*;
 use tokio::net::TcpListener;
 
-use sword_core::*;
-use sword_layers::body_limit::BodyLimitValue;
-
 use self::router::WebApplicationRouter;
+use crate::layers::body_limit::BodyLimitValue;
 
 #[cfg(feature = "swagger-ui")]
 pub use self::config::OpenApiConfig;
 pub use self::config::WebApplicationConfig;
 pub use self::extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
-pub use self::logger::{WebLoggerConfig, WebLoggerLevel};
 
 pub struct WebApplication {
     state: State,
@@ -123,8 +120,26 @@ impl WebApplication {
         Ok(())
     }
 
-    pub fn router(&self) -> axum::Router {
+    /// Returns the router with the application state attached.
+    ///
+    /// It is the router the engine serves, so use it to embed the application
+    /// in another server or to build a test server.
+    pub fn router(&self) -> Router {
         self.router.clone().with_state(self.state.clone())
+    }
+
+    /// Replaces the web router with the result of `f`.
+    ///
+    /// The closure receives the router before the state is attached, so any
+    /// layer, service or fallback added there becomes part of the served
+    /// application.
+    pub fn with_router<F>(&mut self, f: F)
+    where
+        F: FnOnce(Router<State>) -> Router<State>,
+    {
+        let router = std::mem::take(&mut self.router);
+
+        self.router = f(router);
     }
 }
 
@@ -136,7 +151,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
             state,
             config,
             controllers,
-            layer_stack,
         } = ctx;
 
         let web_config = config.get_or_default::<WebApplicationConfig>();
@@ -148,7 +162,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let mut router = WebApplicationRouter {
             state: state.clone(),
             config,
-            layer_stack,
             controller_registry: controllers,
             web_config: web_config.clone(),
         };

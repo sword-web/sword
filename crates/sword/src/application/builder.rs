@@ -1,11 +1,6 @@
-use std::any::Any;
 use std::path::Path;
 
-#[cfg(any(feature = "web", feature = "socketio"))]
-use std::convert::Infallible;
-
 use sword_core::*;
-use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
 #[cfg(any(feature = "events-memory", feature = "events-nats"))]
 use sword_events::EventApplication;
@@ -17,9 +12,10 @@ use sword_grpc::GrpcApplication;
 use sword_jobs::JobSchedulerRuntime;
 
 #[cfg(any(feature = "web", feature = "socketio"))]
-use sword_web::{WebApplication, internal::*};
+use sword_web::WebApplication;
 
 use crate::application::{Application, Engine, Environment};
+use crate::logging::{TracingConfig, TracingSubscriber};
 
 /// Builder pattern of a sword application.
 /// It's in charge of assembling the pieces needed to build the application.
@@ -31,7 +27,6 @@ pub struct ApplicationBuilder {
     state: State,
     container: DependencyContainer,
     controller_registry: ControllerRegistry,
-    layer_stack: LayerStack<State>,
 }
 
 impl ApplicationBuilder {
@@ -131,7 +126,6 @@ impl ApplicationBuilder {
             config,
             container: DependencyContainer::new(),
             controller_registry: ControllerRegistry::new(),
-            layer_stack: LayerStack::new(),
         })
     }
 
@@ -152,27 +146,6 @@ impl ApplicationBuilder {
         self
     }
 
-    #[cfg(any(feature = "web", feature = "socketio"))]
-    /// Adds a `tower::Layer` to the application builder.
-    ///
-    /// This method is equivalent to Axum's `Router::layer` method, allowing you to
-    /// apply Tower layers to the application's router.
-    ///
-    /// Custom layers are applied **after** all built-in Sword layers,
-    /// making them the outermost layer in the layer stack.
-    /// This means custom layers execute first on incoming requests and last on outgoing responses.
-    pub fn with_layer<L>(mut self, layer: L) -> Self
-    where
-        L: TowerLayer<routing::Route> + Clone + Send + Sync + 'static,
-        L::Service: TowerService<AxumRequest> + Clone + Send + Sync + 'static,
-        <L::Service as TowerService<AxumRequest>>::Response: IntoResponse + 'static,
-        <L::Service as TowerService<AxumRequest>>::Error: Into<Infallible> + 'static,
-        <L::Service as TowerService<AxumRequest>>::Future: Send + 'static,
-    {
-        self.layer_stack.push(layer);
-        self
-    }
-
     /// Register a provider directly with the application builder.
     ///
     /// This method can be used to add providers directly to the application, avoiding the need
@@ -183,24 +156,6 @@ impl ApplicationBuilder {
     {
         self.container.provider_registry().register(provider);
         self
-    }
-
-    /// Iterates and looks for layers defined in `sword_layers` and activated with their
-    /// corresponding feature flags. The collection is automatic, so there's no need to use `with_layer`.
-    fn register_sword_built_in_layers(&mut self) {
-        for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
-            let display_fn = registrar.display;
-            let push_layer_fn = (registrar.register)(&self.config);
-
-            tracing::debug!(
-                target: "sword.layers",
-                name = registrar.name,
-                "Layer registered"
-            );
-
-            display_fn(&self.config);
-            push_layer_fn(&mut self.layer_stack as &mut dyn Any);
-        }
     }
 
     /// Build the `Application` instance with the configured options.
@@ -226,15 +181,11 @@ impl ApplicationBuilder {
             register(&self.state)?;
         }
 
-        // Initialization of built-in layers by the `sword_layers` crate.
-        self.register_sword_built_in_layers();
-
         #[allow(unused_variables)]
         let ctx = EngineBuildContext {
             state: self.state,
             config: self.config.clone(),
             controllers: self.controller_registry,
-            layer_stack: self.layer_stack,
         };
 
         #[cfg(any(feature = "events-memory", feature = "events-nats"))]
@@ -306,26 +257,26 @@ fn validate_all(config: &Config) -> Result<(), Error> {
     }
 
     #[cfg(feature = "web")]
-    if let Err(failure) = sword_web::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_web::WebApplicationConfig>() {
         failures.push(failure);
     }
 
     #[cfg(feature = "grpc")]
-    if let Err(failure) = sword_grpc::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_grpc::GrpcApplicationConfig>() {
         failures.push(failure);
     }
 
     #[cfg(feature = "socketio")]
-    if let Err(failure) = sword_socketio::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_socketio::SocketIoServerConfig>() {
         failures.push(failure);
     }
 
     #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-    if let Err(failure) = sword_events::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_events::EventApplicationConfig>() {
         failures.push(failure);
     }
 
-    if let Err(failure) = sword_layers::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<TracingConfig>() {
         failures.push(failure);
     }
 

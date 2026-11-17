@@ -29,7 +29,7 @@ impl Helmet {
     /// ### Example
     ///
     /// ```rust,ignore
-    /// use sword_layers::helmet::*;
+    /// use sword_web::layers::helmet::*;
     ///
     /// let helmet = Helmet::builder()
     ///     .with_header(XContentTypeOptions::nosniff())

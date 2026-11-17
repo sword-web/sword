@@ -12,4 +12,4 @@ Each crate keeps its own changelog, generated from the commits and releases:
 | `sword-grpc` | [crates/sword-grpc/CHANGELOG.md](./crates/sword-grpc/CHANGELOG.md) |
 | `sword-events` | [crates/sword-events/CHANGELOG.md](./crates/sword-events/CHANGELOG.md) |
 | `sword-jobs` | [crates/sword-jobs/CHANGELOG.md](./crates/sword-jobs/CHANGELOG.md) |
-| `sword-layers` | [crates/sword-layers/CHANGELOG.md](./crates/sword-layers/CHANGELOG.md) |
+| `sword-extra` | [crates/sword-extra/CHANGELOG.md](./crates/sword-extra/CHANGELOG.md) |

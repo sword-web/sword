@@ -1,0 +1,30 @@
+[package]
+name = "sword-extra"
+version.workspace = true
+edition.workspace = true
+authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
+description = "Shared tower utilities for the Sword framework"
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/sword-extra"
+keywords = ["sword", "tower", "middleware"]
+categories = ["web-programming"]
+readme = "README.md"
+license.workspace = true
+rust-version.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = []
+
+request-id = ["dep:tower-http", "dep:uuid", "tower-http/request-id"]
+
+[dependencies]
+tower = { workspace = true }
+tower-layer = "0.3.3"
+
+tower-http = { workspace = true, optional = true }
+uuid = { workspace = true, features = ["v4"], optional = true }

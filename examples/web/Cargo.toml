@@ -3,22 +3,16 @@ name = "sword-web-example"
 version = "0.1.0"
 edition = "2024"
 
-[package.metadata.cargo-machete]
-ignored = ["sword-layers"]
-
 [dependencies]
 sword = { workspace = true, features = [
     "web",
     "web-swagger-ui",
     "web-validator",
+    "web-cors",
+    "web-compression",
+    "web-servedir",
     "events",
     "events-memory",
-] }
-
-sword-layers = { workspace = true, features = [
-    "compression",
-    "cors",
-    "servedir",
 ] }
 
 async-stream = { workspace = true }

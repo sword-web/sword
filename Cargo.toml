@@ -28,7 +28,7 @@ readme = "README.md"
 sword = { path = "crates/sword", default-features = false }
 sword-core = { path = "crates/sword-core", version = "0.6.1" }
 sword-macros = { path = "crates/sword-macros", version = "0.6.1" }
-sword-layers = { path = "crates/sword-layers", version = "0.6.1" }
+sword-extra = { path = "crates/sword-extra", version = "0.6.1" }
 
 sword-web = { path = "crates/sword-web", version = "0.6.1" }
 sword-grpc = { path = "crates/sword-grpc", version = "0.6.1" }
@@ -49,7 +49,6 @@ serde = { version = "1.0.219", features = ["derive"] }
 async-nats = "0.51.0"
 
 axum = "0.8.7"
-axum_responses = "0.5.5"
 tower = "0.5.2"
 http = "1.2.0"
 

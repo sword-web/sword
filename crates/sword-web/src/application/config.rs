@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+use crate::layers::body_limit::BodyLimitConfig;
+use crate::layers::timeout::RequestTimeoutConfig;
 use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, inventory_submit};
-use sword_layers::{body_limit::BodyLimitConfig, timeout::RequestTimeoutConfig};
 
-use super::logger::WebLoggerConfig;
+use crate::layers::logger::WebLoggerConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg(feature = "swagger-ui")]

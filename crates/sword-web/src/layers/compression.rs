@@ -3,13 +3,8 @@
 //! This module defines compression configuration and conversion into
 //! `tower_http::compression::CompressionLayer` using the configured algorithms.
 
-use std::any::Any;
-
 use serde::{Deserialize, Serialize};
-use thisconfig::Config;
-use thisconfig::ConfigItem;
-
-use crate::{DisplayConfig, SwordLayerRegistrar};
+use sword_core::{ConfigItem, DisplayConfig};
 
 pub use tower_http::compression::CompressionLayer;
 
@@ -65,25 +60,5 @@ impl DisplayConfig for CompressionConfig {
 impl ConfigItem for CompressionConfig {
     fn key() -> &'static str {
         "compression"
-    }
-}
-
-inventory::submit! {
-    SwordLayerRegistrar {
-        name: "compression",
-        register: |config: &Config| {
-            let layer: CompressionLayer = config.get_or_default::<CompressionConfig>().into();
-
-            Box::new(move |any: &mut dyn Any| {
-                let stack = any
-                    .downcast_mut::<sword_core::LayerStack<sword_core::State>>()
-                    .expect("SwordLayerRegistrar: expected LayerStack<State>");
-
-                stack.push(layer);
-            })
-        },
-        display: |config: &Config| {
-            config.get_or_default::<CompressionConfig>().display();
-        },
     }
 }
