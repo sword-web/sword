@@ -134,7 +134,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
             state,
             config,
             controllers,
-            layer_stack,
         } = ctx;
 
         let web_config = config.get_or_default::<WebApplicationConfig>();
@@ -146,7 +145,6 @@ impl TryFrom<EngineBuildContext> for WebApplication {
         let mut router = WebApplicationRouter {
             state: state.clone(),
             config,
-            layer_stack,
             controller_registry: controllers,
             web_config: web_config.clone(),
         };

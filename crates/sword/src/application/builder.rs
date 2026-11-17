@@ -1,8 +1,5 @@
 use std::path::Path;
 
-#[cfg(any(feature = "web", feature = "socketio"))]
-use std::convert::Infallible;
-
 use sword_core::*;
 
 #[cfg(any(feature = "events-memory", feature = "events-nats"))]
@@ -15,7 +12,7 @@ use sword_grpc::GrpcApplication;
 use sword_jobs::JobSchedulerRuntime;
 
 #[cfg(any(feature = "web", feature = "socketio"))]
-use sword_web::{WebApplication, internal::*};
+use sword_web::WebApplication;
 
 use crate::application::{Application, Engine, Environment};
 use crate::logging::{TracingConfig, TracingSubscriber};
@@ -30,7 +27,6 @@ pub struct ApplicationBuilder {
     state: State,
     container: DependencyContainer,
     controller_registry: ControllerRegistry,
-    layer_stack: LayerStack<State>,
 }
 
 impl ApplicationBuilder {
@@ -130,7 +126,6 @@ impl ApplicationBuilder {
             config,
             container: DependencyContainer::new(),
             controller_registry: ControllerRegistry::new(),
-            layer_stack: LayerStack::new(),
         })
     }
 
@@ -148,27 +143,6 @@ impl ApplicationBuilder {
         M::register_components(self.container.component_registry());
         M::register_controllers(&self.controller_registry);
 
-        self
-    }
-
-    #[cfg(any(feature = "web", feature = "socketio"))]
-    /// Adds a `tower::Layer` to the application builder.
-    ///
-    /// This method is equivalent to Axum's `Router::layer` method, allowing you to
-    /// apply Tower layers to the application's router.
-    ///
-    /// Custom layers are applied **after** all built-in Sword layers,
-    /// making them the outermost layer in the layer stack.
-    /// This means custom layers execute first on incoming requests and last on outgoing responses.
-    pub fn with_layer<L>(mut self, layer: L) -> Self
-    where
-        L: TowerLayer<routing::Route> + Clone + Send + Sync + 'static,
-        L::Service: TowerService<AxumRequest> + Clone + Send + Sync + 'static,
-        <L::Service as TowerService<AxumRequest>>::Response: IntoResponse + 'static,
-        <L::Service as TowerService<AxumRequest>>::Error: Into<Infallible> + 'static,
-        <L::Service as TowerService<AxumRequest>>::Future: Send + 'static,
-    {
-        self.layer_stack.push(layer);
         self
     }
 
@@ -212,7 +186,6 @@ impl ApplicationBuilder {
             state: self.state,
             config: self.config.clone(),
             controllers: self.controller_registry,
-            layer_stack: self.layer_stack,
         };
 
         #[cfg(any(feature = "events-memory", feature = "events-nats"))]

@@ -4,7 +4,6 @@ mod controllers;
 mod diagnostic;
 mod injectables;
 mod interceptor;
-mod layer_stack;
 mod module;
 mod shutdown;
 mod state;
@@ -23,7 +22,6 @@ pub use self::injectables::{
     Provider, ProviderRegistry,
 };
 pub use self::interceptor::{Interceptor, InterceptorRegistrar};
-pub use self::layer_stack::LayerStack;
 pub use self::module::Module;
 pub use self::shutdown::{Shutdown, shutdown_signal};
 pub use self::state::State;

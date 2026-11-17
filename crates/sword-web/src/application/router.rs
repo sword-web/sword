@@ -19,7 +19,6 @@ use crate::response::JsonResponse;
 pub struct WebApplicationRouter {
     pub state: State,
     pub config: Config,
-    pub layer_stack: LayerStack<State>,
     pub controller_registry: ControllerRegistry,
     pub web_config: WebApplicationConfig,
 }
@@ -89,7 +88,6 @@ impl WebApplicationRouter {
         // so they also see responses produced by mounted services, and NotFound is outermost so
         // it only rewrites unmatched requests.
         router = router.layer(CookieManagerLayer::new());
-        router = self.layer_stack.apply(router);
 
         #[cfg(feature = "cors")]
         {
