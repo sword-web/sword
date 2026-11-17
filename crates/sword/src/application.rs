@@ -5,6 +5,13 @@ mod env;
 use std::path::Path;
 
 use sword_core::*;
+use tokio::task::JoinSet;
+
+#[cfg(any(feature = "web", feature = "socketio"))]
+use sword_web::internal::AxumRouter;
+
+#[cfg(any(feature = "web", feature = "socketio"))]
+use sword_core::State;
 
 use self::engine::Engine;
 
@@ -94,7 +101,7 @@ impl Application {
         );
 
         let shutdown = Shutdown::new();
-        let mut tasks = tokio::task::JoinSet::new();
+        let mut tasks = JoinSet::new();
 
         for engine in self.engines {
             tracing::debug!(
@@ -150,22 +157,65 @@ impl Application {
         }
     }
 
+    /// Returns the router of the web engine with the application state attached.
+    ///
+    /// Use it to embed the application in another server or to build a test
+    /// server. Every change made through [`Application::with_router`] before
+    /// this call is included.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the application has no web engine. With the `web` or `socketio`
+    /// feature enabled [`ApplicationBuilder::build`] always creates it, so this
+    /// panic means a bug in Sword. Please report it at
+    /// <https://github.com/sword-web/sword/issues>.
     #[cfg(any(feature = "web", feature = "socketio"))]
     #[allow(irrefutable_let_patterns)]
-    pub fn router(&self) -> Result<sword_web::internal::AxumRouter, Error> {
-        for engine in &self.engines {
+    pub fn router(&self) -> AxumRouter {
+        self.engines
+        .iter()
+        .find_map(|engine| match engine {
+            Engine::Web(web) => Some(web.router()),
+            _ => None,
+        })
+        .unwrap_or_else(|| {
+            panic!(
+                "Invariant violated: the application has no web engine\n\
+                 with the web or socketio feature enabled ApplicationBuilder::build always creates it, \
+                 if you are getting this, please report it at https://github.com/sword-web/sword/issues"
+            )
+        })
+    }
+
+    /// Replaces the web router with the result of `f`.
+    ///
+    /// The closure receives the router before the state is attached, so any
+    /// layer, service or fallback added there becomes part of the served
+    /// application.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the application has no web engine. With the `web` or `socketio`
+    /// feature enabled [`ApplicationBuilder::build`] always creates it, so this
+    /// panic means a bug in Sword. Please report it at
+    /// <https://github.com/sword-web/sword/issues>.
+    #[cfg(any(feature = "web", feature = "socketio"))]
+    pub fn with_router<F>(mut self, f: F) -> Self
+    where
+        F: FnOnce(AxumRouter<State>) -> AxumRouter<State>,
+    {
+        for engine in &mut self.engines {
             if let Engine::Web(web) = engine {
-                return Ok(web.router());
+                web.with_router(f);
+
+                return self;
             }
         }
 
-        Err(sword_error! {
-            code: "sword.runtime.router",
-            phase: DiagnosticPhase::Runtime,
-            target: "Application::router",
-            title: "Router API is only available for web based applications",
-            reason: "The application has no web or Socket.IO engine",
-            hints: ["Enable the web or socketio feature and call Application::router() there"],
-        })
+        panic!(
+            "Invariant violated: the application has no web engine\n\
+                 with the web or socketio feature enabled ApplicationBuilder::build always creates it, \
+                 if you are getting this, please report it at https://github.com/sword-web/sword/issues"
+        )
     }
 }

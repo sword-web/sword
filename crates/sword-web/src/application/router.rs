@@ -91,19 +91,24 @@ impl WebApplicationRouter {
 
         #[cfg(feature = "cors")]
         {
-            let cors_config: crate::layers::cors::CorsConfig = self.config.get_or_default();
+            use crate::CorsConfig;
+            use tower_http::cors::CorsLayer;
+
+            let cors_config = self.config.get_or_default::<CorsConfig>();
             cors_config.display();
-            router = router.layer(crate::layers::cors::CorsLayer::from(cors_config));
+
+            router = router.layer(CorsLayer::from(cors_config));
         }
 
         #[cfg(feature = "compression")]
         {
-            let compression_config: crate::layers::compression::CompressionConfig =
-                self.config.get_or_default();
+            use crate::CompressionConfig;
+            use tower_http::compression::CompressionLayer;
+
+            let compression_config = self.config.get_or_default::<CompressionConfig>();
             compression_config.display();
-            router = router.layer(crate::layers::compression::CompressionLayer::from(
-                compression_config,
-            ));
+
+            router = router.layer(CompressionLayer::from(compression_config));
         }
 
         router = router.layer(from_fn(not_found_mw));

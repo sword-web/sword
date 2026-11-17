@@ -75,19 +75,21 @@ impl Module for V1UsersModule {
 fn test_server() -> TestServer {
     let app = application_builder()
         .with_module::<V1UsersModule>()
-        .with_layer(tower_http::compression::CompressionLayer::from(
-            CompressionConfig {
-                display: false,
-                algorithms: vec![
-                    "gzip".to_string(),
-                    "deflate".to_string(),
-                    "brotli".to_string(),
-                    "zstd".to_string(),
-                ],
-            },
-        ))
         .build()
-        .expect("application");
+        .expect("application")
+        .with_router(|router| {
+            router.layer(tower_http::compression::CompressionLayer::from(
+                CompressionConfig {
+                    display: false,
+                    algorithms: vec![
+                        "gzip".to_string(),
+                        "deflate".to_string(),
+                        "brotli".to_string(),
+                        "zstd".to_string(),
+                    ],
+                },
+            ))
+        });
 
     crate::test_server(app)
 }

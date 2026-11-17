@@ -3981,14 +3981,12 @@ dependencies = [
 name = "sword-core"
 version = "0.6.1"
 dependencies = [
- "axum",
  "inventory",
  "miette",
  "parking_lot 0.13.0",
  "serde",
  "thisconfig",
  "tokio",
- "tower",
  "tracing",
 ]
 

@@ -5,12 +5,11 @@ mod router;
 use std::net::SocketAddr;
 
 use axum::Router;
+use sword_core::*;
 use tokio::net::TcpListener;
 
-use crate::layers::body_limit::BodyLimitValue;
-use sword_core::*;
-
 use self::router::WebApplicationRouter;
+use crate::layers::body_limit::BodyLimitValue;
 
 #[cfg(feature = "swagger-ui")]
 pub use self::config::OpenApiConfig;
@@ -121,8 +120,26 @@ impl WebApplication {
         Ok(())
     }
 
-    pub fn router(&self) -> axum::Router {
+    /// Returns the router with the application state attached.
+    ///
+    /// It is the router the engine serves, so use it to embed the application
+    /// in another server or to build a test server.
+    pub fn router(&self) -> Router {
         self.router.clone().with_state(self.state.clone())
+    }
+
+    /// Replaces the web router with the result of `f`.
+    ///
+    /// The closure receives the router before the state is attached, so any
+    /// layer, service or fallback added there becomes part of the served
+    /// application.
+    pub fn with_router<F>(&mut self, f: F)
+    where
+        F: FnOnce(Router<State>) -> Router<State>,
+    {
+        let router = std::mem::take(&mut self.router);
+
+        self.router = f(router);
     }
 }
 
