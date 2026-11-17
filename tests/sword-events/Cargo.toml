@@ -9,4 +9,4 @@ sword = { workspace = true, features = ["web", "events", "events-memory", "event
 tokio = { workspace = true }
 serial_test = "4.0.1"
 serde = { workspace = true, features = ["derive"] }
-reqwest = { version = "0.12", default-features = false }
+reqwest = { version = "0.13", default-features = false }
