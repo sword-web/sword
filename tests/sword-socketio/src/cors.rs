@@ -2,8 +2,8 @@ use axum_test::TestServer;
 
 use sword::prelude::*;
 use sword::socketio::*;
+use sword::web::CorsConfig;
 use sword::web::*;
-use sword_layers::cors::CorsConfig;
 
 fn cors_layer() -> tower_http::cors::CorsLayer {
     CorsConfig {

@@ -1,6 +1,5 @@
 mod config;
 mod extensions;
-mod logger;
 mod router;
 
 use std::net::SocketAddr;
@@ -8,8 +7,8 @@ use std::net::SocketAddr;
 use axum::Router;
 use tokio::net::TcpListener;
 
+use crate::layers::body_limit::BodyLimitValue;
 use sword_core::*;
-use sword_layers::body_limit::BodyLimitValue;
 
 use self::router::WebApplicationRouter;
 
@@ -17,7 +16,6 @@ use self::router::WebApplicationRouter;
 pub use self::config::OpenApiConfig;
 pub use self::config::WebApplicationConfig;
 pub use self::extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
-pub use self::logger::{WebLoggerConfig, WebLoggerLevel};
 
 pub struct WebApplication {
     state: State,

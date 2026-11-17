@@ -22,7 +22,6 @@ tokio = { workspace = true }
 
 sword-core = { workspace = true }
 sword-events = { workspace = true, optional = true }
-sword-layers = { workspace = true, features = ["tracing"] }
 sword-macros = { workspace = true }
 sword-web = { workspace = true, optional = true }
 sword-grpc = { workspace = true, optional = true }
@@ -30,6 +29,9 @@ sword-socketio = { workspace = true, optional = true }
 sword-jobs = { workspace = true, optional = true }
 
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+thisconfig = { workspace = true }
 inventory = { workspace = true }
 futures-lite = { workspace = true }
 toml = "1.1"
@@ -43,6 +45,10 @@ default = []
 web = ["dep:sword-web"]
 web-multipart = ["web", "sword-web/multipart"]
 web-swagger-ui = ["web", "sword-web/swagger-ui"]
+web-cors = ["web", "sword-web/cors"]
+web-compression = ["web", "sword-web/compression"]
+web-helmet = ["web", "sword-web/helmet"]
+web-servedir = ["web", "sword-web/servedir"]
 web-validator = ["web", "sword-web/validator"]
 
 socketio = ["web", "dep:sword-socketio"]

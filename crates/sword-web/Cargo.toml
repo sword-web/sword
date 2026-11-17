@@ -41,18 +41,12 @@ tracing = { workspace = true }
 inventory = { workspace = true }
 utoipa-swagger-ui = { version = "10.0.1", features = ["axum"], optional = true }
 tower = { workspace = true }
+tower-http = { workspace = true, features = ["limit"] }
+tower-cookies = { version = "0.11.0", features = ["private", "signed"] }
+byte-unit = "5.2.0"
+sword-extra = { workspace = true, features = ["request-id"] }
 async-stream = { workspace = true }
-
-[dependencies.sword-layers]
-workspace = true
-features = [
-    "tracing",
-    "not-found",
-    "request-id",
-    "cookies",
-    "req-timeout",
-    "body-limit",
-]
+axum-helmet = { version = "1.0.2", optional = true }
 
 [features]
 default = []
@@ -60,6 +54,10 @@ default = []
 multipart = ["axum/multipart"]
 validator = ["dep:validator"]
 swagger-ui = ["dep:utoipa-swagger-ui"]
+compression = ["tower-http/compression-full"]
+cors = ["tower-http/cors"]
+helmet = ["dep:axum-helmet"]
+servedir = ["tower-http/fs"]
 
 [dev-dependencies]
 axum-test = { workspace = true }

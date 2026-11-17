@@ -1,25 +1,20 @@
 //! Request timeout middleware.
 //!
-//! This module provides timeout configuration, conversion into
-//! `tower_http::timeout::TimeoutLayer`, and a response mapper that rewrites
-//! timeout responses into Sword's standardized JSON format.
+//! This module provides the timeout configuration and a `from_fn` middleware
+//! that cancels the inner future once the configured duration elapses and
+//! answers with Sword's standardized JSON format.
 
 use std::time::Duration;
 
 use axum::{
-    http::StatusCode,
+    extract::{Request, State},
+    middleware::Next,
     response::{IntoResponse, Response},
 };
-use axum_responses::JsonResponse;
 use serde::{Deserialize, Serialize};
-use thisconfig::TimeConfig;
-use tower::ServiceBuilder;
-use tower_layer::{Identity, Stack};
+use sword_core::{DisplayConfig, TimeConfig};
 
-use crate::DisplayConfig;
-use crate::{MapResponseLayer, ResponseFnMapper};
-
-pub use tower_http::timeout::TimeoutLayer;
+use crate::JsonResponse;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -32,25 +27,20 @@ pub struct RequestTimeoutConfig {
     pub display: bool,
 }
 
-impl From<RequestTimeoutConfig> for TimeoutLayer {
-    fn from(config: RequestTimeoutConfig) -> Self {
-        TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, config.timeout.parsed)
-    }
-}
-
-pub struct RequestTimeoutResponseLayer;
-
-impl RequestTimeoutResponseLayer {
-    pub fn new() -> ServiceBuilder<Stack<MapResponseLayer, Identity>> {
-        fn timeout_mapper(response: Response) -> Response {
-            if response.status().as_u16() == 408 {
-                return JsonResponse::RequestTimeout().into_response();
-            }
-
-            response
+/// Cancels the request once the configured duration elapses.
+pub async fn request_timeout_mw(
+    State(config): State<RequestTimeoutConfig>,
+    req: Request,
+    next: Next,
+) -> Response {
+    // `biased` polls the timer first, so a handler that finishes exactly at the
+    // configured limit still counts as timed out.
+    tokio::select! {
+        biased;
+        () = tokio::time::sleep(config.timeout.parsed) => {
+            JsonResponse::RequestTimeout().into_response()
         }
-
-        ServiceBuilder::new().map_response(timeout_mapper as ResponseFnMapper)
+        response = next.run(req) => response,
     }
 }
 
@@ -61,7 +51,7 @@ impl DisplayConfig for RequestTimeoutConfig {
         }
 
         tracing::info!(
-            target: "sword.layers.request-timeout",
+            target: "sword.web.request-timeout",
             enabled = self.enabled,
             timeout = self.timeout.raw,
             "Request timeout configuration"

@@ -3,8 +3,8 @@ use serde_json::Value;
 use tokio::time::{Duration, sleep};
 
 use sword::prelude::*;
+use sword::web::CompressionConfig;
 use sword::web::*;
-use sword_layers::prelude::CompressionConfig;
 
 use crate::application_builder;
 

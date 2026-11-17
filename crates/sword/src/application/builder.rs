@@ -1,11 +1,9 @@
-use std::any::Any;
 use std::path::Path;
 
 #[cfg(any(feature = "web", feature = "socketio"))]
 use std::convert::Infallible;
 
 use sword_core::*;
-use sword_layers::tracing::{TracingConfig, TracingSubscriber};
 
 #[cfg(any(feature = "events-memory", feature = "events-nats"))]
 use sword_events::EventApplication;
@@ -20,6 +18,7 @@ use sword_jobs::JobSchedulerRuntime;
 use sword_web::{WebApplication, internal::*};
 
 use crate::application::{Application, Engine, Environment};
+use crate::logging::{TracingConfig, TracingSubscriber};
 
 /// Builder pattern of a sword application.
 /// It's in charge of assembling the pieces needed to build the application.
@@ -185,24 +184,6 @@ impl ApplicationBuilder {
         self
     }
 
-    /// Iterates and looks for layers defined in `sword_layers` and activated with their
-    /// corresponding feature flags. The collection is automatic, so there's no need to use `with_layer`.
-    fn register_sword_built_in_layers(&mut self) {
-        for registrar in inventory::iter::<sword_layers::SwordLayerRegistrar>() {
-            let display_fn = registrar.display;
-            let push_layer_fn = (registrar.register)(&self.config);
-
-            tracing::debug!(
-                target: "sword.layers",
-                name = registrar.name,
-                "Layer registered"
-            );
-
-            display_fn(&self.config);
-            push_layer_fn(&mut self.layer_stack as &mut dyn Any);
-        }
-    }
-
     /// Build the `Application` instance with the configured options.
     ///
     /// This method ends the builder pattern and constructs the final `Application`
@@ -225,9 +206,6 @@ impl ApplicationBuilder {
         for InterceptorRegistrar { register } in inventory::iter::<InterceptorRegistrar> {
             register(&self.state)?;
         }
-
-        // Initialization of built-in layers by the `sword_layers` crate.
-        self.register_sword_built_in_layers();
 
         #[allow(unused_variables)]
         let ctx = EngineBuildContext {
@@ -306,26 +284,26 @@ fn validate_all(config: &Config) -> Result<(), Error> {
     }
 
     #[cfg(feature = "web")]
-    if let Err(failure) = sword_web::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_web::WebApplicationConfig>() {
         failures.push(failure);
     }
 
     #[cfg(feature = "grpc")]
-    if let Err(failure) = sword_grpc::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_grpc::GrpcApplicationConfig>() {
         failures.push(failure);
     }
 
     #[cfg(feature = "socketio")]
-    if let Err(failure) = sword_socketio::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_socketio::SocketIoServerConfig>() {
         failures.push(failure);
     }
 
     #[cfg(any(feature = "events-memory", feature = "events-nats"))]
-    if let Err(failure) = sword_events::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<sword_events::EventApplicationConfig>() {
         failures.push(failure);
     }
 
-    if let Err(failure) = sword_layers::validate_config(config) {
+    if let Err(failure) = config.get_validated_section::<TracingConfig>() {
         failures.push(failure);
     }
 

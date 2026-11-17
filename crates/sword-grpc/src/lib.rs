@@ -1,4 +1,5 @@
 mod application;
+mod body_limit;
 mod client;
 mod config;
 mod controller;
@@ -16,6 +17,7 @@ pub use self::client::{
     ClientConnectionKind, DEFAULT_TIMEOUT, FromConfig, GrpcClientConfig, GrpcClientError,
 };
 
+pub use self::body_limit::{GrpcBodyLimitConfig, GrpcBodyLimitValue};
 pub use self::config::GrpcApplicationConfig;
 pub use self::controller::{GrpcResult, GrpcStream};
 pub use self::interceptor::{GrpcInterceptorResult, OnRequest, OnRequestWithConfig};
@@ -68,7 +70,7 @@ pub mod internal {
     #[cfg(feature = "error-details")]
     pub use tonic_types;
 
-    pub use sword_layers::body_limit::GrpcBodyLimitValue;
+    pub use crate::body_limit::GrpcBodyLimitValue;
 
     pub use crate::controller::{GrpcController, GrpcControllerRegistrar};
     pub use crate::registry::GrpcServiceRegistry;

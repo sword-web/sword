@@ -5,8 +5,8 @@ use axum::{Router, extract::Request, middleware::Next};
 use socketioxide::SocketIo;
 use socketioxide::layer::SocketIoLayer;
 
+use sword_core::DisplayConfig;
 use sword_core::*;
-use sword_layers::DisplayConfig;
 use sword_web::{WebApplicationConfig, WebExtension, WebExtensionContext, WebExtensionRegistrar};
 
 use crate::config::{SocketIoParser, SocketIoServerConfig, SocketIoServerLayer};
