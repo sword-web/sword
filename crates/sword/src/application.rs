@@ -170,7 +170,7 @@ impl Application {
     /// panic means a bug in Sword. Please report it at
     /// <https://github.com/sword-web/sword/issues>.
     #[cfg(any(feature = "web", feature = "socketio"))]
-    #[allow(irrefutable_let_patterns)]
+    #[allow(unreachable_patterns)]
     pub fn router(&self) -> AxumRouter {
         self.engines
         .iter()
@@ -200,6 +200,7 @@ impl Application {
     /// panic means a bug in Sword. Please report it at
     /// <https://github.com/sword-web/sword/issues>.
     #[cfg(any(feature = "web", feature = "socketio"))]
+    #[allow(irrefutable_let_patterns)]
     pub fn with_router<F>(mut self, f: F) -> Self
     where
         F: FnOnce(AxumRouter<State>) -> AxumRouter<State>,

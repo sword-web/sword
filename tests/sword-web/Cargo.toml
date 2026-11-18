@@ -11,6 +11,7 @@ sword = { workspace = true, features = [
     "web-validator",
     "web-helmet",
     "web-compression",
+    "web-servedir",
 ] }
 tokio = { workspace = true }
 axum = { workspace = true }
