@@ -42,6 +42,7 @@ mod interceptors {
 mod application {
     mod config;
     mod di;
+    mod plugin;
 }
 
 #[cfg(test)]

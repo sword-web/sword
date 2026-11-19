@@ -5,6 +5,7 @@ mod diagnostic;
 mod injectables;
 mod interceptor;
 mod module;
+mod plugin;
 mod shutdown;
 mod state;
 
@@ -13,16 +14,20 @@ pub use self::config::{
     ByteConfig, Config, ConfigCheck, ConfigFailure, ConfigItem, ConfigProblem, ConfigRegistrar,
     ConfigSourceInfo, ConfigValidateExt, DisplayConfig, TimeConfig, config_failures_error,
 };
+
 pub use self::controllers::{
     Controller, ControllerIds, ControllerMap, ControllerRegistry, ControllerSpec,
 };
+
 pub use self::diagnostic::*;
 pub use self::injectables::{
     Build, Component, ComponentRegistry, DependencyContainer, DependencyInjectionError, HasDeps,
     Provider, ProviderRegistry,
 };
+
 pub use self::interceptor::{Interceptor, InterceptorRegistrar};
 pub use self::module::Module;
+pub use self::plugin::Plugin;
 pub use self::shutdown::{Shutdown, shutdown_signal};
 pub use self::state::State;
 

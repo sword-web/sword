@@ -30,6 +30,11 @@ use syn::parse_macro_input;
 ///
 /// ### Parameters
 /// - `key`: The key in the configuration file where the struct is located.
+/// - `required`: (Optional) Whether the section must exist. Defaults to `true`.
+///   When `false`, the macro uses `get_or_default`, so the struct must implement
+///   `Default`. A missing or invalid section falls back to that default. When
+///   reading the config manually (for example in a plugin), use
+///   `Config::get_or_default` to get the same fallback.
 ///
 /// ### Usage
 ///
@@ -37,6 +42,14 @@ use syn::parse_macro_input;
 /// #[config(key = "my-section")]
 /// #[derive(Debug, Deserialize)]
 /// struct MyConfig {
+///     my_key: String,
+/// }
+/// ```
+///
+/// ```rust,ignore
+/// #[config(key = "my-section", required = false)]
+/// #[derive(Debug, Deserialize, Default)]
+/// struct MyOptionalConfig {
 ///     my_key: String,
 /// }
 /// ```

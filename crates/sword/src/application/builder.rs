@@ -133,7 +133,7 @@ impl ApplicationBuilder {
     /// Can be used with any type that implements the `Module` trait.
     pub fn with_module<M>(self) -> Self
     where
-        M: sword_core::Module,
+        M: Module,
     {
         futures_lite::future::block_on(M::register_providers(
             &self.config,
@@ -142,6 +142,28 @@ impl ApplicationBuilder {
 
         M::register_components(self.container.component_registry());
         M::register_controllers(&self.controller_registry);
+
+        self
+    }
+
+    /// Register a plugin using the application builder.
+    /// Can be used with any type that implements the `Plugin` trait.
+    pub fn with_plugin<P>(self) -> Self
+    where
+        P: Plugin,
+    {
+        futures_lite::future::block_on(P::register_providers(
+            &self.config,
+            self.container.provider_registry(),
+        ));
+
+        P::register_components(self.container.component_registry());
+
+        tracing::info!(
+            target: "sword.plugins",
+            name = P::name(),
+            "Plugin registered"
+        );
 
         self
     }
