@@ -9,11 +9,13 @@ use sword_extra::request_id::RequestIdLayer;
 
 use crate::application::*;
 use crate::controller::{RouteRegistrar, WebControllerRegistrar};
-use crate::layers::body_limit::{body_limit_layer, body_limit_response_mw};
+
+use crate::layers::body_limit::{RequestBodyLimitLayer, body_limit_response_mw};
 use crate::layers::cookies::CookieManagerLayer;
 use crate::layers::logger::web_logger_mw;
-use crate::layers::not_found::not_found_mw;
+use crate::layers::not_found::{method_not_allowed, not_found};
 use crate::layers::timeout::request_timeout_mw;
+
 use crate::response::JsonResponse;
 
 pub struct WebApplicationRouter {
@@ -44,13 +46,19 @@ impl WebApplicationRouter {
         // Everything goes into api_router so it's consistently under prefix when configured
         let mut api_router = Router::new();
 
-        api_router = self.apply_web_controllers(api_router)?;
-        api_router = self.apply_web_layers(api_router);
-
+        // Health is registered before the mandatory layers so it goes through them too.
         api_router = api_router.route(
             "/health",
             axum::routing::get(|| async { JsonResponse::Ok().message("healthy") }),
         );
+
+        api_router = self.apply_web_controllers(api_router)?;
+
+        // Unsupported methods on registered routes answer with the JSON envelope; axum adds
+        // the `Allow` header.
+        api_router = api_router.method_not_allowed_fallback(method_not_allowed);
+
+        api_router = self.apply_web_layers(api_router);
 
         #[cfg(feature = "swagger-ui")]
         let (mut api_router, openapi_urls) = self.apply_openapi_specs(api_router);
@@ -59,11 +67,19 @@ impl WebApplicationRouter {
         // API router.
         #[cfg(feature = "servedir")]
         {
-            let servedir_config: crate::layers::servedir::ServeDirConfig =
-                self.config.get_or_default();
+            use crate::layers::servedir::{ServeDirConfig, ServeDirLayer};
+
+            let servedir_config = self.config.get_or_default::<ServeDirConfig>();
+            let servedir_path = servedir_config.router_path.clone();
+
             servedir_config.display();
-            api_router = crate::layers::servedir::apply(api_router, &servedir_config);
+
+            let layer = ServeDirLayer::from(servedir_config);
+
+            api_router = api_router.nest_service(&servedir_path, layer);
         }
+
+        api_router = api_router.fallback(not_found);
 
         // Nest the API router under the global prefix, or use it directly
         let mut router = if let Some(prefix) = &self.web_config.router_prefix {
@@ -80,6 +96,10 @@ impl WebApplicationRouter {
             router = self.apply_openapi_swagger_ui(router, &openapi_urls);
         }
 
+        // Paths outside the router prefix also get the JSON not-found response. It is set
+        // before the extensions so mounted layers such as Socket.IO still wrap it.
+        router = router.fallback(not_found);
+
         for extension in extensions {
             router = extension.extend_router(&extension_ctx, router)?;
         }
@@ -91,8 +111,7 @@ impl WebApplicationRouter {
 
         #[cfg(feature = "cors")]
         {
-            use crate::CorsConfig;
-            use tower_http::cors::CorsLayer;
+            use crate::layers::cors::{CorsConfig, CorsLayer};
 
             let cors_config = self.config.get_or_default::<CorsConfig>();
             cors_config.display();
@@ -102,8 +121,7 @@ impl WebApplicationRouter {
 
         #[cfg(feature = "compression")]
         {
-            use crate::CompressionConfig;
-            use tower_http::compression::CompressionLayer;
+            use crate::layers::compression::{CompressionConfig, CompressionLayer};
 
             let compression_config = self.config.get_or_default::<CompressionConfig>();
             compression_config.display();
@@ -111,7 +129,16 @@ impl WebApplicationRouter {
             router = router.layer(CompressionLayer::from(compression_config));
         }
 
-        router = router.layer(from_fn(not_found_mw));
+        // Request id and the access logger sit outside the user layers and the built-in
+        // response layers, so every response carries an id and every request is logged,
+        // including unmatched routes and mounted services.
+        router = router.layer(RequestIdLayer::new());
+
+        if let Some(logger_config) = &self.web_config.logger
+            && logger_config.enabled
+        {
+            router = router.layer(from_fn_with_state(logger_config.clone(), web_logger_mw));
+        }
 
         Ok(router)
     }
@@ -198,7 +225,9 @@ impl WebApplicationRouter {
     /// These are applied BEFORE the SocketIO layer, so SocketIO traffic bypasses
     /// HTTP controller timeout semantics.
     fn apply_web_layers(&self, mut router: Router<State>) -> Router<State> {
-        router = router.layer(body_limit_layer(&self.web_config.body_limit));
+        router = router.layer(RequestBodyLimitLayer::new(
+            self.web_config.body_limit.max_size.parsed,
+        ));
         router = router.layer(from_fn(body_limit_response_mw));
 
         // The timeout is applied before the response layers so it can cancel the whole chain.
@@ -208,15 +237,6 @@ impl WebApplicationRouter {
                 self.web_config.request_timeout.clone(),
                 request_timeout_mw,
             ));
-        }
-
-        // Request id is inserted before the logger runs so log lines can reference it.
-        router = router.layer(RequestIdLayer::new());
-
-        if let Some(logger_config) = &self.web_config.logger
-            && logger_config.enabled
-        {
-            router = router.layer(from_fn_with_state(logger_config.clone(), web_logger_mw));
         }
 
         router

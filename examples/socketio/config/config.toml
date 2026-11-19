@@ -24,3 +24,9 @@ allow-methods = ["GET", "POST", "OPTIONS"]
 allow-headers = ["Content-Type", "Authorization", "x-custom-header"]
 allow-credentials = true
 display = true
+
+[serve-dir]
+static-dir = "public"
+router-path = "/static"
+not-found-file = "404.html"
+display = true

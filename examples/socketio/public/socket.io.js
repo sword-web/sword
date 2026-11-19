@@ -1,0 +1,1 @@
+/* static file that looks like a socket.io asset */

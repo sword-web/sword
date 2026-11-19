@@ -23,6 +23,9 @@ mod errors;
 mod http_methods;
 
 #[cfg(test)]
+mod servedir;
+
+#[cfg(test)]
 mod sse;
 
 #[cfg(test)]

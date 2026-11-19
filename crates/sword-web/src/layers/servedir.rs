@@ -3,12 +3,14 @@
 //! This module defines configuration and conversion into Tower's `ServeDir`
 //! service for serving files from a configured directory.
 
-use axum::Router;
 use serde::{Deserialize, Serialize};
-use sword_core::{ByteConfig, ConfigItem, DisplayConfig, State};
-use tower_http::services::{ServeDir, ServeFile};
+use sword_core::{ByteConfig, ConfigItem, DisplayConfig};
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    set_status::SetStatus,
+};
 
-pub type ServeDirLayer = ServeDir<ServeFile>;
+pub type ServeDirLayer = ServeDir<SetStatus<ServeFile>>;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -45,7 +47,7 @@ impl From<ServeDirConfig> for ServeDirLayer {
             fallback = ServeFile::new(format!("{}/{not_found_file}", config.static_dir));
         }
 
-        let mut layer = ServeDir::new(&config.static_dir).fallback(fallback);
+        let mut layer = ServeDir::new(&config.static_dir).not_found_service(fallback);
 
         if let Some(algorithm) = &config.compression_algorithm {
             match algorithm.as_str() {
@@ -108,10 +110,4 @@ impl ConfigItem for ServeDirConfig {
     fn key() -> &'static str {
         "serve-dir"
     }
-}
-
-/// Mounts the static file service under its configured router path.
-pub fn apply(router: Router<State>, config: &ServeDirConfig) -> Router<State> {
-    let service: ServeDirLayer = config.clone().into();
-    router.nest_service(&config.router_path, service)
 }

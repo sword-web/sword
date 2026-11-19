@@ -78,7 +78,7 @@ pub mod prelude {
     pub use crate::layers::helmet;
 
     #[cfg(feature = "servedir")]
-    pub use crate::layers::servedir::{ServeDirConfig, ServeDirLayer};
+    pub use crate::layers::servedir::ServeDirConfig;
 
     pub use crate::layers::cookies::{
         Cookies, Key as CookiesKey, PrivateCookies, SignedCookies,

@@ -1,0 +1,14 @@
+[application]
+
+[web]
+host = "0.0.0.0"
+port = 8080
+
+[serve-dir]
+static-dir = "public"
+router-path = "/static"
+not-found-file = "does-not-exist.html"
+
+[my-custom-section]
+custom_key = "value"
+env_user = "${USER:default_value}"

@@ -12,9 +12,10 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
+
 use serde::{self, Deserialize, Deserializer, Serialize};
 use sword_core::{ByteConfig, DisplayConfig};
-use tower_http::limit::RequestBodyLimitLayer;
+pub use tower_http::limit::RequestBodyLimitLayer;
 
 use crate::JsonResponse;
 
@@ -36,11 +37,6 @@ impl<'de> Deserialize<'de> for BodyLimitConfig {
         let max_size = ByteConfig::deserialize(deserializer)?;
         Ok(BodyLimitConfig { max_size })
     }
-}
-
-/// Builds the layer that enforces the configured body size limit.
-pub fn body_limit_layer(config: &BodyLimitConfig) -> RequestBodyLimitLayer {
-    RequestBodyLimitLayer::new(config.max_size.parsed)
 }
 
 /// Rewrites `413 Payload Too Large` responses into Sword's JSON shape.

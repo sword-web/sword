@@ -6,6 +6,11 @@ port = 8080
 body-limit = "1MB"
 request-timeout = { enabled = true, timeout = "2s", display = true }
 
+[serve-dir]
+static-dir = "public"
+router-path = "/static"
+not-found-file = "custom-404.html"
+
 [socketio]
 enabled = true
 ping-timeout = "20s"
