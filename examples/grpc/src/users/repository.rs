@@ -1,106 +1,91 @@
 use std::sync::Arc;
 
+use plugins::sqlx_sqlite::SqliteDatabase;
 use sword::prelude::*;
 
-use crate::{
-    shared::{AppError, AppResult, Database, Hasher},
-    users::{CreateUserDto, UpdateUserDto, User},
-};
+use crate::users::{User, UserView};
 
 #[injectable]
 pub struct UserRepository {
-    db: Arc<Database>,
-    hasher: Arc<Hasher>,
+    db: Arc<SqliteDatabase>,
 }
 
 impl UserRepository {
-    pub async fn find_by_id(&self, id: &str) -> AppResult<User> {
-        self.db
-            .get(id)
-            .await?
-            .ok_or_else(|| AppError::NotFoundError {
-                message: "User not found".to_string(),
-            })
+    pub async fn find_by_id(&self, id: &str) -> sqlx::Result<Option<User>> {
+        let row = sqlx::query_as::<_, UserView>(
+            "SELECT id, username, password, created_at \
+             FROM users WHERE id = ?",
+        )
+        .bind(id)
+        .fetch_optional(self.db.pool())
+        .await?;
+
+        Ok(row.map(User::from))
     }
 
-    pub async fn find_by_username(&self, username: &str) -> AppResult<Option<User>> {
-        Ok(self.db.find_by_username(username).await?)
+    pub async fn find_by_username(&self, username: &str) -> sqlx::Result<Option<User>> {
+        let row = sqlx::query_as::<_, UserView>(
+            "SELECT id, username, password, created_at \
+             FROM users WHERE username = ?",
+        )
+        .bind(username)
+        .fetch_optional(self.db.pool())
+        .await?;
+
+        Ok(row.map(User::from))
     }
 
-    pub async fn find_all(&self) -> AppResult<Vec<User>> {
-        Ok(self.db.get_all().await?)
+    pub async fn find_all(&self) -> sqlx::Result<Vec<User>> {
+        let rows =
+            sqlx::query_as::<_, UserView>("SELECT id, username, password, created_at FROM users")
+                .fetch_all(self.db.pool())
+                .await?;
+
+        Ok(rows.into_iter().map(User::from).collect())
     }
 
-    pub async fn create(&self, dto: CreateUserDto) -> AppResult<User> {
-        if dto.username.trim().is_empty() {
-            return Err(AppError::InvalidArgument {
-                reason: "username cannot be empty".to_string(),
-            });
-        }
+    pub async fn set(&self, user: &User) -> sqlx::Result<()> {
+        sqlx::query(
+            "INSERT INTO users (id, username, password, created_at) \
+             VALUES (?, ?, ?, ?)",
+        )
+        .bind(&user.id)
+        .bind(&user.username)
+        .bind(&user.password)
+        .bind(user.created_at)
+        .execute(self.db.pool())
+        .await?;
 
-        if dto.password.len() < 6 {
-            return Err(AppError::InvalidArgument {
-                reason: "password must contain at least 6 characters".to_string(),
-            });
-        }
-
-        if self.find_by_username(&dto.username).await?.is_some() {
-            return Err(AppError::UserConflictError {
-                value: dto.username,
-            });
-        }
-
-        let id = uuid::Uuid::new_v4().to_string();
-        let password = self.hasher.hash(&dto.password)?;
-
-        let user = User {
-            id,
-            username: dto.username,
-            password,
-            created_at: prost_types::Timestamp::from(std::time::SystemTime::now()),
-        };
-
-        self.db.set(user.clone()).await?;
-
-        Ok(user)
+        Ok(())
     }
 
-    pub async fn update(&self, dto: UpdateUserDto) -> AppResult<User> {
-        let existing = self.find_by_id(&dto.id).await?;
+    pub async fn upsert(&self, user: &User) -> sqlx::Result<()> {
+        sqlx::query(
+            r#"
+            INSERT INTO users (id, username, password, created_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (id)
+            DO UPDATE SET
+                username = excluded.username,
+                password = excluded.password
+            "#,
+        )
+        .bind(&user.id)
+        .bind(&user.username)
+        .bind(&user.password)
+        .bind(user.created_at)
+        .execute(self.db.pool())
+        .await?;
 
-        let username = if dto.username.trim().is_empty() {
-            existing.username
-        } else {
-            dto.username
-        };
-
-        let password = if dto.password.is_empty() {
-            existing.password
-        } else {
-            self.hasher.hash(&dto.password)?
-        };
-
-        let updated = User {
-            id: dto.id,
-            username,
-            password,
-            created_at: existing.created_at,
-        };
-
-        self.db.upsert(updated.clone()).await?;
-
-        Ok(updated)
+        Ok(())
     }
 
-    pub async fn delete(&self, id: &str) -> AppResult<()> {
-        let deleted = self.db.delete(id).await?;
+    pub async fn delete(&self, id: &str) -> sqlx::Result<bool> {
+        let result = sqlx::query("DELETE FROM users WHERE id = ?")
+            .bind(id)
+            .execute(self.db.pool())
+            .await?;
 
-        if deleted {
-            Ok(())
-        } else {
-            Err(AppError::NotFoundError {
-                message: "User not found".to_string(),
-            })
-        }
+        Ok(result.rows_affected() > 0)
     }
 }

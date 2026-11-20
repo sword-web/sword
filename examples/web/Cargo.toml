@@ -26,3 +26,5 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 sqlx = { workspace = true }
 argon2 = { workspace = true }
+
+plugins = { path = "../plugins" }

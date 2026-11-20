@@ -23,3 +23,9 @@ format = "dev"
 time-style = "none"
 time-pattern = "%H:%M:%S"
 with-fields = []
+
+[sqlite]
+path = ":memory:"
+max-connections = 1
+create-if-missing = true
+migrations-path = "migrations"

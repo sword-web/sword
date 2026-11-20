@@ -1,0 +1,16 @@
+[package]
+name = "plugins"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+description.workspace = true
+readme.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+sword = { workspace = true }
+sqlx = { workspace = true }
+serde = { workspace = true }

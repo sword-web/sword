@@ -1,6 +1,7 @@
 mod shared;
 mod users;
 
+use plugins::sqlx_sqlite::SqlxSqlitePlugin;
 use sword::prelude::*;
 
 use crate::{shared::SharedModule, users::UsersModule};
@@ -15,6 +16,7 @@ async fn main() -> Result<(), Error> {
         .expect("Failed to load configuration");
 
     let app = Application::from_config(config)?
+        .with_plugin::<SqlxSqlitePlugin>()
         .with_module::<SharedModule>()
         .with_module::<UsersModule>()
         .build()?;

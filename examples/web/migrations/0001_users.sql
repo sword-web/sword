@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS users (
+    id BLOB PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
+);

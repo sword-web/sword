@@ -2,21 +2,22 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
+use plugins::sqlx_sqlite::SqliteDatabase;
 use sword::prelude::*;
 
 use super::entity::User;
-use crate::shared::{database::Database, errors::AppResult};
+use crate::shared::errors::AppResult;
 
 #[injectable]
 pub struct UserRepository {
-    db: Arc<Database>,
+    db: Arc<SqliteDatabase>,
 }
 
 impl UserRepository {
     pub async fn find_by_id(&self, id: &Uuid) -> AppResult<Option<User>> {
         let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
             .bind(id)
-            .fetch_optional(self.db.get_pool())
+            .fetch_optional(self.db.pool())
             .await?;
 
         Ok(result)
@@ -25,7 +26,7 @@ impl UserRepository {
     pub async fn find_by_username(&self, username: &str) -> AppResult<Option<User>> {
         let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE username = ?")
             .bind(username)
-            .fetch_optional(self.db.get_pool())
+            .fetch_optional(self.db.pool())
             .await?;
 
         Ok(result)
@@ -33,7 +34,7 @@ impl UserRepository {
 
     pub async fn find_all(&self) -> AppResult<Vec<User>> {
         let result = sqlx::query_as::<_, User>("SELECT * FROM users")
-            .fetch_all(self.db.get_pool())
+            .fetch_all(self.db.pool())
             .await?;
 
         Ok(result)
@@ -53,7 +54,7 @@ impl UserRepository {
         .bind(user.id)
         .bind(&user.username)
         .bind(&user.password)
-        .execute(self.db.get_pool())
+        .execute(self.db.pool())
         .await?;
 
         Ok(())
@@ -62,7 +63,7 @@ impl UserRepository {
     pub async fn delete(&self, id: &Uuid) -> AppResult<()> {
         sqlx::query("DELETE FROM users WHERE id = ?")
             .bind(id)
-            .execute(self.db.get_pool())
+            .execute(self.db.pool())
             .await?;
 
         Ok(())

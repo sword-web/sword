@@ -42,3 +42,9 @@ router-path = "/static"
 memory-kib = 19456
 time = 2
 parallelism = 1
+
+[sqlite]
+path = ":memory:"
+max-connections = 1
+create-if-missing = true
+migrations-path = "migrations"

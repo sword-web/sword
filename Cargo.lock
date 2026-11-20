@@ -2655,6 +2655,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
+name = "plugins"
+version = "0.6.1"
+dependencies = [
+ "serde",
+ "sqlx",
+ "sword",
+ "tokio",
+]
+
+[[package]]
 name = "polyval"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3699,6 +3709,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "cfg-if",
+ "chrono",
  "crc",
  "crossbeam-queue",
  "either",
@@ -3773,6 +3784,7 @@ dependencies = [
  "bitflags",
  "byteorder",
  "bytes",
+ "chrono",
  "crc",
  "digest 0.11.3",
  "dotenvy",
@@ -3801,6 +3813,7 @@ dependencies = [
  "base64 0.22.1",
  "bitflags",
  "byteorder",
+ "chrono",
  "crc",
  "dotenvy",
  "etcetera",
@@ -3834,6 +3847,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488e99c397a62007e4229aec669a179816339afc6d2620ca6fa420dbee2e982c"
 dependencies = [
  "atoi",
+ "chrono",
  "flume",
  "form_urlencoded",
  "futures-channel",
@@ -4063,6 +4077,8 @@ name = "sword-grpc-example"
 version = "0.1.0"
 dependencies = [
  "async-stream",
+ "chrono",
+ "plugins",
  "prost",
  "prost-types",
  "sqlx",
@@ -4232,6 +4248,7 @@ version = "0.1.0"
 dependencies = [
  "argon2",
  "async-stream",
+ "plugins",
  "serde",
  "sqlx",
  "sword",
