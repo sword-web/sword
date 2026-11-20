@@ -4,7 +4,7 @@ mod application;
 mod logging;
 pub mod prelude;
 
-pub use sword_core::{Diagnostic, Error, Module};
+pub use sword_core::{Diagnostic, Error, Module, Plugin};
 
 #[cfg(feature = "events")]
 pub use sword_events::prelude as events;
