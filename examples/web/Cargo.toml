@@ -4,27 +4,30 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sword = { workspace = true, features = [
-    "web",
-    "web-swagger-ui",
-    "web-validator",
-    "web-cors",
-    "web-compression",
-    "web-servedir",
-    "events",
-    "events-memory",
-] }
+sword = {
+    workspace = true,
+    features = [
+        "events",
+        "events-memory",
+        "web",
+        "web-compression",
+        "web-cors",
+        "web-servedir",
+        "web-swagger-ui",
+        "web-validator",
+    ]
+}
 
 async-stream = { workspace = true }
 tokio = { workspace = true }
 
 serde = { workspace = true }
-validator = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+validator = { workspace = true }
 
-uuid = { workspace = true }
-sqlx = { workspace = true }
 argon2 = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
 
 plugins = { path = "../plugins" }

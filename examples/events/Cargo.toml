@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sword = { workspace = true, features = ["web", "events", "events-memory", "events-nats"] }
+sword = { workspace = true, features = ["events", "events-memory", "events-nats", "web"] }
 
-tokio = { workspace = true }
 serde = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }

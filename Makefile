@@ -5,6 +5,7 @@ clean:
 
 fmt:
 	cargo fmt --all
+	tombi format
 
 lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
@@ -18,6 +19,8 @@ lint:
 	cargo doc -p sword-web --no-deps --all-features
 	cargo doc -p sword-socketio --no-deps --all-features
 	cargo doc -p sword-grpc --no-deps --all-features
+
+	tombi lint --offline --error-on-warnings
 
 machete:
 	cargo machete

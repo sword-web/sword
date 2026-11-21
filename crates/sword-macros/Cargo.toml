@@ -2,35 +2,24 @@
 name = "sword-macros"
 version.workspace = true
 edition.workspace = true
-authors = ["Luciano Revillod <lrevillod2022@alu.uct.cl>"]
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword-macros"
-keywords = ["web", "framework", "axum", "http", "async"]
-readme.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/sword-macros"
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["async", "axum", "framework", "http", "web"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-[lib]
-proc-macro = true
-
-[dependencies]
-syn = { version = "3", features = ["full"] }
-quote = "1"
-proc-macro2 = "1"
-heck = { workspace = true }
-darling = "0.24.1"
-
 [features]
 default = []
 
-web = []
 socketio = []
+web = []
 
 grpc = []
 grpc-reflection = ["grpc"]
@@ -42,3 +31,13 @@ events-in-memory = ["events"]
 events-nats = ["events"]
 
 hot-reload = []
+
+[lib]
+proc-macro = true
+
+[dependencies]
+darling = "0.24.1"
+heck = { workspace = true }
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "3", features = ["full"] }

@@ -2,30 +2,29 @@
 name = "sword-core"
 version.workspace = true
 edition.workspace = true
-authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword"
-keywords = ["sword", "web", "framework", "axum", "microservices"]
-categories = ["web-programming", "web-programming::http-server"]
-readme.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/sword"
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["axum", "framework", "microservices", "sword", "web"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-[dependencies]
-tracing = { workspace = true }
-inventory = { workspace = true }
-parking_lot = { workspace = true }
-thisconfig = { workspace = true }
-tokio = { workspace = true }
-serde = { workspace = true }
-
-miette = { workspace = true }
-
 [features]
 default = []
+
+[dependencies]
+inventory = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+thisconfig = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+miette = { workspace = true }

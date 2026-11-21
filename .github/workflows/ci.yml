@@ -7,6 +7,10 @@ on:
         description: "Run formatting checks"
         type: boolean
         default: false
+      run_toml:
+        description: "Run TOML format and lint checks"
+        type: boolean
+        default: false
       run_core:
         description: "Run core checks"
         type: boolean
@@ -83,6 +87,7 @@ jobs:
       events: ${{ steps.filter.outputs.events }}
       mixed: ${{ steps.filter.outputs.mixed }}
       formatting: ${{ steps.filter.outputs.formatting }}
+      toml: ${{ steps.filter.outputs.toml }}
       deps: ${{ steps.filter.outputs.deps }}
     steps:
       - uses: actions/checkout@v7
@@ -128,6 +133,9 @@ jobs:
               - 'rustfmt.toml'
               - 'rust-toolchain.toml'
               - '.github/workflows/**'
+            toml:
+              - '**/*.toml'
+              - '.github/workflows/**'
             deps:
               - 'Cargo.toml'
               - 'Cargo.lock'
@@ -145,6 +153,25 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt --all -- --check
+
+  toml-checks:
+    needs: changes
+    if: needs.changes.outputs.toml == 'true' || inputs.run_toml == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install tombi
+        uses: taiki-e/install-action@v2
+        with:
+          tool: tombi@1.11.3
+
+      - name: Check TOML formatting
+        run: tombi format --check --offline
+
+      - name: Lint TOML
+        run: tombi lint --offline --error-on-warnings
 
   core-checks:
     needs: changes

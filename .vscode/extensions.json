@@ -2,6 +2,6 @@
 	"recommendations": [
 		"usernamehw.errorlens",
 		"rust-lang.rust-analyzer",
-		"tamasfe.even-better-toml",
+		"tombi-toml.tombi",
 	]
 }

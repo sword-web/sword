@@ -5,22 +5,25 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = [
-    "web",
-    "web-multipart",
-    "web-validator",
-    "web-helmet",
-    "web-compression",
-    "web-servedir",
-] }
-tokio = { workspace = true }
 axum = { workspace = true }
-tokio-stream = { workspace = true }
+http = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sword = {
+    workspace = true,
+    features = [
+        "web",
+        "web-compression",
+        "web-helmet",
+        "web-multipart",
+        "web-servedir",
+        "web-validator",
+    ]
+}
 thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
 validator = { workspace = true }
-http = { workspace = true }
 
 axum-test = { workspace = true }
-tower-http = { workspace = true, features = ["limit", "cors", "trace"] }
+tower-http = { workspace = true, features = ["cors", "limit", "trace"] }

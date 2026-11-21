@@ -2,45 +2,44 @@
 name = "sword-grpc"
 version.workspace = true
 edition.workspace = true
-authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword"
-keywords = ["sword", "grpc", "framework", "tonic", "rpc"]
-categories = ["web-programming", "web-programming::http-server"]
-readme.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/sword"
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["framework", "grpc", "rpc", "sword", "tonic"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+default = []
+error-details = ["dep:tonic-types"]
+reflection = ["dep:tonic-reflection", "sword-macros/grpc-reflection"]
+
 [dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-async-interceptor = { workspace = true }
 tonic-health = { workspace = true }
 tonic-reflection = { workspace = true, optional = true }
 tonic-types = { workspace = true, optional = true }
-tokio = { workspace = true }
-tokio-stream = { workspace = true }
-serde = { workspace = true }
-thiserror = { workspace = true }
 
-http = { workspace = true }
 futures-util = { workspace = true }
+http = { workspace = true }
 tower = { workspace = true, features = ["util"] }
 
+byte-unit = "5.2.0"
 sword-core = { workspace = true }
 sword-extra = { workspace = true, features = ["request-id"] }
-byte-unit = "5.2.0"
 sword-macros = { workspace = true, features = ["grpc"] }
 
-tracing = { workspace = true }
 inventory = { workspace = true }
-
-[features]
-default = []
-reflection = ["dep:tonic-reflection", "sword-macros/grpc-reflection"]
-error-details = ["dep:tonic-types"]
+tracing = { workspace = true }

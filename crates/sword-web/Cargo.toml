@@ -2,20 +2,30 @@
 name = "sword-web"
 version.workspace = true
 edition.workspace = true
-authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword"
-keywords = ["sword", "web", "framework", "axum", "http"]
-categories = ["web-programming", "web-programming::http-server"]
-readme.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/sword"
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["axum", "framework", "http", "sword", "web"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = []
+
+compression = ["tower-http/compression-full"]
+cors = ["tower-http/cors"]
+helmet = ["dep:axum-helmet"]
+multipart = ["axum/multipart"]
+servedir = ["tower-http/fs"]
+swagger-ui = ["dep:utoipa-swagger-ui"]
+validator = ["dep:validator"]
 
 [dependencies]
 tokio = { workspace = true }
@@ -28,37 +38,26 @@ sword-macros = { workspace = true, features = ["web"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-thiserror = { workspace = true }
+bytes = { workspace = true }
 chrono = { workspace = true }
 form_urlencoded = { workspace = true }
-serde_urlencoded = { workspace = true }
-bytes = { workspace = true }
 http-body-util = { workspace = true }
+serde_urlencoded = { workspace = true }
+thiserror = { workspace = true }
 
 validator = { workspace = true, optional = true }
 
-tracing = { workspace = true }
-inventory = { workspace = true }
-utoipa-swagger-ui = { version = "10.0.1", features = ["axum"], optional = true }
-tower = { workspace = true }
-tower-http = { workspace = true, features = ["limit"] }
-tower-cookies = { version = "0.11.0", features = ["private", "signed"] }
-byte-unit = "5.2.0"
-sword-extra = { workspace = true, features = ["request-id"] }
 async-stream = { workspace = true }
 axum-helmet = { version = "1.0.2", optional = true }
-
-[features]
-default = []
-
-multipart = ["axum/multipart"]
-validator = ["dep:validator"]
-swagger-ui = ["dep:utoipa-swagger-ui"]
-compression = ["tower-http/compression-full"]
-cors = ["tower-http/cors"]
-helmet = ["dep:axum-helmet"]
-servedir = ["tower-http/fs"]
+byte-unit = "5.2.0"
+inventory = { workspace = true }
+sword-extra = { workspace = true, features = ["request-id"] }
+tower = { workspace = true }
+tower-cookies = { version = "0.11.0", features = ["private", "signed"] }
+tower-http = { workspace = true, features = ["limit"] }
+tracing = { workspace = true }
+utoipa-swagger-ui = { version = "10.0.1", features = ["axum"], optional = true }
 
 [dev-dependencies]
 axum-test = { workspace = true }
-tower-http = { workspace = true, features = ["limit", "cors"] }
+tower-http = { workspace = true, features = ["cors", "limit"] }

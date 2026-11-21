@@ -3,88 +3,88 @@ resolver = "2"
 members = [
     "crates/*",
     "examples/*",
-    "tests/sword-web",
-    "tests/sword-socketio",
+    "tests/sword-events",
     "tests/sword-grpc",
     "tests/sword-jobs",
-    "tests/sword-events",
     "tests/sword-mixed",
+    "tests/sword-socketio",
+    "tests/sword-web",
 ]
-
-[workspace.metadata.cargo-machete]
-ignored  = ["prost", "prost-types", "tonic-prost"]
 
 [workspace.package]
 version = "0.6.1"
 edition = "2024"
-license = "MIT"
-repository = "https://github.com/sword-web/sword"
-homepage = "https://sword-web.github.io"
 rust-version = "1.95"
 description = "Server side application framework for Rust, built on top of the Tokio ecosystem, for web, Socket.IO, gRPC, events, jobs and more"
 readme = "README.md"
+homepage = "https://sword-web.github.io"
+repository = "https://github.com/sword-web/sword"
+license = "MIT"
 
 [workspace.dependencies]
 sword = { path = "crates/sword", default-features = false }
 sword-core = { path = "crates/sword-core", version = "0.6.1" }
-sword-macros = { path = "crates/sword-macros", version = "0.6.1" }
 sword-extra = { path = "crates/sword-extra", version = "0.6.1" }
+sword-macros = { path = "crates/sword-macros", version = "0.6.1" }
 
-sword-web = { path = "crates/sword-web", version = "0.6.1" }
-sword-grpc = { path = "crates/sword-grpc", version = "0.6.1" }
-sword-socketio = { path = "crates/sword-socketio", version = "0.6.1" }
 sword-events = { path = "crates/sword-events", version = "0.6.1" }
+sword-grpc = { path = "crates/sword-grpc", version = "0.6.1" }
 sword-jobs = { path = "crates/sword-jobs", version = "0.6.1" }
+sword-socketio = { path = "crates/sword-socketio", version = "0.6.1" }
+sword-web = { path = "crates/sword-web", version = "0.6.1" }
 
+async-nats = "0.52.0"
+serde = { version = "1.0.219", features = ["derive"] }
 tokio = { version = "^1.0", features = ["full"] }
 tokio-stream = "0.1.18"
 tonic = "0.14.6"
-tonic-prost = "0.14.6"
-tonic-types = "0.14.6"
-tonic-prost-build = "0.14.6"
 tonic-async-interceptor = "0.14.1"
 tonic-health = "0.14.6"
+tonic-prost = "0.14.6"
+tonic-prost-build = "0.14.6"
 tonic-reflection = "0.14.6"
-serde = { version = "1.0.219", features = ["derive"] }
-async-nats = "0.52.0"
+tonic-types = "0.14.6"
 
 axum = "0.8.7"
-tower = "0.5.2"
 http = "1.2.0"
+tower = "0.5.2"
 
 async-stream = "0.3.6"
-serde_json = "1.0.140"
 regex-lite = "0.1.7"
+serde_json = "1.0.140"
 
 thiserror = "2.0.17"
-uuid = { version = "1.26.0", features = ["v4", "serde"] }
+uuid = { version = "1.26.0", features = ["serde", "v4"] }
 validator = { version = "0.21.0", features = ["derive"] }
 
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json", "chrono"] }
+tracing-subscriber = { version = "0.3.19", features = ["chrono", "env-filter", "fmt", "json"] }
 
 miette = { version = "7.6.0", features = ["fancy"] }
 
+heck = "0.5"
 inventory = "0.3.21"
 parking_lot = "0.13.0"
-heck = "0.5"
 
 bon = "3.9.1"
 bytes = "1.10.1"
+form_urlencoded = "1.2.2"
 http-body-util = "0.1.5"
 serde_urlencoded = "0.7.1"
-form_urlencoded = "1.2.2"
 
-thisconfig = { version = "0.3.1", features = ["byte-unit", "time-unit"] }
 console = "0.15.8"
+dioxus-devtools = { version = "0.7.2", features = ["serve"] }
 futures-lite = "2.6"
 futures-util = "0.3"
 subsecond = "0.7.2"
-dioxus-devtools = { version = "0.7.2", features = ["serve"] }
+thisconfig = { version = "0.3.1", features = ["byte-unit", "time-unit"] }
 
-tower-http = "0.7.1"
 axum-test = "21.1.0"
+tower-http = "0.7.1"
 
-sqlx = { version = "0.9.0", features = ["sqlite", "runtime-tokio", "uuid", "postgres"] }
 argon2 = "0.6.0"
 chrono = "0.4.42"
+sqlx = { version = "0.9.0", features = ["postgres", "runtime-tokio", "sqlite", "uuid"] }
+
+[workspace.metadata.cargo-machete]
+ignored = ["prost", "prost-types", "tonic-prost"]

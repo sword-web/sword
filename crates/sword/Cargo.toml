@@ -2,61 +2,38 @@
 name = "sword"
 version.workspace = true
 edition.workspace = true
-authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword"
-keywords = ["sword", "web", "framework", "axum", "microservices"]
-categories = ["web-programming", "web-programming::http-server"]
-readme.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/sword"
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["axum", "framework", "microservices", "sword", "web"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-[dependencies]
-tokio = { workspace = true }
-
-sword-core = { workspace = true }
-sword-events = { workspace = true, optional = true }
-sword-macros = { workspace = true }
-sword-web = { workspace = true, optional = true }
-sword-grpc = { workspace = true, optional = true }
-sword-socketio = { workspace = true, optional = true }
-sword-jobs = { workspace = true, optional = true }
-
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-serde = { workspace = true }
-thisconfig = { workspace = true }
-inventory = { workspace = true }
-futures-lite = { workspace = true }
-toml = "1.1"
-
-subsecond = { workspace = true, optional = true }
-dioxus-devtools = { workspace = true, optional = true }
-
 [features]
 default = []
 
 web = ["dep:sword-web"]
-web-multipart = ["web", "sword-web/multipart"]
-web-swagger-ui = ["web", "sword-web/swagger-ui"]
-web-cors = ["web", "sword-web/cors"]
-web-compression = ["web", "sword-web/compression"]
-web-helmet = ["web", "sword-web/helmet"]
-web-servedir = ["web", "sword-web/servedir"]
-web-validator = ["web", "sword-web/validator"]
+web-compression = ["sword-web/compression", "web"]
+web-cors = ["sword-web/cors", "web"]
+web-helmet = ["sword-web/helmet", "web"]
+web-multipart = ["sword-web/multipart", "web"]
+web-servedir = ["sword-web/servedir", "web"]
+web-swagger-ui = ["sword-web/swagger-ui", "web"]
+web-validator = ["sword-web/validator", "web"]
 
-socketio = ["web", "dep:sword-socketio"]
+socketio = ["dep:sword-socketio", "web"]
 socketio-validator = ["socketio", "sword-socketio/validator"]
 
 grpc = ["dep:sword-grpc"]
-grpc-reflection = ["grpc", "sword-grpc/reflection"]
 grpc-error-details = ["grpc", "sword-grpc/error-details"]
+grpc-reflection = ["grpc", "sword-grpc/reflection"]
 
 events = ["dep:sword-events"]
 events-memory = ["events", "sword-events/memory"]
@@ -64,4 +41,26 @@ events-nats = ["events", "sword-events/nats"]
 
 jobs = ["dep:sword-jobs"]
 
-hot-reload = ["dep:subsecond", "dep:dioxus-devtools", "sword-macros/hot-reload"]
+hot-reload = ["dep:dioxus-devtools", "dep:subsecond", "sword-macros/hot-reload"]
+
+[dependencies]
+tokio = { workspace = true }
+
+sword-core = { workspace = true }
+sword-events = { workspace = true, optional = true }
+sword-grpc = { workspace = true, optional = true }
+sword-jobs = { workspace = true, optional = true }
+sword-macros = { workspace = true }
+sword-socketio = { workspace = true, optional = true }
+sword-web = { workspace = true, optional = true }
+
+futures-lite = { workspace = true }
+inventory = { workspace = true }
+serde = { workspace = true }
+thisconfig = { workspace = true }
+toml = "1.1"
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+dioxus-devtools = { workspace = true, optional = true }
+subsecond = { workspace = true, optional = true }
