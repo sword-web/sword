@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sword = { workspace = true, features = ["socketio", "socketio-validator", "web-cors", "web-servedir"] }
-uuid = { workspace = true }
-tokio = { workspace = true }
-serde = { workspace = true }
-validator = { workspace = true }
 chrono = { workspace = true }
+serde = { workspace = true }
+sword = { workspace = true, features = ["socketio", "socketio-validator", "web-cors", "web-servedir"] }
+tokio = { workspace = true }
 tracing.workspace = true
+uuid = { workspace = true }
+validator = { workspace = true }

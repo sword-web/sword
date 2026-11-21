@@ -2,12 +2,12 @@
 name = "sword-events"
 version.workspace = true
 edition.workspace = true
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
 readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [features]
 default = []
@@ -18,11 +18,11 @@ nats = ["dep:async-nats"]
 sword-core = { workspace = true }
 sword-macros = { workspace = true, features = ["events"] }
 
-tokio = { workspace = true }
+async-nats = { workspace = true, optional = true }
+futures-lite = { workspace = true }
 inventory = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-tracing = { workspace = true }
-async-nats = { workspace = true, optional = true }
-thiserror = { workspace = true }
 serde_json = { workspace = true }
-futures-lite = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

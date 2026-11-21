@@ -5,8 +5,8 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = ["web", "events", "events-memory", "events-nats"] }
-tokio = { workspace = true }
-serial_test = "4.0.1"
-serde = { workspace = true, features = ["derive"] }
 reqwest = { version = "0.13", default-features = false }
+serde = { workspace = true, features = ["derive"] }
+serial_test = "4.0.1"
+sword = { workspace = true, features = ["events", "events-memory", "events-nats", "web"] }
+tokio = { workspace = true }

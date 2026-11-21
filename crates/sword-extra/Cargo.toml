@@ -2,16 +2,15 @@
 name = "sword-extra"
 version.workspace = true
 edition.workspace = true
-authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description = "Shared tower utilities for the Sword framework"
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword-extra"
-keywords = ["sword", "tower", "middleware"]
-categories = ["web-programming"]
-readme = "README.md"
-license.workspace = true
 rust-version.workspace = true
+description = "Shared tower utilities for the Sword framework"
+documentation = "https://docs.rs/sword-extra"
+readme = "README.md"
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["middleware", "sword", "tower"]
+categories = ["web-programming"]
 
 [package.metadata.docs.rs]
 all-features = true

@@ -2,33 +2,36 @@
 name = "sword-socketio"
 version.workspace = true
 edition.workspace = true
-authors = ["luciano revillod <lrevillod2022@alu.uct.cl>"]
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/sword"
-keywords = ["sword", "socketio", "framework", "web"]
-categories = ["web-programming", "web-programming::http-server"]
-readme.workspace = true
-license.workspace = true
 rust-version.workspace = true
+description.workspace = true
+documentation = "https://docs.rs/sword"
+readme.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords = ["framework", "socketio", "sword", "web"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+default = []
+validator = ["dep:validator"]
+
 [dependencies]
 axum = { workspace = true }
 bytes = { workspace = true }
+inventory = { workspace = true }
 parking_lot = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-inventory = { workspace = true }
 
 sword-core = { workspace = true }
-sword-web = { workspace = true }
 sword-macros = { workspace = true, features = ["socketio"] }
+sword-web = { workspace = true }
 
 socketioxide = { version = "0.18.9", features = ["extensions", "msgpack"] }
 socketioxide-core = "0.20.0"
@@ -39,10 +42,6 @@ form_urlencoded = { workspace = true }
 serde_urlencoded = { workspace = true }
 validator = { workspace = true, optional = true }
 
-[features]
-default = []
-validator = ["dep:validator"]
-
 [dev-dependencies]
 axum-test = { workspace = true }
-tower-http = { workspace = true, features = ["limit", "cors", "trace"] }
+tower-http = { workspace = true, features = ["cors", "limit", "trace"] }

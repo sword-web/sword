@@ -5,12 +5,12 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-sword = { workspace = true, features = ["web", "grpc"] }
+prost = "0.14.1"
+serial_test = "4.0.1"
+sword = { workspace = true, features = ["grpc", "web"] }
 tokio = { workspace = true }
 tonic = { workspace = true }
 tonic-prost = { workspace = true }
-prost = "0.14.1"
-serial_test = "4.0.1"
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }

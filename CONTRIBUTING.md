@@ -11,7 +11,10 @@ Hey! Want to help out with Sword? Awesome! Here’s how you can jump in:
 ## Code style & tests
 
 - Use `rustfmt` to keep code style.
+- Use `tombi` 1.11.3 to keep TOML style. It formats and lints every `.toml` file from `sword/tombi.toml`.
 - Run the full local quality gate before opening a PR:
+  - `tombi format --check --offline`
+  - `tombi lint --offline --error-on-warnings`
   - `cargo fmt --all -- --check`
   - `cargo clippy -p sword --all-targets -- -D warnings`
   - `cargo clippy -p sword-web --all-targets --all-features -- -D warnings`
@@ -33,9 +36,11 @@ Hey! Want to help out with Sword? Awesome! Here’s how you can jump in:
 ## Setup
 
 1. Install Rust: https://rustup.rs
-2. Clone: `git clone https://github.com/sword-web/sword`
-3. Go to the folder: `cd sword`
-4. Build: `cargo build`
-5. Test: `cargo test`
+2. Install Tombi 1.11.3: `cargo binstall tombi` or `curl -fsSL https://tombi-toml.github.io/tombi/install.sh | sh`
+3. Clone: `git clone https://github.com/sword-web/sword`
+4. Go to the folder: `cd sword`
+5. Build: `cargo build`
+6. Format TOML: `tombi format`
+7. Test: `cargo test`
 
 Thanks for helping make Sword better!
