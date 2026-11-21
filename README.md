@@ -79,9 +79,13 @@ Also gives a set of sub-features for the top-level applications:
 
 **Web Features**:
 
-- `web-validator`: enables input validation for web controllers
+- `web-compression`: enables response compression
+- `web-cors`: enables CORS handling
+- `web-helmet`: enables security headers through `helmet`
 - `web-multipart`: enables `multipart/form-data` support in web controllers
+- `web-servedir`: serves a static directory from the file system
 - `web-swagger-ui`: enables Swagger UI for OpenAPI specs
+- `web-validator`: enables input validation for web controllers
 
 **Socket.IO Features**:
 
