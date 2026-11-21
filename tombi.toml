@@ -1,0 +1,27 @@
+[files]
+include = ["**/*.toml"]
+exclude = ["target/**"]
+respect-ignore-files = true
+
+[format.rules]
+group-blank-lines-limit = 1
+indent-width = 4
+line-ending = "lf"
+table-blank-lines = 1
+
+[lint.rules]
+dotted-keys-out-of-order = "error"
+key-empty = "error"
+tables-out-of-order = "error"
+
+[schema]
+enabled = true
+strict = true
+
+[schema.format.rules]
+array-values-order.enabled = true
+table-keys-order.enabled = true
+
+[[schemas]]
+path = "tombi://www.schemastore.org/cargo.json"
+include = ["Cargo.toml", "**/Cargo.toml"]

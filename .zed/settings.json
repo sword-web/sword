@@ -12,7 +12,11 @@
 			"enable_language_server": true,
 		},
 		"TOML": {
-			"formatter": "language_server",
+			"formatter": {
+				"language_server": {
+					"name": "tombi",
+				},
+			},
 		},
 	},
 	"lsp": {

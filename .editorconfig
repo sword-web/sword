@@ -7,3 +7,7 @@ insert_final_newline = true
 
 [{Makefile,*.js,*.html,*.css,*.json}]
 indent_style = tab
+
+[*.toml]
+indent_style = space
+indent_size = 4
