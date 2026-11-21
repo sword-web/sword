@@ -60,7 +60,7 @@ validator = { version = "0.21.0", features = ["derive"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["chrono", "env-filter", "fmt", "json"] }
 
-miette = { version = "7.6.0", features = ["fancy"] }
+miette = { version = "7.6.0", features = ["fancy-no-backtrace"] }
 
 heck = "0.5"
 inventory = "0.3.21"
