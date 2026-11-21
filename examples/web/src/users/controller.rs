@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use plugins::redis::RedisCache;
 use uuid::Uuid;
 
 use sword::events::*;
@@ -18,12 +19,27 @@ pub struct UsersController {
     hasher: Arc<Hasher>,
     users: Arc<UserRepository>,
     publisher: Arc<MemoryEventPublisher>,
+    cache: Arc<RedisCache>,
 }
+
+const USERS_CACHE_KEY: &str = "users:list";
 
 impl UsersController {
     #[get("/")]
     async fn get_users(&self, _: Request) -> WebResult<Vec<User>> {
-        Ok(self.users.find_all().await?)
+        match self.cache.get::<Vec<User>>(USERS_CACHE_KEY).await {
+            Ok(Some(users)) => return Ok(users),
+            Ok(None) => {}
+            Err(err) => tracing::warn!(error = %err, "users cache read failed"),
+        }
+
+        let users = self.users.find_all().await?;
+
+        if let Err(err) = self.cache.set(USERS_CACHE_KEY, &users).await {
+            tracing::warn!(error = %err, "users cache write failed");
+        }
+
+        Ok(users)
     }
 
     #[post("/")]
@@ -43,6 +59,10 @@ impl UsersController {
         let user = User::new(body.username, self.hasher.hash(&body.password).await?);
 
         self.users.save(&user).await?;
+
+        if let Err(err) = self.cache.invalidate(USERS_CACHE_KEY).await {
+            tracing::warn!(error = %err, "users cache invalidation failed");
+        }
 
         let event_data = UserCreatedEvent {
             user_id: user.id.to_string(),
@@ -79,6 +99,10 @@ impl UsersController {
 
         self.users.save(&updated_user).await?;
 
+        if let Err(err) = self.cache.invalidate(USERS_CACHE_KEY).await {
+            tracing::warn!(error = %err, "users cache invalidation failed");
+        }
+
         Ok(())
     }
 
@@ -91,6 +115,10 @@ impl UsersController {
         };
 
         self.users.delete(&id).await?;
+
+        if let Err(err) = self.cache.invalidate(USERS_CACHE_KEY).await {
+            tracing::warn!(error = %err, "users cache invalidation failed");
+        }
 
         Ok(())
     }

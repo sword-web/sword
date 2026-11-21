@@ -3,6 +3,7 @@ pub mod shared;
 pub mod sse;
 pub mod users;
 
+use plugins::redis::RedisPlugin;
 use plugins::sqlx_sqlite::SqlxSqlitePlugin;
 use sword::prelude::*;
 
@@ -14,6 +15,7 @@ async fn main() -> Result<(), Error> {
 
     let app = Application::builder()?
         .with_plugin::<SqlxSqlitePlugin>()
+        .with_plugin::<RedisPlugin>()
         .with_module::<SharedModule>()
         .with_module::<UsersModule>()
         .with_module::<MailerModule>()

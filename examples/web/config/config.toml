@@ -48,3 +48,10 @@ path = ":memory:"
 max-connections = 1
 create-if-missing = true
 migrations-path = "migrations"
+
+[redis]
+url = "redis://127.0.0.1:6379"
+ttl-ms = 60000
+prefix = "sword:web"
+connection-timeout-ms = 500
+response-timeout-ms = 500

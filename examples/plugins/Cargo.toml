@@ -10,7 +10,9 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
+redis = { version = "1", features = ["connection-manager", "tokio-comp"] }
 serde = { workspace = true }
+serde_json = { workspace = true }
 sqlx = { workspace = true }
 sword = { workspace = true }
 tokio = { workspace = true }
