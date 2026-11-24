@@ -358,9 +358,18 @@ impl WebApplicationRouter {
 
         let page = super::scalar::render_html(&openapi.title, urls);
 
-        router.route(
-            &docs_path,
-            axum::routing::get(move || async move { page.clone() }),
-        )
+        // axum matches paths exactly, so the trailing-slash variant is registered too, as
+        // Swagger UI does. The page only uses absolute URLs, so both can serve the same HTML.
+        let with_slash = format!("{docs_path}/");
+
+        [docs_path, with_slash]
+            .into_iter()
+            .fold(router, |router, path| {
+                let page = page.clone();
+                router.route(
+                    &path,
+                    axum::routing::get(move || async move { page.clone() }),
+                )
+            })
     }
 }
