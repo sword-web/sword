@@ -1,6 +1,8 @@
 mod config;
 mod extensions;
 mod router;
+#[cfg(feature = "scalar-ui")]
+mod scalar;
 
 use std::net::SocketAddr;
 
@@ -11,7 +13,7 @@ use tokio::net::TcpListener;
 use self::router::WebApplicationRouter;
 use crate::layers::body_limit::BodyLimitValue;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
 pub use self::config::OpenApiConfig;
 pub use self::config::WebApplicationConfig;
 pub use self::extensions::{WebExtension, WebExtensionContext, WebExtensionRegistrar};
@@ -39,7 +41,7 @@ impl WebApplication {
             "Starting application listener"
         );
 
-        #[cfg(feature = "swagger-ui")]
+        #[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
         {
             if let Some(cfg) = &self.config.openapi {
                 let display_host = if self.config.host == "0.0.0.0" {
@@ -48,17 +50,25 @@ impl WebApplication {
                     &self.config.host
                 };
 
+                // With both UIs enabled Swagger UI keeps `/docs` and Scalar moves to `/scalar`.
+                let docs_route = if cfg!(feature = "scalar-ui") && cfg!(feature = "swagger-ui") {
+                    "/docs and /scalar"
+                } else {
+                    "/docs"
+                };
+
                 let docs_url = format!(
-                    "http://{}:{}{}/docs",
+                    "http://{}:{}{}{}",
                     display_host,
                     self.config.port,
-                    self.config.router_prefix.as_deref().unwrap_or("")
+                    self.config.router_prefix.as_deref().unwrap_or(""),
+                    docs_route
                 );
 
                 tracing::info!(
                     target: "sword.startup.app",
                     docs_url = docs_url.as_str(),
-                    "Loaded {} OpenAPI spec file(s) for Swagger UI",
+                    "Loaded {} OpenAPI spec file(s) for the API docs UI",
                     cfg.spec_file_paths.len()
                 );
             }

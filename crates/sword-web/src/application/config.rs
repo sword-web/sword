@@ -7,7 +7,7 @@ use sword_core::{ConfigCheck, ConfigItem, ConfigProblem, ConfigRegistrar, invent
 use crate::layers::logger::WebLoggerConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg(feature = "swagger-ui")]
+#[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
 pub struct OpenApiConfig {
     pub title: String,
     pub version: String,
@@ -30,7 +30,7 @@ pub struct WebApplicationConfig {
     #[serde(rename = "router-prefix")]
     pub router_prefix: Option<String>,
 
-    #[cfg(feature = "swagger-ui")]
+    #[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
     #[serde(default)]
     /// Optional OpenAPI documentation configuration.
     pub openapi: Option<OpenApiConfig>,
@@ -57,7 +57,7 @@ impl Default for WebApplicationConfig {
             body_limit: BodyLimitConfig::default(),
             request_timeout: RequestTimeoutConfig::default(),
             logger: None,
-            #[cfg(feature = "swagger-ui")]
+            #[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
             openapi: None,
         }
     }

@@ -6,7 +6,7 @@ mod response;
 
 pub mod layers;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
 pub use self::application::OpenApiConfig;
 
 pub use self::application::{
