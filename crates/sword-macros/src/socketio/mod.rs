@@ -185,7 +185,7 @@ pub fn expand_controller(controller: &ControllerStruct) -> Result<TokenStream> {
             let handler = base_handler;
             #(#interceptor_applications)*
 
-            io.ns(#namespace, handler);
+            #Spawnable::spawn(io.ns(#namespace, handler));
 
             Ok(())
         }

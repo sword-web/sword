@@ -1,4 +1,6 @@
-use std::{convert::Infallible, sync::Arc, time::Duration};
+use std::convert::Infallible;
+use std::sync::Arc;
+use std::time::Duration;
 
 use axum::http::{Extensions as HttpExtensions, HeaderMap, request::Parts};
 use bytes::Bytes;
@@ -8,23 +10,26 @@ use socketioxide::handler::Value;
 use socketioxide::{
     ProtocolVersion, SendError, TransportType,
     ack::AckStream,
-    adapter::{Adapter as SocketIoAdapter, LocalAdapter},
+    adapter::Adapter as SocketIoAdapter,
     extensions::Extensions,
     extract::{AckSender, Event, SocketRef},
     handler::{FromConnectParts, FromDisconnectParts, FromMessageParts},
     operators::{BroadcastOperators, ConfOperators},
     socket::{DisconnectReason, Socket},
 };
+
 use socketioxide_core::{
     Sid,
     adapter::{Room, RoomParam},
     parser::ParseError,
 };
+
 #[cfg(feature = "validator")]
 use validator::Validate;
 
 use sword_web::prelude::Cookies;
 
+use crate::adapter::DefaultAdapter;
 use crate::config::SocketIoParser;
 use crate::error::SocketError;
 
@@ -38,7 +43,7 @@ enum SocketKind {
 ///
 /// Provides access to socket operations, message data, acknowledgments, event names,
 /// and disconnect reasons depending on the handler type.
-pub struct SocketContext<A: SocketIoAdapter = LocalAdapter> {
+pub struct SocketContext<A: SocketIoAdapter = DefaultAdapter> {
     socket: SocketRef<A>,
     data: RwLock<Option<Value>>,
     ack: Option<AckSender<A>>,

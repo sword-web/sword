@@ -1,10 +1,9 @@
 use std::fmt::Display;
 
-use socketioxide::adapter::{Adapter as SocketIoSocketAdapter, LocalAdapter};
-
+use socketioxide::adapter::Adapter as SocketIoSocketAdapter;
 use sword_core::Interceptor;
 
-use crate::extract::SocketContext;
+use crate::{adapter::DefaultAdapter, extract::SocketContext};
 
 /// An interceptor that is called when a new Socket.IO connection is established.
 ///
@@ -44,7 +43,7 @@ use crate::extract::SocketContext;
 /// }
 /// ```
 #[allow(async_fn_in_trait)]
-pub trait OnConnect<A = LocalAdapter>: Interceptor
+pub trait OnConnect<A = DefaultAdapter>: Interceptor
 where
     A: SocketIoSocketAdapter,
 {

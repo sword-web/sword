@@ -1,5 +1,6 @@
 #![allow(rustdoc::broken_intra_doc_links)]
 
+mod adapter;
 mod config;
 mod controller;
 mod error;
@@ -46,6 +47,9 @@ pub fn validate_config(config: &Config) -> Result<(), ConfigFailure> {
 #[doc(hidden)]
 pub mod internal {
     pub use socketioxide::handler::ConnectHandler;
+    pub use socketioxide_core::adapter::Spawnable;
+
+    pub use crate::adapter::{ADAPTER_NAME, DefaultAdapter, DefaultAdapterState};
 
     pub use crate::controller::{
         HandlerRegistrar, SocketEventKind, SocketIoController, SocketIoHandlerRegistrar,

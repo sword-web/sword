@@ -95,6 +95,7 @@ path!(HandlerRegistrar => ::sword::internal::socketio::HandlerRegistrar);
 path!(SocketIoHandlerRegistrar => ::sword::internal::socketio::SocketIoHandlerRegistrar);
 path!(SocketIoController => ::sword::internal::socketio::SocketIoController);
 path!(ConnectHandler => ::sword::internal::socketio::ConnectHandler);
+path!(Spawnable => ::sword::internal::socketio::Spawnable);
 
 path!(GrpcController => ::sword::internal::grpc::GrpcController);
 path!(GrpcControllerRegistrar => ::sword::internal::grpc::GrpcControllerRegistrar);
