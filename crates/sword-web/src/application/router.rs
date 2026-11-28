@@ -323,6 +323,8 @@ impl WebApplicationRouter {
         (router, urls)
     }
 
+    /// Serves the Swagger UI. It lives at `{prefix}/docs`, or at `{prefix}/docs/swagger-ui`
+    /// when `scalar-ui` is also enabled so both UIs can coexist.
     #[cfg(feature = "swagger-ui")]
     fn apply_openapi_swagger_ui(&self, router: Router<State>, urls: &[String]) -> Router<State> {
         use utoipa_swagger_ui::{Config, SwaggerUi};
@@ -332,44 +334,49 @@ impl WebApplicationRouter {
         }
 
         let prefix = self.web_config.router_prefix.as_deref().unwrap_or("");
-        let docs_path = format!("{prefix}/docs");
+        let docs_path = if cfg!(feature = "scalar-ui") {
+            format!("{prefix}/docs/swagger-ui")
+        } else {
+            format!("{prefix}/docs")
+        };
 
         router.merge(SwaggerUi::new(docs_path).config(Config::new(urls.to_vec())))
     }
 
-    /// Serves the Scalar API reference. It lives at `{prefix}/docs`, or at `{prefix}/scalar`
+    /// Serves the Scalar API reference. It lives at `{prefix}/docs`, or at `{prefix}/docs/scalar-ui`
     /// when `swagger-ui` is also enabled so both UIs can coexist.
     #[cfg(feature = "scalar-ui")]
     fn apply_openapi_scalar_ui(&self, router: Router<State>, urls: &[String]) -> Router<State> {
-        let Some(openapi) = &self.web_config.openapi else {
-            return router;
-        };
+        use scalar_api_reference::axum::router as scalar_router;
+        use serde_json::json;
 
         if urls.is_empty() {
             return router;
         }
 
+        let sources = urls
+            .iter()
+            .map(|url| json!({ "url": url }))
+            .collect::<Vec<_>>();
+
+        let config = json!({ "sources": sources });
+
         let prefix = self.web_config.router_prefix.as_deref().unwrap_or("");
         let docs_path = if cfg!(feature = "swagger-ui") {
-            format!("{prefix}/scalar")
+            format!("{prefix}/docs/scalar-ui")
         } else {
             format!("{prefix}/docs")
         };
+        let trailing_slash = format!("{docs_path}/");
+        let redirect_target = docs_path.clone();
 
-        let page = super::scalar::render_html(&openapi.title, urls);
-
-        // axum matches paths exactly, so the trailing-slash variant is registered too, as
-        // Swagger UI does. The page only uses absolute URLs, so both can serve the same HTML.
-        let with_slash = format!("{docs_path}/");
-
-        [docs_path, with_slash]
-            .into_iter()
-            .fold(router, |router, path| {
-                let page = page.clone();
-                router.route(
-                    &path,
-                    axum::routing::get(move || async move { page.clone() }),
-                )
-            })
+        router
+            .merge(scalar_router(&docs_path, &config).with_state::<State>(()))
+            .route(
+                &trailing_slash,
+                axum::routing::get(move || async move {
+                    axum::response::Redirect::permanent(&redirect_target)
+                }),
+            )
     }
 }

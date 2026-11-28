@@ -1,8 +1,6 @@
 mod config;
 mod extensions;
 mod router;
-#[cfg(feature = "scalar-ui")]
-mod scalar;
 
 use std::net::SocketAddr;
 
@@ -50,9 +48,9 @@ impl WebApplication {
                     &self.config.host
                 };
 
-                // With both UIs enabled Swagger UI keeps `/docs` and Scalar moves to `/scalar`.
+                // With both UIs enabled each gets its own sub-path under `/docs`.
                 let docs_route = if cfg!(feature = "scalar-ui") && cfg!(feature = "swagger-ui") {
-                    "/docs and /scalar"
+                    "/docs/swagger-ui and /docs/scalar-ui"
                 } else {
                     "/docs"
                 };
