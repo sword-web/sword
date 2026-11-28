@@ -60,7 +60,7 @@ impl WebApplicationRouter {
 
         api_router = self.apply_web_layers(api_router);
 
-        #[cfg(feature = "swagger-ui")]
+        #[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
         let (mut api_router, openapi_urls) = self.apply_openapi_specs(api_router);
 
         // Static file serving is mounted before the prefix is applied, like the rest of the
@@ -94,6 +94,12 @@ impl WebApplicationRouter {
         #[cfg(feature = "swagger-ui")]
         {
             router = self.apply_openapi_swagger_ui(router, &openapi_urls);
+        }
+
+        // Scalar is mounted at the same outer level for consistency with Swagger UI.
+        #[cfg(feature = "scalar-ui")]
+        {
+            router = self.apply_openapi_scalar_ui(router, &openapi_urls);
         }
 
         // Paths outside the router prefix also get the JSON not-found response. It is set
@@ -242,7 +248,7 @@ impl WebApplicationRouter {
         router
     }
 
-    #[cfg(feature = "swagger-ui")]
+    #[cfg(any(feature = "swagger-ui", feature = "scalar-ui"))]
     fn apply_openapi_specs(&self, mut router: Router<State>) -> (Router<State>, Vec<String>) {
         let Some(openapi) = &self.web_config.openapi else {
             return (router, vec![]);
@@ -310,13 +316,15 @@ impl WebApplicationRouter {
                 }),
             );
 
-            // Full URL with prefix so Swagger UI fetches from the correct path
+            // Full URL with prefix so the docs UI fetches from the correct path
             urls.push(format!("{prefix}{route_path}"));
         }
 
         (router, urls)
     }
 
+    /// Serves the Swagger UI. It lives at `{prefix}/docs`, or at `{prefix}/docs/swagger-ui`
+    /// when `scalar-ui` is also enabled so both UIs can coexist.
     #[cfg(feature = "swagger-ui")]
     fn apply_openapi_swagger_ui(&self, router: Router<State>, urls: &[String]) -> Router<State> {
         use utoipa_swagger_ui::{Config, SwaggerUi};
@@ -326,8 +334,49 @@ impl WebApplicationRouter {
         }
 
         let prefix = self.web_config.router_prefix.as_deref().unwrap_or("");
-        let docs_path = format!("{prefix}/docs");
+        let docs_path = if cfg!(feature = "scalar-ui") {
+            format!("{prefix}/docs/swagger-ui")
+        } else {
+            format!("{prefix}/docs")
+        };
 
         router.merge(SwaggerUi::new(docs_path).config(Config::new(urls.to_vec())))
+    }
+
+    /// Serves the Scalar API reference. It lives at `{prefix}/docs`, or at `{prefix}/docs/scalar-ui`
+    /// when `swagger-ui` is also enabled so both UIs can coexist.
+    #[cfg(feature = "scalar-ui")]
+    fn apply_openapi_scalar_ui(&self, router: Router<State>, urls: &[String]) -> Router<State> {
+        use scalar_api_reference::axum::router as scalar_router;
+        use serde_json::json;
+
+        if urls.is_empty() {
+            return router;
+        }
+
+        let sources = urls
+            .iter()
+            .map(|url| json!({ "url": url }))
+            .collect::<Vec<_>>();
+
+        let config = json!({ "sources": sources });
+
+        let prefix = self.web_config.router_prefix.as_deref().unwrap_or("");
+        let docs_path = if cfg!(feature = "swagger-ui") {
+            format!("{prefix}/docs/scalar-ui")
+        } else {
+            format!("{prefix}/docs")
+        };
+        let trailing_slash = format!("{docs_path}/");
+        let redirect_target = docs_path.clone();
+
+        router
+            .merge(scalar_router(&docs_path, &config).with_state::<State>(()))
+            .route(
+                &trailing_slash,
+                axum::routing::get(move || async move {
+                    axum::response::Redirect::permanent(&redirect_target)
+                }),
+            )
     }
 }

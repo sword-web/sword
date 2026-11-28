@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- *(openapi)* add the `scalar-ui` feature to serve the OpenAPI specs with Scalar
+
 ## [0.6.1](https://github.com/sword-web/sword/compare/sword-web-v0.6.0...sword-web-v0.6.1) - 2026-11-15
 
 ### Other

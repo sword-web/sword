@@ -23,6 +23,7 @@ compression = ["tower-http/compression-full"]
 cors = ["tower-http/cors"]
 helmet = ["dep:axum-helmet"]
 multipart = ["axum/multipart"]
+scalar-ui = ["dep:scalar_api_reference"]
 servedir = ["tower-http/fs"]
 swagger-ui = ["dep:utoipa-swagger-ui"]
 validator = ["dep:validator"]
@@ -42,6 +43,7 @@ bytes = { workspace = true }
 chrono = { workspace = true }
 form_urlencoded = { workspace = true }
 http-body-util = { workspace = true }
+scalar_api_reference = { version = "0.2.32", features = ["axum"], optional = true }
 serde_urlencoded = { workspace = true }
 thiserror = { workspace = true }
 

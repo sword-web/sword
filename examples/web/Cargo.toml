@@ -12,8 +12,8 @@ sword = {
         "web",
         "web-compression",
         "web-cors",
+        "web-scalar-ui",
         "web-servedir",
-        "web-swagger-ui",
         "web-validator",
     ]
 }
