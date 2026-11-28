@@ -83,9 +83,9 @@ Also gives a set of sub-features for the top-level applications:
 - `web-cors`: enables CORS handling
 - `web-helmet`: enables security headers through `helmet`
 - `web-multipart`: enables `multipart/form-data` support in web controllers
-- `web-scalar-ui`: enables Scalar API reference for OpenAPI specs (served at `/docs`, or `/docs/scalar-ui` when `web-swagger-ui` is also enabled)
+- `web-scalar-ui`: enables Scalar API reference for OpenAPI specs
 - `web-servedir`: serves a static directory from the file system
-- `web-swagger-ui`: enables Swagger UI for OpenAPI specs (served at `/docs`, or `/docs/swagger-ui` when `web-scalar-ui` is also enabled)
+- `web-swagger-ui`: enables Swagger UI for OpenAPI specs
 - `web-validator`: enables input validation for web controllers
 
 **Socket.IO Features**:
